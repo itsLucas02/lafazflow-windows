@@ -4,7 +4,7 @@
 
 **Goal:** Build the first Windows-native LafazFlow offline dictation loop with a VoiceInk-like floating recorder, local WAV recording, local `whisper-cli.exe` transcription, and paste-to-active-window behavior.
 
-**Architecture:** Create a .NET 9 WPF app with small services around hotkeys, recording, transcription, clipboard paste, and local JSON settings. The first Whisper integration uses a process bridge to a user-configured `whisper-cli.exe` and `.bin` model path so the offline flow can be verified before native bindings.
+**Architecture:** Create a .NET 9 WPF app with small services around double Shift detection, recording, transcription, clipboard paste, and local JSON settings. The first Whisper integration uses a process bridge to a user-configured `whisper-cli.exe` and `.bin` model path so the offline flow can be verified before native bindings.
 
 **Tech Stack:** .NET 9, WPF, C#, NAudio, xUnit, Win32 interop, local JSON settings, local `whisper.cpp` CLI.
 
@@ -21,7 +21,8 @@
 - Create `src/LafazFlow.Windows/Core/HotkeyMode.cs`: hotkey mode enum.
 - Create `src/LafazFlow.Windows/Core/AppSettings.cs`: strongly typed settings.
 - Create `src/LafazFlow.Windows/Services/SettingsStore.cs`: JSON settings load/save.
-- Create `src/LafazFlow.Windows/Services/HotkeyService.cs`: Win32 `RegisterHotKey` shortcut handling.
+- Create `src/LafazFlow.Windows/Services/DoubleShiftHotkeyService.cs`: low-level keyboard hook for double Shift toggle detection.
+- Create `src/LafazFlow.Windows/Services/DoubleShiftDetector.cs`: testable double Shift timing logic used by the hook service.
 - Create `src/LafazFlow.Windows/Services/AudioCaptureService.cs`: NAudio WAV capture and meter updates.
 - Create `src/LafazFlow.Windows/Services/WhisperCliTranscriptionService.cs`: local process invocation.
 - Create `src/LafazFlow.Windows/Services/ClipboardPasteService.cs`: clipboard/paste/restore behavior.
@@ -39,6 +40,14 @@
 - Create: `tests/LafazFlow.Windows.Tests/LafazFlow.Windows.Tests.csproj`
 - Create: `.gitignore`
 - Create: `README.md`
+
+**Prerequisites before starting:**
+- Windows 10 or Windows 11.
+- .NET 9 SDK with Windows Desktop support.
+- Git.
+- Visual Studio 2022 or Build Tools with the `.NET desktop development` workload is recommended.
+- A local Windows `whisper-cli.exe` and ggml `.bin` model are needed for the final manual dictation test, but not for compiling the app.
+- CMake is not required for the MVP unless building `whisper.cpp` from source.
 
 - [ ] **Step 1: Create solution and projects**
 
@@ -161,7 +170,7 @@ public sealed class SettingsStoreTests
 
         var settings = store.Load();
 
-        Assert.Equal("Ctrl+Alt+Space", settings.HotkeyGesture);
+        Assert.Equal("DoubleShift", settings.HotkeyGesture);
         Assert.Equal(HotkeyMode.Hybrid, settings.HotkeyMode);
         Assert.True(settings.RestoreClipboardAfterPaste);
         Assert.Equal(250, settings.ClipboardRestoreDelayMs);
@@ -240,7 +249,7 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public string HotkeyGesture { get; init; } = "Ctrl+Alt+Space";
+    public string HotkeyGesture { get; init; } = "DoubleShift";
     public HotkeyMode HotkeyMode { get; init; } = HotkeyMode.Hybrid;
     public string WhisperCliPath { get; init; } = "";
     public string ModelPath { get; init; } = "";
@@ -767,13 +776,15 @@ git add src/LafazFlow.Windows/UI src/LafazFlow.Windows/MainWindow.xaml.cs
 git commit -m "Add floating recorder shell"
 ```
 
-## Task 5: Add Capture, Controller, Hotkey, And Paste
+## Task 5: Add Capture, Controller, Double Shift Hotkey, And Paste
 
 **Files:**
 - Create: `src/LafazFlow.Windows/Services/AudioCaptureService.cs`
 - Create: `src/LafazFlow.Windows/Services/ClipboardPasteService.cs`
-- Create: `src/LafazFlow.Windows/Services/HotkeyService.cs`
+- Create: `src/LafazFlow.Windows/Services/DoubleShiftDetector.cs`
+- Create: `src/LafazFlow.Windows/Services/DoubleShiftHotkeyService.cs`
 - Create: `src/LafazFlow.Windows/Services/RecorderController.cs`
+- Create: `tests/LafazFlow.Windows.Tests/DoubleShiftDetectorTests.cs`
 - Modify: `src/LafazFlow.Windows/MainWindow.xaml.cs`
 
 - [ ] **Step 1: Implement audio capture service**
@@ -1004,11 +1015,193 @@ public sealed class RecorderController
 }
 ```
 
-- [ ] **Step 4: Defer full hotkey service if needed**
+- [ ] **Step 4: Add double Shift detector tests**
 
-If `RegisterHotKey` integration takes longer than expected, wire a temporary keyboard gesture in `MainWindow` for `Ctrl+Alt+Space` and document it in the review. The production follow-up must replace it with `HotkeyService` before calling the MVP complete.
+Create `tests/LafazFlow.Windows.Tests/DoubleShiftDetectorTests.cs`:
 
-- [ ] **Step 5: Build and manually smoke test**
+```csharp
+using LafazFlow.Windows.Services;
+
+namespace LafazFlow.Windows.Tests;
+
+public sealed class DoubleShiftDetectorTests
+{
+    [Fact]
+    public void SingleShiftDoesNotTrigger()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
+
+        Assert.False(triggered);
+    }
+
+    [Fact]
+    public void TwoShiftUpsInsideWindowTriggers()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+
+        detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
+        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch.AddMilliseconds(300));
+
+        Assert.True(triggered);
+    }
+
+    [Fact]
+    public void TwoShiftUpsOutsideWindowDoesNotTrigger()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+
+        detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
+        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch.AddMilliseconds(500));
+
+        Assert.False(triggered);
+    }
+}
+```
+
+- [ ] **Step 5: Add double Shift detector**
+
+Create `src/LafazFlow.Windows/Services/DoubleShiftDetector.cs`:
+
+```csharp
+namespace LafazFlow.Windows.Services;
+
+public sealed class DoubleShiftDetector
+{
+    private readonly TimeSpan _window;
+    private DateTimeOffset? _lastShiftUpAt;
+
+    public DoubleShiftDetector(TimeSpan window)
+    {
+        _window = window;
+    }
+
+    public bool RegisterShiftUp(DateTimeOffset now)
+    {
+        if (_lastShiftUpAt is not null && now - _lastShiftUpAt <= _window)
+        {
+            _lastShiftUpAt = null;
+            return true;
+        }
+
+        _lastShiftUpAt = now;
+        return false;
+    }
+}
+```
+
+- [ ] **Step 6: Verify double Shift detector tests**
+
+Run:
+
+```powershell
+dotnet test tests/LafazFlow.Windows.Tests/LafazFlow.Windows.Tests.csproj --filter DoubleShiftDetectorTests
+```
+
+Expected: tests pass.
+
+- [ ] **Step 7: Implement double Shift hotkey service**
+
+Create `src/LafazFlow.Windows/Services/DoubleShiftHotkeyService.cs`:
+
+```csharp
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+namespace LafazFlow.Windows.Services;
+
+public sealed class DoubleShiftHotkeyService : IDisposable
+{
+    private const int WhKeyboardLl = 13;
+    private const int WmKeyUp = 0x0101;
+    private const int VkShift = 0x10;
+    private const int VkLeftShift = 0xA0;
+    private const int VkRightShift = 0xA1;
+    private static readonly TimeSpan DoublePressWindow = TimeSpan.FromMilliseconds(350);
+
+    private readonly LowLevelKeyboardProc _proc;
+    private readonly DoubleShiftDetector _detector = new(DoublePressWindow);
+    private IntPtr _hookId;
+
+    public event Action? DoubleShiftPressed;
+
+    public DoubleShiftHotkeyService()
+    {
+        _proc = HookCallback;
+    }
+
+    public void Start()
+    {
+        if (_hookId != IntPtr.Zero) return;
+        _hookId = SetHook(_proc);
+    }
+
+    public void Stop()
+    {
+        if (_hookId == IntPtr.Zero) return;
+        UnhookWindowsHookEx(_hookId);
+        _hookId = IntPtr.Zero;
+    }
+
+    public void Dispose()
+    {
+        Stop();
+    }
+
+    private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0 && wParam == WmKeyUp)
+        {
+            var vkCode = Marshal.ReadInt32(lParam);
+            if (IsShift(vkCode))
+            {
+                if (_detector.RegisterShiftUp(DateTimeOffset.UtcNow))
+                {
+                    DoubleShiftPressed?.Invoke();
+                }
+            }
+        }
+
+        return CallNextHookEx(_hookId, nCode, wParam, lParam);
+    }
+
+    private static bool IsShift(int virtualKey)
+    {
+        return virtualKey is VkShift or VkLeftShift or VkRightShift;
+    }
+
+    private static IntPtr SetHook(LowLevelKeyboardProc proc)
+    {
+        using var currentProcess = Process.GetCurrentProcess();
+        using var currentModule = currentProcess.MainModule;
+        var moduleHandle = GetModuleHandle(currentModule?.ModuleName);
+        return SetWindowsHookEx(WhKeyboardLl, proc, moduleHandle, 0);
+    }
+
+    private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string? lpModuleName);
+}
+```
+
+Expected behavior:
+- A single Shift tap does nothing.
+- Holding Shift does not trigger.
+- Pressing Shift twice within 350 ms fires `DoubleShiftPressed`.
+- The service does not suppress the key events; Shift still reaches the active app.
+
+- [ ] **Step 8: Build and manually smoke test**
 
 Run:
 
@@ -1019,12 +1212,12 @@ dotnet run --project src/LafazFlow.Windows/LafazFlow.Windows.csproj
 
 Expected: with valid settings paths, the app can record, transcribe locally, and paste text. With invalid settings paths, no recording starts.
 
-- [ ] **Step 6: Commit workflow**
+- [ ] **Step 9: Commit workflow**
 
 Run:
 
 ```powershell
-git add src/LafazFlow.Windows/Services src/LafazFlow.Windows/MainWindow.xaml.cs
+git add src/LafazFlow.Windows/Services tests/LafazFlow.Windows.Tests/DoubleShiftDetectorTests.cs src/LafazFlow.Windows/MainWindow.xaml.cs
 git commit -m "Wire offline dictation workflow"
 ```
 

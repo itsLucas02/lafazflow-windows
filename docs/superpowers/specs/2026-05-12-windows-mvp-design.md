@@ -37,7 +37,7 @@ Use `whisper-cli.exe` as the first transcription bridge instead of a direct DLL 
 ## Architecture
 The MVP is split into focused services:
 
-- `HotkeyService`: registers and handles global hotkeys through Win32 APIs.
+- `DoubleShiftHotkeyService`: listens for double Shift through a low-level keyboard hook and raises a recorder toggle event.
 - `RecorderController`: coordinates recording state, panel visibility, and transcription.
 - `AudioCaptureService`: records microphone input to 16 kHz mono WAV and reports audio meter levels.
 - `WhisperCliTranscriptionService`: invokes local `whisper-cli.exe` with a local `.bin` model.
@@ -102,6 +102,16 @@ The recorder should start with the macOS proportions:
 The MVP can omit prompt and power-mode popovers, but it should reserve left and right icon slots so the control bar rhythm matches the macOS app.
 
 ## Hotkey Requirements
+The default MVP hotkey is **double Shift**:
+
+- Press Shift twice within 350 ms to start dictation.
+- Press Shift twice again within 350 ms to stop recording and begin local transcription.
+- Repeated keydown events from holding Shift must not count as a double press.
+- The trigger should be based on Shift key-up events so a normal single Shift press still feels natural while typing.
+- Both left Shift and right Shift count toward the double-press sequence.
+
+Double Shift is the closest Windows-friendly match for the desired "quick muscle-memory" recorder toggle. It requires a low-level keyboard hook instead of a normal registered hotkey because Win32 `RegisterHotKey` handles modifier combinations like `Ctrl+Alt+Space`, not sequential taps of a modifier key.
+
 The MVP supports three modes:
 
 - `Toggle`: key press starts; next press stops.
@@ -110,9 +120,32 @@ The MVP supports three modes:
 
 Windows implementation details:
 
-- First version uses Win32 `RegisterHotKey` for normal shortcuts such as `Ctrl+Alt+Space`.
-- A later milestone may add low-level keyboard hooks for modifier-only parity with right Command/right Option style behavior.
+- First version uses a low-level keyboard hook (`WH_KEYBOARD_LL`) for double Shift detection.
+- A conventional shortcut such as `Ctrl+Alt+Space` can remain as an optional fallback if the keyboard hook is disabled or conflicts with another tool.
 - The hotkey must not fire while the app is already `transcribing` or `busy`.
+
+## Windows Prerequisites
+Development machine:
+
+- Windows 10 or Windows 11.
+- .NET 9 SDK with Windows Desktop support.
+- Git.
+- GitHub CLI, only for publishing and repo operations.
+- Visual Studio 2022 or Build Tools with the `.NET desktop development` workload is recommended for debugging WPF comfortably.
+- CMake is not required for the MVP because the app uses a manually supplied/prebuilt `whisper-cli.exe`.
+
+Runtime/local transcription:
+
+- A local `whisper-cli.exe` Windows build.
+- A local ggml Whisper `.bin` model file.
+- Microphone access enabled in Windows privacy settings.
+- Microsoft Visual C++ Redistributable may be needed depending on how `whisper-cli.exe` was built.
+
+Optional later native build path:
+
+- CMake.
+- Visual Studio C++ Build Tools.
+- Optional GPU acceleration dependencies such as CUDA Toolkit, Vulkan SDK, or OpenVINO, depending on which `whisper.cpp` backend is chosen later.
 
 ## Local Whisper Requirements
 The MVP is offline-only:
@@ -168,7 +201,7 @@ The MVP is done only when these checks pass:
 - Installer/signing.
 
 ## Open Decisions For Owner Review
-- Default hotkey: proposed `Ctrl+Alt+Space` for Windows safety.
+- Default hotkey: double Shift within 350 ms.
 - First UI tech: proposed WPF on .NET 9.
 - First transcription bridge: proposed manually configured `whisper-cli.exe` path.
 - First model management: proposed manual model path configuration before download UI.

@@ -7,3 +7,7 @@
 ## Verify Git working directory before initialization
 - Pattern: A Git initialization command ran from the parent folder instead of the intended project folder.
 - Rule: For repository creation or destructive cleanup, verify the exact working directory and resulting `.git` path before proceeding.
+
+## Preserve LafazFlow muscle memory on Windows
+- Pattern: The owner prefers a fast double Shift gesture over conventional shortcuts such as `Ctrl+Alt+Space`.
+- Rule: Treat double Shift as the default Windows dictation toggle unless the owner explicitly changes the hotkey strategy.
