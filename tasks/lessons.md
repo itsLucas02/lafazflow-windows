@@ -1,0 +1,9 @@
+# Lessons
+
+## Prefer local/offline transcription for LafazFlow
+- Pattern: When discussing the Windows port, keep the default workflow privacy-first and local/offline.
+- Rule: Do not suggest cloud transcription as the primary path unless the user explicitly asks for cloud features.
+
+## Verify Git working directory before initialization
+- Pattern: A Git initialization command ran from the parent folder instead of the intended project folder.
+- Rule: For repository creation or destructive cleanup, verify the exact working directory and resulting `.git` path before proceeding.
