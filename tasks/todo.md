@@ -1,15 +1,16 @@
-# Task: Publish lafazflow-windows
+# Task: Windows Offline MVP Planning
 
 ## Plan
-- [x] Create task tracking and lessons docs.
-- [x] Inspect public repo contents for secrets or accidental files.
-- [x] Commit safe initial files.
-- [x] Create a public GitHub remote and push.
-- [x] Record verification results.
+- [x] Review current Windows repo instructions and lessons.
+- [x] Inspect macOS reference behavior for recorder UI, state, hotkeys, and paste flow.
+- [x] Verify local Windows development toolchain.
+- [x] Write Windows MVP design spec.
+- [x] Write first implementation plan.
+- [x] Review docs for ambiguity, accidental secrets, and public-readiness.
+- [ ] Commit and push planning docs for owner review.
 
 ## Review
-- Local file inventory before first commit: `AGENTS.md`, `tasks/todo.md`, and `tasks/lessons.md`.
-- Secret scan found no credentials. The only match was the checklist word "secrets" in this file.
-- Initial commit `c1adf69` was pushed to `origin/main`.
-- GitHub remote: `https://github.com/itsLucas02/lafazflow-windows`
-- Remote visibility verified as `PUBLIC`; default branch verified as `main`.
+- Design spec written at `docs/superpowers/specs/2026-05-12-windows-mvp-design.md`.
+- Implementation plan written at `docs/superpowers/plans/2026-05-12-windows-mvp.md`.
+- Local toolchain check: .NET SDK 9.0.313 is installed; CMake is not installed.
+- Public-readiness scan found no credentials. Matches are documentation references to words such as "secret", "token", and `CancellationToken`.
