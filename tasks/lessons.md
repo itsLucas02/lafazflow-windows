@@ -11,3 +11,7 @@
 ## Preserve LafazFlow muscle memory on Windows
 - Pattern: The owner prefers a fast double Shift gesture over conventional shortcuts such as `Ctrl+Alt+Space`.
 - Rule: Treat double Shift as the default Windows dictation toggle unless the owner explicitly changes the hotkey strategy.
+
+## Answer readiness questions directly
+- Pattern: When the owner asks whether required tools are installed, do not jump ahead to implementation choices.
+- Rule: Check the local machine and report a clear ready/missing/not-needed-yet matrix before asking to proceed.
