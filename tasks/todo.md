@@ -12,7 +12,7 @@
 - [x] Document Windows development and runtime prerequisites.
 - [x] Update implementation plan for low-level keyboard hook support.
 - [x] Update lessons from owner correction.
-- [ ] Commit and push revision docs.
+- [x] Commit and push revision docs.
 
 ## Review
 - Design spec written at `docs/superpowers/specs/2026-05-12-windows-mvp-design.md`.
@@ -22,3 +22,4 @@
 - Planning docs pushed in commit `32e2999`.
 - Default Windows hotkey revised to double Shift within 350 ms.
 - Install prerequisites documented for development, runtime transcription, and optional future native `whisper.cpp` builds.
+- Revision pushed in commit `cf2dd65`.
