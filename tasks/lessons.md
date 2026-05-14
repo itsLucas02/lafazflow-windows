@@ -15,3 +15,7 @@
 ## Answer readiness questions directly
 - Pattern: When the owner asks whether required tools are installed, do not jump ahead to implementation choices.
 - Rule: Check the local machine and report a clear ready/missing/not-needed-yet matrix before asking to proceed.
+
+## Make setup instructions concrete
+- Pattern: The owner had already downloaded required components but the next setup step was unclear.
+- Rule: When components exist locally, install/extract them into stable paths, verify exact executable/model paths, and run an end-to-end smoke test before explaining next steps.
