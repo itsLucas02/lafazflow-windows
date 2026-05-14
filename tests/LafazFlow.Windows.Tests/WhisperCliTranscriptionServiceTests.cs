@@ -15,6 +15,8 @@ public sealed class WhisperCliTranscriptionServiceTests
         Assert.Contains("-m \"C:\\Models\\ggml-base.en.bin\"", args);
         Assert.Contains("-f \"C:\\Audio\\sample.wav\"", args);
         Assert.Contains("-otxt", args);
+        Assert.Contains("-nt", args);
+        Assert.Contains("-tp 0", args);
         Assert.Contains("-of \"C:\\Audio\\sample\"", args);
     }
 
@@ -57,7 +59,7 @@ public sealed class WhisperCliTranscriptionServiceTests
     [Fact]
     public void CleanTranscriptTrimsWhitespace()
     {
-        var result = WhisperCliTranscriptionService.CleanTranscript("  Hello LafazFlow.\r\n");
+        var result = WhisperCliTranscriptionService.CleanTranscript("  hello LafazFlow\r\n");
 
         Assert.Equal("Hello LafazFlow.", result);
     }

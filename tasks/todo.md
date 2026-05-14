@@ -37,3 +37,6 @@
 - `dotnet build` after Task 5: pass.
 - Full `dotnet test` after Task 5: pass, 15 tests.
 - App launch smoke check after Task 5: pass; WPF app stayed running and was stopped cleanly.
+- Output quality pass completed: added local transcript formatter and stronger Whisper CLI arguments (`-nt`, `-tp 0`).
+- `dotnet build` after output quality pass: pass.
+- Full `dotnet test` after output quality pass: pass, 18 tests.

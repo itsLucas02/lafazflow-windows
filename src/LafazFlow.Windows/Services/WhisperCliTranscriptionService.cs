@@ -22,7 +22,7 @@ public sealed class WhisperCliTranscriptionService
 
     public static string BuildArguments(string modelPath, string audioPath, string outputBasePath)
     {
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -otxt -of {Quote(outputBasePath)}";
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -otxt -nt -tp 0 -of {Quote(outputBasePath)}";
     }
 
     public async Task<string> TranscribeAsync(
@@ -82,7 +82,7 @@ public sealed class WhisperCliTranscriptionService
 
     public static string CleanTranscript(string text)
     {
-        return text.Trim();
+        return TranscriptionTextFormatter.Format(text);
     }
 
     private static string Quote(string value)
