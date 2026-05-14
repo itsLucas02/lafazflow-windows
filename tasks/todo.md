@@ -26,3 +26,6 @@
 - Task 1 scaffold completed in commit `e274692`; `dotnet build` passed and placeholder tests were removed.
 - Task 2 settings store completed in commit `f842ea5`; settings tests were written red-first, then passed.
 - Full `dotnet test` after Task 2: pass, 2 tests.
+- Task 3 Whisper CLI service completed in commit `2caf58c`; tests were written red-first, then passed.
+- Full `dotnet test` after Task 3: pass, 6 tests.
+- `dotnet build` after Task 3: pass.
