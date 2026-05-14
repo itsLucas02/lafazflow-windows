@@ -27,3 +27,7 @@
 ## Verify Win32 interop structure sizes
 - Pattern: `SendInput` can silently fail if the managed `INPUT` struct is smaller than the native Win32 structure, even when clipboard transcription succeeds.
 - Rule: Add regression tests for native struct sizes and check `SendInput` return values instead of ignoring them.
+
+## Optimize for VoiceInk-like latency before maximum accuracy
+- Pattern: Full `large-v3-turbo` made Windows dictation feel much slower than VoiceInk, even though it stayed local and offline.
+- Rule: Prefer `ggml-large-v3-turbo-q5_0.bin` as the default high-quality local model because it better matches VoiceInk's fast quantized experience.

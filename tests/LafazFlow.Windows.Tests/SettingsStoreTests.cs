@@ -63,20 +63,22 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
-    public void LoadPrefersLargeTurboWhenNoSettingsFileExists()
+    public void LoadPrefersQuantizedLargeTurboWhenNoSettingsFileExists()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var whisperCliPath = Path.GetTempFileName();
         var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
         var baseModelPath = Path.Combine(modelRoot, "ggml-base.en.bin");
         var largeTurboPath = Path.Combine(modelRoot, "ggml-large-v3-turbo.bin");
+        var quantizedLargeTurboPath = Path.Combine(modelRoot, "ggml-large-v3-turbo-q5_0.bin");
         File.WriteAllText(baseModelPath, "");
         File.WriteAllText(largeTurboPath, "");
+        File.WriteAllText(quantizedLargeTurboPath, "");
         var store = new SettingsStore(root, whisperCliPath, baseModelPath, modelRoot);
 
         var settings = store.Load();
 
-        Assert.Equal(largeTurboPath, settings.ModelPath);
+        Assert.Equal(quantizedLargeTurboPath, settings.ModelPath);
         File.Delete(whisperCliPath);
     }
 
@@ -87,8 +89,10 @@ public sealed class SettingsStoreTests
         var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
         var oldDefaultPath = Path.Combine(modelRoot, "ggml-base.en.bin");
         var largeTurboPath = Path.Combine(modelRoot, "ggml-large-v3-turbo.bin");
+        var quantizedLargeTurboPath = Path.Combine(modelRoot, "ggml-large-v3-turbo-q5_0.bin");
         File.WriteAllText(oldDefaultPath, "");
         File.WriteAllText(largeTurboPath, "");
+        File.WriteAllText(quantizedLargeTurboPath, "");
         var store = new SettingsStore(root, defaultModelPath: oldDefaultPath, defaultModelDirectory: modelRoot);
         store.Save(AppSettings.Default with
         {
@@ -99,7 +103,7 @@ public sealed class SettingsStoreTests
 
         var migrated = store.Load();
 
-        Assert.Equal(largeTurboPath, migrated.ModelPath);
+        Assert.Equal(quantizedLargeTurboPath, migrated.ModelPath);
         Assert.Equal(1500, migrated.ClipboardRestoreDelayMs);
 
         var customModelPath = Path.Combine(modelRoot, "custom.bin");

@@ -65,3 +65,9 @@
 - SendInput interop fixed and now throws a visible error if key dispatch fails.
 - SendInput interop verification: targeted native structure test pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
 - Public-readiness scan after SendInput interop fix found no credentials. Matches are documentation references and `CancellationToken`.
+- Model latency correction: full `ggml-large-v3-turbo.bin` was too slow for VoiceInk-like dictation, so default priority now prefers `ggml-large-v3-turbo-q5_0.bin`.
+- Added `scripts/install-fast-voiceink-model.ps1` for the preferred 547 MiB quantized model.
+- Installed `C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin` locally for the owner.
+- Q5 model priority verification: targeted settings tests pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
+- App launch smoke after Q5 priority change: pass; app started and was stopped cleanly.
+- Public-readiness scan after Q5 priority change found no credentials. Matches are documentation references and `CancellationToken`.
