@@ -7,6 +7,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         ShowInTaskbar="False"
+        ShowActivated="False"
         Topmost="True"
         ResizeMode="NoResize">
     <Grid VerticalAlignment="Bottom" HorizontalAlignment="Center">
@@ -41,6 +42,14 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusText}"
+                           Foreground="White"
+                           FontSize="11"
+                           FontWeight="Medium"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
 
                 <TextBlock Grid.Column="2"
                            Text="AI"

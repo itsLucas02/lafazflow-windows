@@ -40,4 +40,21 @@ public sealed class SettingsStoreTests
 
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void LoadReturnsDetectedLocalWhisperPathsWhenFileDoesNotExist()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var whisperCliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, whisperCliPath, modelPath);
+
+        var settings = store.Load();
+
+        Assert.Equal(whisperCliPath, settings.WhisperCliPath);
+        Assert.Equal(modelPath, settings.ModelPath);
+
+        File.Delete(whisperCliPath);
+        File.Delete(modelPath);
+    }
 }

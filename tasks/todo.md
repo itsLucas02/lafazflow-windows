@@ -33,3 +33,7 @@
 - `dotnet build` after Task 4: pass.
 - Full `dotnet test` after Task 4: pass, 11 tests.
 - App launch smoke check after Task 4: pass; WPF app stayed running and was stopped cleanly.
+- Task 5 workflow wiring completed: double Shift detector, keyboard hook, microphone capture, local Whisper controller, and clipboard paste service.
+- `dotnet build` after Task 5: pass.
+- Full `dotnet test` after Task 5: pass, 15 tests.
+- App launch smoke check after Task 5: pass; WPF app stayed running and was stopped cleanly.
