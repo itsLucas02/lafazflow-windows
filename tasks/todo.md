@@ -44,3 +44,7 @@
 - Clipboard paste hardened with retry logic for transient Windows clipboard locks.
 - `dotnet build` after diagnostics pass: pass.
 - Full `dotnet test` after diagnostics pass: pass, 19 tests.
+- Paste separator bug fixed: local dictation output now appends one trailing whitespace separator by default so consecutive dictations do not glue together after punctuation.
+- Regression tests added for paste separator behavior and default settings.
+- `dotnet build` after paste separator fix: pass.
+- Full `dotnet test` after paste separator fix: pass, 22 tests.

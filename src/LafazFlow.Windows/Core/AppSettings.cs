@@ -8,7 +8,7 @@ public sealed record AppSettings
     public string ModelPath { get; init; } = "";
     public bool RestoreClipboardAfterPaste { get; init; } = true;
     public int ClipboardRestoreDelayMs { get; init; } = 250;
-    public bool AppendTrailingSpace { get; init; }
+    public bool AppendTrailingSpace { get; init; } = true;
     public bool KeepRecordingsForDiagnostics { get; init; }
 
     public static AppSettings Default { get; } = new();

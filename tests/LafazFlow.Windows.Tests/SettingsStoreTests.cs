@@ -17,7 +17,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(HotkeyMode.Hybrid, settings.HotkeyMode);
         Assert.True(settings.RestoreClipboardAfterPaste);
         Assert.Equal(250, settings.ClipboardRestoreDelayMs);
-        Assert.False(settings.AppendTrailingSpace);
+        Assert.True(settings.AppendTrailingSpace);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
 

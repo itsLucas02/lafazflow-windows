@@ -96,7 +96,7 @@ public sealed class RecorderController
 
             if (settings.AppendTrailingSpace)
             {
-                transcript += " ";
+                transcript = PasteTextFormatter.EnsureTrailingSeparator(transcript);
             }
 
             await _clipboardPaste.PasteAsync(
