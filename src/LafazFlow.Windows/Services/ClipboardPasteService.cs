@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using WpfClipboard = System.Windows.Clipboard;
@@ -129,7 +130,11 @@ public sealed class ClipboardPasteService
             CreateKeyboardInput(VirtualKeyControl, KeyEventKeyUp)
         };
 
-        _ = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+        if (sent != inputs.Length)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "SendInput failed to dispatch paste keys.");
+        }
     }
 
     private static string? GetProcessName(IntPtr windowHandle)
@@ -171,7 +176,7 @@ public sealed class ClipboardPasteService
         };
     }
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint numberOfInputs, Input[] inputs, int sizeOfInputStructure);
 
     [DllImport("user32.dll")]
@@ -191,7 +196,24 @@ public sealed class ClipboardPasteService
     private struct InputUnion
     {
         [FieldOffset(0)]
+        public MouseInputData MouseInput;
+
+        [FieldOffset(0)]
         public KeyboardInputData KeyboardInput;
+
+        [FieldOffset(0)]
+        public HardwareInputData HardwareInput;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MouseInputData
+    {
+        public int X;
+        public int Y;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public UIntPtr ExtraInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -202,5 +224,13 @@ public sealed class ClipboardPasteService
         public uint Flags;
         public uint Time;
         public UIntPtr ExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HardwareInputData
+    {
+        public uint Message;
+        public ushort ParamLow;
+        public ushort ParamHigh;
     }
 }

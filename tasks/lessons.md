@@ -23,3 +23,7 @@
 ## Do not restore clipboard too aggressively in Cursor
 - Pattern: Cursor terminal paste can fail silently while LafazFlow restores the previous clipboard, leaving the owner with no pasted text and no manual clipboard fallback.
 - Rule: For Cursor/VS Code targets, keep the transcript on the clipboard after attempting paste so manual `Ctrl+V` remains available if the app-specific paste event is swallowed.
+
+## Verify Win32 interop structure sizes
+- Pattern: `SendInput` can silently fail if the managed `INPUT` struct is smaller than the native Win32 structure, even when clipboard transcription succeeds.
+- Rule: Add regression tests for native struct sizes and check `SendInput` return values instead of ignoring them.

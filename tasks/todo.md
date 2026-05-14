@@ -61,3 +61,7 @@
 - Cursor/VS Code paste fallback added: transcript remains on clipboard for Cursor-like targets after paste is attempted.
 - Cursor paste fallback verification: `dotnet build` pass; full `dotnet test` pass, 29 tests.
 - Public-readiness scan after Cursor paste fallback found no credentials. Matches are documentation references and `CancellationToken`.
+- Cross-app paste failure investigation: clipboard contained the transcript, so transcription and clipboard set worked; `SendInput` native `INPUT` struct was 32 bytes instead of the expected 40 bytes on 64-bit Windows.
+- SendInput interop fixed and now throws a visible error if key dispatch fails.
+- SendInput interop verification: targeted native structure test pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
+- Public-readiness scan after SendInput interop fix found no credentials. Matches are documentation references and `CancellationToken`.
