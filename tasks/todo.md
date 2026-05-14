@@ -29,3 +29,7 @@
 - Task 3 Whisper CLI service completed in commit `2caf58c`; tests were written red-first, then passed.
 - Full `dotnet test` after Task 3: pass, 6 tests.
 - `dotnet build` after Task 3: pass.
+- Task 4 floating recorder shell completed in commit `b81e4f4`; view-model tests were written red-first, then passed.
+- `dotnet build` after Task 4: pass.
+- Full `dotnet test` after Task 4: pass, 11 tests.
+- App launch smoke check after Task 4: pass; WPF app stayed running and was stopped cleanly.
