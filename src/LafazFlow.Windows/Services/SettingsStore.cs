@@ -6,17 +6,31 @@ namespace LafazFlow.Windows.Services;
 
 public sealed class SettingsStore
 {
+    private static readonly string[] ModelPriority =
+    [
+        "ggml-large-v3-turbo.bin",
+        "ggml-large-v3-turbo-q5_0.bin",
+        "ggml-medium.en.bin",
+        "ggml-small.en.bin",
+        "ggml-base.en.bin"
+    ];
+
     private readonly string _settingsPath;
     private readonly string _defaultWhisperCliPath;
     private readonly string _defaultModelPath;
+    private readonly string _defaultModelDirectory;
 
     public SettingsStore(
         string? rootDirectory = null,
         string defaultWhisperCliPath = @"C:\Tools\whisper.cpp\Release\whisper-cli.exe",
-        string defaultModelPath = @"C:\Models\whisper\ggml-base.en.bin")
+        string defaultModelPath = @"C:\Models\whisper\ggml-base.en.bin",
+        string? defaultModelDirectory = null)
     {
         _defaultWhisperCliPath = defaultWhisperCliPath;
         _defaultModelPath = defaultModelPath;
+        _defaultModelDirectory = defaultModelDirectory
+            ?? Path.GetDirectoryName(defaultModelPath)
+            ?? @"C:\Models\whisper";
         var root = rootDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "LafazFlow");
@@ -32,7 +46,8 @@ public sealed class SettingsStore
         }
 
         var json = File.ReadAllText(_settingsPath);
-        return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions()) ?? AppSettings.Default;
+        var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions()) ?? AppSettings.Default;
+        return Migrate(settings);
     }
 
     public void Save(AppSettings settings)
@@ -56,11 +71,63 @@ public sealed class SettingsStore
             settings = settings with { WhisperCliPath = _defaultWhisperCliPath };
         }
 
-        if (File.Exists(_defaultModelPath))
+        var modelPath = DetectBestModelPath();
+        if (modelPath is not null)
         {
-            settings = settings with { ModelPath = _defaultModelPath };
+            settings = settings with { ModelPath = modelPath };
         }
 
         return settings;
+    }
+
+    private AppSettings Migrate(AppSettings settings)
+    {
+        if (settings.SettingsSchemaVersion >= AppSettings.CurrentSchemaVersion)
+        {
+            return settings;
+        }
+
+        var migrated = settings;
+
+        if (migrated.ClipboardRestoreDelayMs <= 250)
+        {
+            migrated = migrated with { ClipboardRestoreDelayMs = AppSettings.DefaultClipboardRestoreDelayMs };
+        }
+
+        if (string.IsNullOrWhiteSpace(migrated.WhisperInitialPrompt))
+        {
+            migrated = migrated with { WhisperInitialPrompt = AppSettings.DefaultWhisperInitialPrompt };
+        }
+
+        if (ShouldUpgradeDefaultModel(migrated.ModelPath))
+        {
+            var modelPath = DetectBestModelPath();
+            if (modelPath is not null)
+            {
+                migrated = migrated with { ModelPath = modelPath };
+            }
+        }
+
+        return migrated with { SettingsSchemaVersion = AppSettings.CurrentSchemaVersion };
+    }
+
+    private bool ShouldUpgradeDefaultModel(string modelPath)
+    {
+        return string.IsNullOrWhiteSpace(modelPath)
+            || string.Equals(modelPath, _defaultModelPath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string? DetectBestModelPath()
+    {
+        foreach (var modelFileName in ModelPriority)
+        {
+            var candidate = Path.Combine(_defaultModelDirectory, modelFileName);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return File.Exists(_defaultModelPath) ? _defaultModelPath : null;
     }
 }

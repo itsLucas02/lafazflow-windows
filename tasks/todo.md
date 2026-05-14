@@ -13,6 +13,11 @@
 - [x] Update implementation plan for low-level keyboard hook support.
 - [x] Update lessons from owner correction.
 - [x] Commit and push revision docs.
+- [x] Plan Cursor paste reliability and offline accuracy upgrade.
+- [x] Add regression tests for settings migration, Whisper prompts, and vocabulary corrections.
+- [x] Implement robust clipboard restore defaults and SendInput paste.
+- [x] Implement large turbo model preference and offline prompt/vocabulary correction.
+- [x] Document large turbo install path.
 
 ## Review
 - Design spec written at `docs/superpowers/specs/2026-05-12-windows-mvp-design.md`.
@@ -48,3 +53,7 @@
 - Regression tests added for paste separator behavior and default settings.
 - `dotnet build` after paste separator fix: pass.
 - Full `dotnet test` after paste separator fix: pass, 22 tests.
+- Cursor/quality upgrade implementation started from owner-approved plan: robust clipboard restore, `ggml-large-v3-turbo.bin` preference, Whisper prompt support, and local vocabulary corrections.
+- Cursor/quality upgrade verification: `dotnet build` pass; full `dotnet test` pass, 27 tests.
+- App launch smoke check after Cursor/quality upgrade: pass; app started and was stopped cleanly.
+- Public-readiness scan after Cursor/quality upgrade found no credentials. Matches are documentation references and `CancellationToken`.

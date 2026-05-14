@@ -20,15 +20,24 @@ public sealed class WhisperCliTranscriptionService
         return null;
     }
 
-    public static string BuildArguments(string modelPath, string audioPath, string outputBasePath)
+    public static string BuildArguments(
+        string modelPath,
+        string audioPath,
+        string outputBasePath,
+        string initialPrompt)
     {
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -otxt -nt -tp 0 -of {Quote(outputBasePath)}";
+        var promptArgs = string.IsNullOrWhiteSpace(initialPrompt)
+            ? ""
+            : $" --prompt {Quote(initialPrompt)} --carry-initial-prompt";
+
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -otxt -nt -tp 0{promptArgs} -of {Quote(outputBasePath)}";
     }
 
     public async Task<string> TranscribeAsync(
         string whisperCliPath,
         string modelPath,
         string audioPath,
+        string initialPrompt,
         CancellationToken cancellationToken)
     {
         var pathError = ValidatePaths(whisperCliPath, modelPath);
@@ -49,7 +58,7 @@ public sealed class WhisperCliTranscriptionService
         var startInfo = new ProcessStartInfo
         {
             FileName = whisperCliPath,
-            Arguments = BuildArguments(modelPath, audioPath, outputBasePath),
+            Arguments = BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

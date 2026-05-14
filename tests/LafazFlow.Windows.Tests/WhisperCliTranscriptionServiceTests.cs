@@ -10,7 +10,8 @@ public sealed class WhisperCliTranscriptionServiceTests
         var args = WhisperCliTranscriptionService.BuildArguments(
             @"C:\Models\ggml-base.en.bin",
             @"C:\Audio\sample.wav",
-            @"C:\Audio\sample");
+            @"C:\Audio\sample",
+            "");
 
         Assert.Contains("-m \"C:\\Models\\ggml-base.en.bin\"", args);
         Assert.Contains("-f \"C:\\Audio\\sample.wav\"", args);
@@ -18,6 +19,19 @@ public sealed class WhisperCliTranscriptionServiceTests
         Assert.Contains("-nt", args);
         Assert.Contains("-tp 0", args);
         Assert.Contains("-of \"C:\\Audio\\sample\"", args);
+    }
+
+    [Fact]
+    public void BuildArgumentsIncludesPromptWhenConfigured()
+    {
+        var args = WhisperCliTranscriptionService.BuildArguments(
+            @"C:\Models\ggml-large-v3-turbo.bin",
+            @"C:\Audio\sample.wav",
+            @"C:\Audio\sample",
+            "Supabase Vercel Tailscale \"quoted\"");
+
+        Assert.Contains("--prompt \"Supabase Vercel Tailscale \\\"quoted\\\"\"", args);
+        Assert.Contains("--carry-initial-prompt", args);
     }
 
     [Fact]

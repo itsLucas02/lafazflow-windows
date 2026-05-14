@@ -92,7 +92,13 @@ public sealed class RecorderController
                 settings.WhisperCliPath,
                 settings.ModelPath,
                 _currentAudioPath,
+                settings.WhisperInitialPrompt,
                 cancellationToken);
+
+            if (settings.EnableVocabularyCorrections)
+            {
+                transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
+            }
 
             if (settings.AppendTrailingSpace)
             {
