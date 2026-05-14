@@ -23,3 +23,6 @@
 - Default Windows hotkey revised to double Shift within 350 ms.
 - Install prerequisites documented for development, runtime transcription, and optional future native `whisper.cpp` builds.
 - Revision pushed in commit `cf2dd65`.
+- Task 1 scaffold completed in commit `e274692`; `dotnet build` passed and placeholder tests were removed.
+- Task 2 settings store completed in commit `f842ea5`; settings tests were written red-first, then passed.
+- Full `dotnet test` after Task 2: pass, 2 tests.
