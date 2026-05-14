@@ -57,3 +57,7 @@
 - Cursor/quality upgrade verification: `dotnet build` pass; full `dotnet test` pass, 27 tests.
 - App launch smoke check after Cursor/quality upgrade: pass; app started and was stopped cleanly.
 - Public-readiness scan after Cursor/quality upgrade found no credentials. Matches are documentation references and `CancellationToken`.
+- Cursor paste regression investigation: Whisper transcription succeeded and generated `.txt` output, so the failure was isolated to clipboard restore/paste behavior.
+- Cursor/VS Code paste fallback added: transcript remains on clipboard for Cursor-like targets after paste is attempted.
+- Cursor paste fallback verification: `dotnet build` pass; full `dotnet test` pass, 29 tests.
+- Public-readiness scan after Cursor paste fallback found no credentials. Matches are documentation references and `CancellationToken`.

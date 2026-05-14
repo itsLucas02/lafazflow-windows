@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using WpfClipboard = System.Windows.Clipboard;
@@ -18,7 +19,10 @@ public sealed class ClipboardPasteService
         IntPtr targetWindow,
         CancellationToken cancellationToken)
     {
-        var previousClipboard = restoreClipboard
+        var shouldRestoreClipboard = ClipboardRestorePolicy.ShouldRestore(
+            GetProcessName(targetWindow),
+            restoreClipboard);
+        var previousClipboard = shouldRestoreClipboard
             ? await GetClipboardSnapshotWithRetryAsync(cancellationToken)
             : null;
 
@@ -33,7 +37,7 @@ public sealed class ClipboardPasteService
 
         SendCtrlV();
 
-        if (restoreClipboard && previousClipboard is not null)
+        if (shouldRestoreClipboard && previousClipboard is not null)
         {
             await Task.Delay(Math.Max(restoreDelayMs, 1500), cancellationToken);
             await SetClipboardDataWithRetryAsync(previousClipboard, cancellationToken);
@@ -128,6 +132,29 @@ public sealed class ClipboardPasteService
         _ = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
     }
 
+    private static string? GetProcessName(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        _ = GetWindowThreadProcessId(windowHandle, out var processId);
+        if (processId == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            return Process.GetProcessById((int)processId).ProcessName;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static Input CreateKeyboardInput(ushort virtualKey, uint flags)
     {
         return new Input
@@ -149,6 +176,9 @@ public sealed class ClipboardPasteService
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Input

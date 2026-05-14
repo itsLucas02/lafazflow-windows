@@ -19,3 +19,7 @@
 ## Make setup instructions concrete
 - Pattern: The owner had already downloaded required components but the next setup step was unclear.
 - Rule: When components exist locally, install/extract them into stable paths, verify exact executable/model paths, and run an end-to-end smoke test before explaining next steps.
+
+## Do not restore clipboard too aggressively in Cursor
+- Pattern: Cursor terminal paste can fail silently while LafazFlow restores the previous clipboard, leaving the owner with no pasted text and no manual clipboard fallback.
+- Rule: For Cursor/VS Code targets, keep the transcript on the clipboard after attempting paste so manual `Ctrl+V` remains available if the app-specific paste event is swallowed.
