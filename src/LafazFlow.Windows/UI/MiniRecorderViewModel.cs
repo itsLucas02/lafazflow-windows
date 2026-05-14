@@ -33,6 +33,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsRecording));
             OnPropertyChanged(nameof(IsProcessing));
+            OnPropertyChanged(nameof(HasStatusText));
         }
     }
 
@@ -64,12 +65,25 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
             _statusText = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasStatusText));
         }
     }
 
     public bool IsRecording => State == RecordingState.Recording;
 
     public bool IsProcessing => State is RecordingState.Transcribing or RecordingState.Enhancing;
+
+    public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
+
+    public void SetError(string message)
+    {
+        _state = RecordingState.Error;
+        StatusText = message;
+        OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(IsRecording));
+        OnPropertyChanged(nameof(IsProcessing));
+        OnPropertyChanged(nameof(HasStatusText));
+    }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

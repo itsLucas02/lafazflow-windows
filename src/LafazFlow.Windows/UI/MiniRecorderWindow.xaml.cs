@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using WpfVisibility = System.Windows.Visibility;
 using WpfColor = System.Windows.Media.Color;
 using WpfRectangle = System.Windows.Shapes.Rectangle;
 
@@ -66,6 +67,7 @@ public partial class MiniRecorderWindow : Window
         _lastRender = now;
         var time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         var amplitude = Math.Pow(_viewModel.AudioLevel, 0.7);
+        Visualizer.Visibility = _viewModel.HasStatusText ? WpfVisibility.Hidden : WpfVisibility.Visible;
 
         for (var index = 0; index < _bars.Length; index++)
         {

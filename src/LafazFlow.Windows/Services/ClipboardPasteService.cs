@@ -16,11 +16,11 @@ public sealed class ClipboardPasteService
         IntPtr targetWindow,
         CancellationToken cancellationToken)
     {
-        var previousText = restoreClipboard && WpfClipboard.ContainsText()
-            ? WpfClipboard.GetText()
+        var previousText = restoreClipboard && TryContainsText()
+            ? await GetTextWithRetryAsync(cancellationToken)
             : null;
 
-        WpfClipboard.SetText(text);
+        await SetTextWithRetryAsync(text, cancellationToken);
         await Task.Delay(50, cancellationToken);
 
         if (targetWindow != IntPtr.Zero)
@@ -37,8 +37,59 @@ public sealed class ClipboardPasteService
         if (restoreClipboard && previousText is not null)
         {
             await Task.Delay(Math.Max(restoreDelayMs, 250), cancellationToken);
-            WpfClipboard.SetText(previousText);
+            await SetTextWithRetryAsync(previousText, cancellationToken);
         }
+    }
+
+    private static bool TryContainsText()
+    {
+        try
+        {
+            return WpfClipboard.ContainsText();
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string> GetTextWithRetryAsync(CancellationToken cancellationToken)
+    {
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                return WpfClipboard.GetText();
+            }
+            catch (Exception error)
+            {
+                lastError = error;
+                await Task.Delay(40, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException("Clipboard text could not be read.", lastError);
+    }
+
+    private static async Task SetTextWithRetryAsync(string text, CancellationToken cancellationToken)
+    {
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            try
+            {
+                WpfClipboard.SetText(text);
+                return;
+            }
+            catch (Exception error)
+            {
+                lastError = error;
+                await Task.Delay(40, cancellationToken);
+            }
+        }
+
+        throw new InvalidOperationException("Clipboard text could not be written.", lastError);
     }
 
     [DllImport("user32.dll")]

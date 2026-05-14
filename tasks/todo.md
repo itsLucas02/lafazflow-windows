@@ -40,3 +40,7 @@
 - Output quality pass completed: added local transcript formatter and stronger Whisper CLI arguments (`-nt`, `-tp 0`).
 - `dotnet build` after output quality pass: pass.
 - Full `dotnet test` after output quality pass: pass, 18 tests.
+- Error diagnostics pass completed: recorder now shows detailed error text and writes logs to `%LocalAppData%\LafazFlow\Logs\lafazflow.log`.
+- Clipboard paste hardened with retry logic for transient Windows clipboard locks.
+- `dotnet build` after diagnostics pass: pass.
+- Full `dotnet test` after diagnostics pass: pass, 19 tests.

@@ -57,7 +57,8 @@ public sealed class RecorderController
         var validationError = WhisperCliTranscriptionService.ValidatePaths(settings.WhisperCliPath, settings.ModelPath);
         if (validationError is not null)
         {
-            _viewModel.State = RecordingState.Error;
+            _viewModel.SetError(validationError);
+            LogError(validationError);
             _window.ShowBottomCenter();
             return;
         }
@@ -108,9 +109,11 @@ public sealed class RecorderController
             _window.Hide();
             _viewModel.State = RecordingState.Idle;
         }
-        catch
+        catch (Exception error)
         {
-            _viewModel.State = RecordingState.Error;
+            var message = ShortError(error);
+            _viewModel.SetError(message);
+            LogError(error.ToString());
         }
         finally
         {
@@ -134,6 +137,25 @@ public sealed class RecorderController
         catch
         {
         }
+    }
+
+    private static string ShortError(Exception error)
+    {
+        return string.IsNullOrWhiteSpace(error.Message)
+            ? error.GetType().Name
+            : error.Message;
+    }
+
+    private static void LogError(string message)
+    {
+        var logRoot = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LafazFlow",
+            "Logs");
+        Directory.CreateDirectory(logRoot);
+        File.AppendAllText(
+            Path.Combine(logRoot, "lafazflow.log"),
+            $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
     }
 
     [DllImport("user32.dll")]

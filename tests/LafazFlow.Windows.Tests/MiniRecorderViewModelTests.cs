@@ -14,6 +14,7 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.True(viewModel.IsRecording);
         Assert.False(viewModel.IsProcessing);
+        Assert.False(viewModel.HasStatusText);
         Assert.Equal("", viewModel.StatusText);
     }
 
@@ -26,7 +27,20 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.False(viewModel.IsRecording);
         Assert.True(viewModel.IsProcessing);
+        Assert.True(viewModel.HasStatusText);
         Assert.Equal("Transcribing", viewModel.StatusText);
+    }
+
+    [Fact]
+    public void SetErrorReportsErrorDetail()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.SetError("Whisper model was not found.");
+
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.True(viewModel.HasStatusText);
+        Assert.Equal("Whisper model was not found.", viewModel.StatusText);
     }
 
     [Theory]
