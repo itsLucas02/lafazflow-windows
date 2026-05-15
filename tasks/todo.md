@@ -232,3 +232,19 @@
 - App launch smoke passed after stopping the previous running LafazFlow process that locked the Windows executable.
 - Public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
 - Trademark scan found no current tracked-file matches.
+
+## Plan: Bundle GPL Sound Cues
+- [x] Copy the exact cue assets from the local macOS reference repo into the Windows app resources.
+- [x] Add GPLv3 license text and third-party notice attribution for the bundled sound assets.
+- [x] Implement asset-backed sound playback without Windows system notification sounds.
+- [x] Add tests for sound cue asset mapping and bundled file presence.
+- [x] Verify with focused tests, full build/test, launch smoke, and public-readiness scan, then commit and push.
+
+## Review: Bundle GPL Sound Cues
+- Bundled `recstart.mp3`, `recstop.mp3`, `pastess.mp3`, and `esc.wav` under `src/LafazFlow.Windows/Resources/Sounds`.
+- Added GPLv3 license text and third-party notice attribution for the bundled sound cue assets.
+- Replaced the no-op sound service with NAudio-backed playback from bundled assets: start, stop/transcribing, completion, and error.
+- Added `SoundCueServiceTests` for cue-to-file mapping, missing-asset behavior, playback dispatch, and copy-to-output.
+- Focused `SoundCueServiceTests` pass, 7 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 83 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
+- Attribution scan now intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

@@ -13,4 +13,11 @@
     <PackageReference Include="NAudio" Version="2.3.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Resources\Sounds\esc.wav" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Sounds\pastess.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Sounds\recstart.mp3" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Sounds\recstop.mp3" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

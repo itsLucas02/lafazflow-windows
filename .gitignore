@@ -14,5 +14,7 @@ artifacts/
 local-settings.json
 *.wav
 *.mp3
+!src/LafazFlow.Windows/Resources/Sounds/*.wav
+!src/LafazFlow.Windows/Resources/Sounds/*.mp3
 *.bin
 whisper-cli.exe

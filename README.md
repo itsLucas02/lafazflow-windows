@@ -31,3 +31,9 @@ To install the optional quantized large turbo quality model:
 ```
 
 Model files are ignored by git and must not be committed.
+
+## License
+
+LafazFlow Windows is distributed under the GNU General Public License version 3. See `LICENSE`.
+
+Bundled sound cue assets are attributed in `THIRD_PARTY_NOTICES.md`.
