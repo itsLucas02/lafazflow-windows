@@ -16,6 +16,9 @@ public static class MiniRecorderVisualSpec
     public const int TranscribingPulseMilliseconds = 180;
     public const int StateFadeMilliseconds = 200;
     public const int ExpansionMilliseconds = 300;
+    public const int WindowEntranceMilliseconds = 180;
+    public const int WindowExitMilliseconds = 160;
+    public const double WindowEntranceStartScale = 0.96;
 
     public static double CalculateBarHeight(
         int index,

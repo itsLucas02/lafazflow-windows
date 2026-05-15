@@ -16,6 +16,7 @@ public sealed record AppSettings
     public bool RestoreClipboardAfterPaste { get; init; } = true;
     public int ClipboardRestoreDelayMs { get; init; } = DefaultClipboardRestoreDelayMs;
     public bool AppendTrailingSpace { get; init; } = true;
+    public bool ShowLiveTranscriptPreview { get; init; } = true;
     public string WhisperInitialPrompt { get; init; } = DefaultWhisperInitialPrompt;
     public bool EnableVocabularyCorrections { get; init; } = true;
     public bool KeepRecordingsForDiagnostics { get; init; }

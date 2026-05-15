@@ -10,6 +10,8 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
     public event Action<double>? AudioLevelChanged;
 
+    public event Action<byte[]>? AudioChunkAvailable;
+
     public string Start(string outputDirectory)
     {
         Directory.CreateDirectory(outputDirectory);
@@ -44,6 +46,12 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
         _writer?.Write(e.Buffer, 0, e.BytesRecorded);
+        if (AudioChunkAvailable is not null)
+        {
+            var audioChunk = new byte[e.BytesRecorded];
+            Buffer.BlockCopy(e.Buffer, 0, audioChunk, 0, e.BytesRecorded);
+            AudioChunkAvailable.Invoke(audioChunk);
+        }
 
         var max = 0;
         for (var index = 0; index < e.BytesRecorded; index += 2)

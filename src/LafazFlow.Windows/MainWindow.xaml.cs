@@ -23,7 +23,8 @@ public partial class MainWindow : Window
             _audioCaptureService,
             new WhisperCliTranscriptionService(),
             new ClipboardPasteService(),
-            new SettingsStore());
+            new SettingsStore(),
+            livePreview: new RollingWhisperLiveTranscriptPreviewService());
         Loaded += OnLoaded;
         Closed += OnClosed;
     }

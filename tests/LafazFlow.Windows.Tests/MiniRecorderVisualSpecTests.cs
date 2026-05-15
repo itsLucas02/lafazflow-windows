@@ -48,4 +48,12 @@ public sealed class MiniRecorderVisualSpecTests
     {
         Assert.Equal(180, MiniRecorderVisualSpec.TranscribingPulseMilliseconds);
     }
+
+    [Fact]
+    public void WindowEntranceAndExitUseShortReferenceStyleMotion()
+    {
+        Assert.Equal(180, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+        Assert.Equal(160, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        Assert.Equal(0.96, MiniRecorderVisualSpec.WindowEntranceStartScale, precision: 6);
+    }
 }

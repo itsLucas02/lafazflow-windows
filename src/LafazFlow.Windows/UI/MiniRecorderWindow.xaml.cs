@@ -13,6 +13,8 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
     private readonly WpfRectangle[] _processingDots;
+    private readonly ScaleTransform _shellScale = new(1, 1);
+    private readonly TranslateTransform _shellTranslate = new(0, 0);
     private DateTime _lastRender = DateTime.UtcNow;
     private bool _lastShowVisualizer = true;
     private bool _lastShowProcessingIndicator;
@@ -27,6 +29,15 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         DataContext = viewModel;
         _bars = Enumerable.Range(0, 15).Select(_ => CreateBar()).ToArray();
         _processingDots = Enumerable.Range(0, 5).Select(_ => CreateProcessingDot()).ToArray();
+        RecorderShell.RenderTransformOrigin = new System.Windows.Point(0.5, 1);
+        RecorderShell.RenderTransform = new TransformGroup
+        {
+            Children =
+            {
+                _shellScale,
+                _shellTranslate
+            }
+        };
 
         foreach (var bar in _bars)
         {
@@ -50,13 +61,39 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         if (!wasVisible)
         {
             Opacity = 0;
+            _shellScale.ScaleX = MiniRecorderVisualSpec.WindowEntranceStartScale;
+            _shellScale.ScaleY = MiniRecorderVisualSpec.WindowEntranceStartScale;
+            _shellTranslate.Y = 6;
         }
 
         Show();
         if (!wasVisible)
         {
-            FadeElement(this, 1);
+            FadeElement(this, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+            AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+            AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+            AnimateDouble(_shellTranslate, TranslateTransform.YProperty, 0, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
         }
+    }
+
+    public new void Hide()
+    {
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        var fade = new DoubleAnimation
+        {
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(MiniRecorderVisualSpec.WindowExitMilliseconds),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+        };
+        fade.Completed += (_, _) => base.Hide();
+        BeginAnimation(OpacityProperty, fade);
+        AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        AnimateDouble(_shellTranslate, TranslateTransform.YProperty, 4, MiniRecorderVisualSpec.WindowExitMilliseconds);
     }
 
     public Task InvokeAsync(Action action)
@@ -213,6 +250,16 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         {
             To = opacity,
             Duration = TimeSpan.FromMilliseconds(milliseconds ?? MiniRecorderVisualSpec.StateFadeMilliseconds),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+        });
+    }
+
+    private static void AnimateDouble(Animatable target, DependencyProperty property, double value, int milliseconds)
+    {
+        target.BeginAnimation(property, new DoubleAnimation
+        {
+            To = value,
+            Duration = TimeSpan.FromMilliseconds(milliseconds),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
         });
     }

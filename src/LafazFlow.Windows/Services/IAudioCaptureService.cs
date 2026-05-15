@@ -4,6 +4,8 @@ public interface IAudioCaptureService
 {
     event Action<double>? AudioLevelChanged;
 
+    event Action<byte[]>? AudioChunkAvailable;
+
     string Start(string outputDirectory);
 
     void Stop();

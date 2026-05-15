@@ -53,6 +53,65 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task RecordingFeedsAudioChunksToLivePreviewAndUpdatesPartialTranscript()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var preview = new FakeLiveTranscriptPreviewService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("final")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)123,
+            preview);
+
+        controller.StartRecording();
+        audio.EmitAudioChunk([1, 2, 3, 4]);
+        preview.EmitPartial("Testing one two.");
+
+        Assert.True(preview.Started);
+        Assert.Equal([1, 2, 3, 4], preview.Chunks.Single());
+        Assert.Equal("Testing one two.", viewModel.PartialTranscript);
+
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.True(preview.Stopped);
+    }
+
+    [Fact]
+    public async Task LivePreviewFailureDoesNotBlockFinalTranscription()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var preview = new FakeLiveTranscriptPreviewService { ThrowOnStart = true };
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("final transcript")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)123,
+            preview);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["final transcript "], paste.Texts);
+        Assert.Equal(RecordingState.Idle, viewModel.State);
+    }
+
+    [Fact]
     public async Task QueuedJobsPasteToTheirCapturedTargetWindowsInOrder()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -163,6 +222,8 @@ public sealed class RecorderControllerTests
 
         public event Action<double>? AudioLevelChanged;
 
+        public event Action<byte[]>? AudioChunkAvailable;
+
         public string? CurrentPath { get; private set; }
 
         public string Start(string outputDirectory)
@@ -174,6 +235,11 @@ public sealed class RecorderControllerTests
 
         public void Stop()
         {
+        }
+
+        public void EmitAudioChunk(byte[] audioChunk)
+        {
+            AudioChunkAvailable?.Invoke(audioChunk);
         }
     }
 
@@ -224,6 +290,50 @@ public sealed class RecorderControllerTests
             Texts.Add(text);
             TargetWindows.Add(targetWindow);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeLiveTranscriptPreviewService : ILiveTranscriptPreviewService
+    {
+        private Action<string>? _onPartialTranscript;
+
+        public bool Started { get; private set; }
+
+        public bool Stopped { get; private set; }
+
+        public bool ThrowOnStart { get; init; }
+
+        public List<byte[]> Chunks { get; } = [];
+
+        public Task StartAsync(
+            AppSettings settings,
+            Action<string> onPartialTranscript,
+            CancellationToken cancellationToken)
+        {
+            if (ThrowOnStart)
+            {
+                throw new InvalidOperationException("preview failed");
+            }
+
+            Started = true;
+            _onPartialTranscript = onPartialTranscript;
+            return Task.CompletedTask;
+        }
+
+        public void AcceptAudioChunk(byte[] audioChunk)
+        {
+            Chunks.Add(audioChunk);
+        }
+
+        public Task StopAsync()
+        {
+            Stopped = true;
+            return Task.CompletedTask;
+        }
+
+        public void EmitPartial(string text)
+        {
+            _onPartialTranscript?.Invoke(text);
         }
     }
 }

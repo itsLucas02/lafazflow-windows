@@ -14,6 +14,7 @@ public sealed class RecorderController
     private readonly IClipboardPasteService _clipboardPaste;
     private readonly SettingsStore _settingsStore;
     private readonly SoundCueService _soundCues;
+    private readonly ILiveTranscriptPreviewService _livePreview;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly DictationQueueProcessor _queue;
     private string? _currentAudioPath;
@@ -28,7 +29,8 @@ public sealed class RecorderController
         IClipboardPasteService clipboardPaste,
         SettingsStore settingsStore,
         SoundCueService? soundCues = null,
-        Func<IntPtr>? getForegroundWindow = null)
+        Func<IntPtr>? getForegroundWindow = null,
+        ILiveTranscriptPreviewService? livePreview = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -37,12 +39,15 @@ public sealed class RecorderController
         _clipboardPaste = clipboardPaste;
         _settingsStore = settingsStore;
         _soundCues = soundCues ?? new SoundCueService();
+        _livePreview = livePreview ?? new NullLiveTranscriptPreviewService();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
         _audioCapture.AudioLevelChanged += level =>
             _ = _window.InvokeAsync(() => _viewModel.AudioLevel = level);
+        _audioCapture.AudioChunkAvailable += audioChunk =>
+            _livePreview.AcceptAudioChunk(audioChunk);
     }
 
     public async Task ToggleAsync()
@@ -81,6 +86,7 @@ public sealed class RecorderController
             "Recordings");
         _currentAudioPath = _audioCapture.Start(recordingsRoot);
         _viewModel.State = RecordingState.Recording;
+        StartLivePreview(settings, _runCancellation.Token);
         _soundCues.PlayRecordingStarted();
         _window.ShowBottomCenter();
     }
@@ -99,6 +105,7 @@ public sealed class RecorderController
         var runCancellation = _runCancellation;
 
         _audioCapture.Stop();
+        StopLivePreview();
         _currentAudioPath = null;
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
@@ -107,6 +114,45 @@ public sealed class RecorderController
         _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings), cancellationToken)
             .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
         return Task.CompletedTask;
+    }
+
+    private void StartLivePreview(AppSettings settings, CancellationToken cancellationToken)
+    {
+        if (!settings.ShowLiveTranscriptPreview)
+        {
+            return;
+        }
+
+        try
+        {
+            _livePreview.StartAsync(
+                settings,
+                partialTranscript =>
+                    _ = _window.InvokeAsync(() =>
+                    {
+                        if (_viewModel.IsRecording)
+                        {
+                            _viewModel.PartialTranscript = partialTranscript;
+                        }
+                    }),
+                cancellationToken).GetAwaiter().GetResult();
+        }
+        catch (Exception error)
+        {
+            LogError($"Live preview failed to start: {error}");
+        }
+    }
+
+    private void StopLivePreview()
+    {
+        try
+        {
+            _livePreview.StopAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception error)
+        {
+            LogError($"Live preview failed to stop: {error}");
+        }
     }
 
     public Task WaitForPendingTranscriptionsAsync()

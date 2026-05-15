@@ -19,6 +19,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(1500, settings.ClipboardRestoreDelayMs);
         Assert.Equal(16, settings.WhisperThreads);
         Assert.True(settings.AppendTrailingSpace);
+        Assert.True(settings.ShowLiveTranscriptPreview);
         Assert.True(settings.EnableVocabularyCorrections);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
         Assert.Contains("Luqman", settings.WhisperInitialPrompt);
