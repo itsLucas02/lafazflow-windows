@@ -3,22 +3,34 @@ namespace LafazFlow.Windows.Services;
 public sealed class DoubleShiftDetector
 {
     private readonly TimeSpan _window;
-    private DateTimeOffset? _lastShiftUpAt;
+    private DateTimeOffset? _lastShiftDownAt;
+    private bool _isDown;
 
     public DoubleShiftDetector(TimeSpan window)
     {
         _window = window;
     }
 
-    public bool RegisterShiftUp(DateTimeOffset now)
+    public bool RegisterKeyDown(DateTimeOffset now, bool isRepeat)
     {
-        if (_lastShiftUpAt is not null && now - _lastShiftUpAt <= _window)
+        if (isRepeat || _isDown)
         {
-            _lastShiftUpAt = null;
+            return false;
+        }
+
+        _isDown = true;
+        if (_lastShiftDownAt is not null && now - _lastShiftDownAt <= _window)
+        {
+            _lastShiftDownAt = null;
             return true;
         }
 
-        _lastShiftUpAt = now;
+        _lastShiftDownAt = now;
         return false;
+    }
+
+    public void RegisterKeyUp()
+    {
+        _isDown = false;
     }
 }

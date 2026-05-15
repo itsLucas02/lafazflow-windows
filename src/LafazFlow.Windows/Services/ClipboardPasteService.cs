@@ -6,7 +6,7 @@ using WpfClipboard = System.Windows.Clipboard;
 
 namespace LafazFlow.Windows.Services;
 
-public sealed class ClipboardPasteService
+public sealed class ClipboardPasteService : IClipboardPasteService
 {
     private const ushort VirtualKeyControl = 0x11;
     private const ushort VirtualKeyShift = 0x10;

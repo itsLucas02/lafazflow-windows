@@ -51,3 +51,7 @@
 ## Keep homophone corrections contextual
 - Pattern: Fast local Whisper can hear dictated `test` as `that's`, especially in testing phrases.
 - Rule: Correct `that's` to `test` only in testing-dictation patterns; do not globally rewrite ordinary `that's` sentences.
+
+## Prefer rapid queueing over blocking the recorder
+- Pattern: Awaiting the full transcription and paste path before returning to idle makes rapid dictation feel slower than VoiceInk.
+- Rule: Stop recording quickly, enqueue the audio for sequential background processing, and allow the next recording while previous jobs are still transcribing.

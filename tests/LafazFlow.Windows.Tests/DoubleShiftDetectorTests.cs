@@ -9,29 +9,42 @@ public sealed class DoubleShiftDetectorTests
     {
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
 
-        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
 
         Assert.False(triggered);
     }
 
     [Fact]
-    public void TwoShiftUpsInsideWindowTriggers()
+    public void SecondKeyDownInsideWindowTriggers()
     {
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
 
-        detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
-        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch.AddMilliseconds(300));
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        detector.RegisterKeyUp();
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddMilliseconds(300), isRepeat: false);
 
         Assert.True(triggered);
     }
 
     [Fact]
-    public void TwoShiftUpsOutsideWindowDoesNotTrigger()
+    public void KeyRepeatDoesNotTrigger()
     {
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
 
-        detector.RegisterShiftUp(DateTimeOffset.UnixEpoch);
-        var triggered = detector.RegisterShiftUp(DateTimeOffset.UnixEpoch.AddMilliseconds(500));
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddMilliseconds(50), isRepeat: true);
+
+        Assert.False(triggered);
+    }
+
+    [Fact]
+    public void TwoKeyDownsOutsideWindowDoesNotTrigger()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        detector.RegisterKeyUp();
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddMilliseconds(500), isRepeat: false);
 
         Assert.False(triggered);
     }

@@ -57,6 +57,14 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Fact]
+    public void ApplyDefaultsFixesRapidnessMisrecognition()
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults("VoiceInk rapidness, not repeteness.");
+
+        Assert.Equal("VoiceInk rapidness, not rapidness.", corrected);
+    }
+
+    [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults("Testing one, two, three.");

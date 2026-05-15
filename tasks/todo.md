@@ -145,3 +145,25 @@
 - Added paste key gesture policy: Cursor/VS Code targets use `Ctrl+Shift+V`; generic apps keep `Ctrl+V`.
 - Focused vocabulary/paste policy tests pass, 19 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 50 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Rapid Dictation Queue
+- [x] Add red tests for sequential transcription queue behavior.
+- [x] Implement in-memory sequential dictation queue.
+- [x] Add red tests for double Shift triggering on second key-down without repeat spam.
+- [x] Implement key-down double Shift detection.
+- [x] Add red tests for queue-aware mini recorder state.
+- [x] Implement pending queue UI state.
+- [x] Add red tests for `rapidness` vocabulary correction.
+- [x] Add the offline `rapidness` correction.
+- [x] Refactor recorder controller to enqueue completed recordings and allow immediate next recording while previous jobs process.
+- [x] Verify with build, full tests, launch smoke, public-readiness scan, then commit and push.
+
+## Review: Rapid Dictation Queue
+- Added an in-memory sequential dictation queue that processes/pastes completed recordings in order.
+- Stopping a recording now enqueues the audio and returns the recorder to idle immediately, so another double Shift can start the next dictation while previous audio is still processing.
+- Each queued job keeps its original target window for paste.
+- Mini recorder processing dots now stay active for pending background transcriptions and hide while actively recording.
+- Double Shift now triggers on the second key-down instead of waiting for key-up, with repeat suppression.
+- Added offline `repeteness` -> `rapidness` vocabulary correction.
+- Focused queue/controller/hotkey/view-model/vocabulary tests pass; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 59 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

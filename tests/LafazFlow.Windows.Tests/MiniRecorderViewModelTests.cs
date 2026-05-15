@@ -33,6 +33,31 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
+    public void PendingTranscriptionsShowProcessingIndicator()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.PendingTranscriptionCount = 2;
+
+        Assert.Equal(2, viewModel.PendingTranscriptionCount);
+        Assert.True(viewModel.HasPendingTranscriptions);
+        Assert.True(viewModel.ShowProcessingIndicator);
+    }
+
+    [Fact]
+    public void RecordingHidesPendingProcessingIndicator()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            PendingTranscriptionCount = 1,
+            State = RecordingState.Recording
+        };
+
+        Assert.True(viewModel.HasPendingTranscriptions);
+        Assert.False(viewModel.ShowProcessingIndicator);
+    }
+
+    [Fact]
     public void CompletedTranscriptsAreQueuedNewestFirst()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -77,6 +102,19 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.Equal(2, viewModel.ProcessingPulseStep);
         Assert.Equal("", viewModel.StatusText);
+    }
+
+    [Fact]
+    public void ProcessingPulseCyclesForPendingTranscriptions()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            PendingTranscriptionCount = 1
+        };
+
+        viewModel.AdvanceProcessingPulse();
+
+        Assert.Equal(1, viewModel.ProcessingPulseStep);
     }
 
     [Fact]

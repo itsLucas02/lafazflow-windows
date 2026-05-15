@@ -3,7 +3,7 @@ using System.IO;
 
 namespace LafazFlow.Windows.Services;
 
-public sealed class WhisperCliTranscriptionService
+public sealed class WhisperCliTranscriptionService : ITranscriptionService
 {
     public static string? ValidatePaths(string whisperCliPath, string modelPath)
     {

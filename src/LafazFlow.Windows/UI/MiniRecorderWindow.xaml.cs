@@ -6,7 +6,7 @@ using WpfRectangle = System.Windows.Shapes.Rectangle;
 
 namespace LafazFlow.Windows.UI;
 
-public partial class MiniRecorderWindow : Window
+public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 {
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
@@ -42,6 +42,11 @@ public partial class MiniRecorderWindow : Window
         Left = workArea.Left + (workArea.Width - Width) / 2;
         Top = workArea.Bottom - Height - 24;
         Show();
+    }
+
+    public Task InvokeAsync(Action action)
+    {
+        return Dispatcher.InvokeAsync(action).Task;
     }
 
     protected override void OnClosed(EventArgs e)

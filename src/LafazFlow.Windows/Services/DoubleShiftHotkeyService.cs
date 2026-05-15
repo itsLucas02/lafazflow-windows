@@ -6,7 +6,10 @@ namespace LafazFlow.Windows.Services;
 public sealed class DoubleShiftHotkeyService : IDisposable
 {
     private const int WhKeyboardLl = 13;
+    private const int WmKeyDown = 0x0100;
+    private const int WmSysKeyDown = 0x0104;
     private const int WmKeyUp = 0x0101;
+    private const int WmSysKeyUp = 0x0105;
     private const int VkShift = 0x10;
     private const int VkLeftShift = 0xA0;
     private const int VkRightShift = 0xA1;
@@ -55,12 +58,21 @@ public sealed class DoubleShiftHotkeyService : IDisposable
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && wParam == WmKeyUp)
+        if (nCode >= 0)
         {
             var virtualKey = Marshal.ReadInt32(lParam);
-            if (IsShift(virtualKey) && _detector.RegisterShiftUp(DateTimeOffset.UtcNow))
+            if (IsShift(virtualKey) && IsKeyDownMessage(wParam))
             {
-                DoubleShiftPressed?.Invoke();
+                var flags = Marshal.ReadInt32(lParam, 8);
+                var isRepeat = (flags & 0x40000000) != 0;
+                if (_detector.RegisterKeyDown(DateTimeOffset.UtcNow, isRepeat))
+                {
+                    DoubleShiftPressed?.Invoke();
+                }
+            }
+            else if (IsShift(virtualKey) && IsKeyUpMessage(wParam))
+            {
+                _detector.RegisterKeyUp();
             }
         }
 
@@ -70,6 +82,16 @@ public sealed class DoubleShiftHotkeyService : IDisposable
     private static bool IsShift(int virtualKey)
     {
         return virtualKey is VkShift or VkLeftShift or VkRightShift;
+    }
+
+    private static bool IsKeyDownMessage(IntPtr message)
+    {
+        return message == WmKeyDown || message == WmSysKeyDown;
+    }
+
+    private static bool IsKeyUpMessage(IntPtr message)
+    {
+        return message == WmKeyUp || message == WmSysKeyUp;
     }
 
     private static IntPtr SetHook(LowLevelKeyboardProc proc)

@@ -11,6 +11,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     private double _audioLevel;
     private string _statusText = "";
     private int _processingPulseStep;
+    private int _pendingTranscriptionCount;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -72,11 +73,31 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public bool IsProcessing => State is RecordingState.Transcribing or RecordingState.Enhancing;
 
-    public bool ShowProcessingIndicator => IsProcessing;
+    public bool ShowProcessingIndicator => IsProcessing || (HasPendingTranscriptions && !IsRecording);
 
     public int ProcessingPulseStep => _processingPulseStep;
 
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
+
+    public int PendingTranscriptionCount
+    {
+        get => _pendingTranscriptionCount;
+        set
+        {
+            var clamped = Math.Max(0, value);
+            if (_pendingTranscriptionCount == clamped)
+            {
+                return;
+            }
+
+            _pendingTranscriptionCount = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPendingTranscriptions));
+            OnPropertyChanged(nameof(ShowProcessingIndicator));
+        }
+    }
+
+    public bool HasPendingTranscriptions => PendingTranscriptionCount > 0;
 
     public ObservableCollection<string> RecentTranscripts { get; } = [];
 
@@ -104,7 +125,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public void AdvanceProcessingPulse()
     {
-        if (!IsProcessing)
+        if (!ShowProcessingIndicator)
         {
             return;
         }

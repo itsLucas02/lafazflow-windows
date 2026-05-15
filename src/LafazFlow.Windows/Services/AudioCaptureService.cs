@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace LafazFlow.Windows.Services;
 
-public sealed class AudioCaptureService : IDisposable
+public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 {
     private WaveInEvent? _waveIn;
     private WaveFileWriter? _writer;

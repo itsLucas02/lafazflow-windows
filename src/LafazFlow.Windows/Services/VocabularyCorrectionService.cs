@@ -21,6 +21,7 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("voice ink"), "VoiceInk"),
         (PhraseRegex("voicing"), "VoiceInk"),
         (PhraseRegex("voice in"), "VoiceInk"),
+        (PhraseRegex("repeteness"), "rapidness"),
         (PhraseRegex("github"), "GitHub"),
         (PhraseRegex("power shell"), "PowerShell"),
         (PhraseRegex("powershell"), "PowerShell"),

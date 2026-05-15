@@ -8,24 +8,27 @@ namespace LafazFlow.Windows.Services;
 public sealed class RecorderController
 {
     private readonly MiniRecorderViewModel _viewModel;
-    private readonly MiniRecorderWindow _window;
-    private readonly AudioCaptureService _audioCapture;
-    private readonly WhisperCliTranscriptionService _transcription;
-    private readonly ClipboardPasteService _clipboardPaste;
+    private readonly IMiniRecorderWindow _window;
+    private readonly IAudioCaptureService _audioCapture;
+    private readonly ITranscriptionService _transcription;
+    private readonly IClipboardPasteService _clipboardPaste;
     private readonly SettingsStore _settingsStore;
     private readonly SoundCueService _soundCues;
+    private readonly Func<IntPtr> _getForegroundWindow;
+    private readonly DictationQueueProcessor _queue;
     private string? _currentAudioPath;
     private IntPtr _targetWindow;
     private CancellationTokenSource? _runCancellation;
 
     public RecorderController(
         MiniRecorderViewModel viewModel,
-        MiniRecorderWindow window,
-        AudioCaptureService audioCapture,
-        WhisperCliTranscriptionService transcription,
-        ClipboardPasteService clipboardPaste,
+        IMiniRecorderWindow window,
+        IAudioCaptureService audioCapture,
+        ITranscriptionService transcription,
+        IClipboardPasteService clipboardPaste,
         SettingsStore settingsStore,
-        SoundCueService? soundCues = null)
+        SoundCueService? soundCues = null,
+        Func<IntPtr>? getForegroundWindow = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -34,8 +37,12 @@ public sealed class RecorderController
         _clipboardPaste = clipboardPaste;
         _settingsStore = settingsStore;
         _soundCues = soundCues ?? new SoundCueService();
+        _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
+        _queue = new DictationQueueProcessor(ProcessJobAsync);
+        _queue.PendingCountChanged += count =>
+            _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
         _audioCapture.AudioLevelChanged += level =>
-            _window.Dispatcher.BeginInvoke(() => _viewModel.AudioLevel = level);
+            _ = _window.InvokeAsync(() => _viewModel.AudioLevel = level);
     }
 
     public async Task ToggleAsync()
@@ -46,7 +53,7 @@ public sealed class RecorderController
             return;
         }
 
-        if (_viewModel.State is RecordingState.Transcribing or RecordingState.Enhancing or RecordingState.Busy)
+        if (_viewModel.State is RecordingState.Busy)
         {
             return;
         }
@@ -66,7 +73,7 @@ public sealed class RecorderController
             return;
         }
 
-        _targetWindow = GetForegroundWindow();
+        _targetWindow = _getForegroundWindow();
         _runCancellation = new CancellationTokenSource();
         var recordingsRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -78,69 +85,88 @@ public sealed class RecorderController
         _window.ShowBottomCenter();
     }
 
-    public async Task StopAndTranscribeAsync()
+    public Task StopAndTranscribeAsync()
     {
         if (_currentAudioPath is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         var settings = _settingsStore.Load();
         var cancellationToken = _runCancellation?.Token ?? CancellationToken.None;
-        _audioCapture.Stop();
-        _viewModel.State = RecordingState.Transcribing;
-        _soundCues.PlayTranscribingStarted();
+        var audioPath = _currentAudioPath;
+        var targetWindow = _targetWindow;
+        var runCancellation = _runCancellation;
 
+        _audioCapture.Stop();
+        _currentAudioPath = null;
+        _targetWindow = IntPtr.Zero;
+        _runCancellation = null;
+        _viewModel.State = RecordingState.Idle;
+        _soundCues.PlayTranscribingStarted();
+        _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings), cancellationToken)
+            .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
+        return Task.CompletedTask;
+    }
+
+    public Task WaitForPendingTranscriptionsAsync()
+    {
+        return _queue.WhenIdleAsync();
+    }
+
+    private async Task ProcessJobAsync(DictationJob job, CancellationToken cancellationToken)
+    {
         try
         {
             var transcript = await _transcription.TranscribeAsync(
-                settings.WhisperCliPath,
-                settings.ModelPath,
-                _currentAudioPath,
-                settings.WhisperInitialPrompt,
-                settings.WhisperThreads,
+                job.Settings.WhisperCliPath,
+                job.Settings.ModelPath,
+                job.AudioPath,
+                job.Settings.WhisperInitialPrompt,
+                job.Settings.WhisperThreads,
                 cancellationToken);
 
-            if (settings.EnableVocabularyCorrections)
+            if (job.Settings.EnableVocabularyCorrections)
             {
                 transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
             }
 
-            if (settings.AppendTrailingSpace)
+            if (job.Settings.AppendTrailingSpace)
             {
                 transcript = PasteTextFormatter.EnsureTrailingSeparator(transcript);
             }
 
-            _viewModel.AddCompletedTranscript(transcript);
+            await _window.InvokeAsync(() => _viewModel.AddCompletedTranscript(transcript));
 
             await _clipboardPaste.PasteAsync(
                 transcript,
-                settings.RestoreClipboardAfterPaste,
-                settings.ClipboardRestoreDelayMs,
-                _targetWindow,
+                job.Settings.RestoreClipboardAfterPaste,
+                job.Settings.ClipboardRestoreDelayMs,
+                job.TargetWindow,
                 cancellationToken);
 
-            _window.Hide();
-            _viewModel.State = RecordingState.Idle;
+            await _window.InvokeAsync(() =>
+            {
+                if (!_viewModel.IsRecording && _viewModel.PendingTranscriptionCount <= 1)
+                {
+                    _window.Hide();
+                }
+            });
             _soundCues.PlayCompleted();
         }
         catch (Exception error)
         {
             var message = ShortError(error);
-            _viewModel.SetError(message);
+            await _window.InvokeAsync(() => _viewModel.SetError(message));
             _soundCues.PlayError();
             LogError(error.ToString());
         }
         finally
         {
-            if (!settings.KeepRecordingsForDiagnostics)
+            if (!job.Settings.KeepRecordingsForDiagnostics)
             {
-                TryDelete(_currentAudioPath);
+                TryDelete(job.AudioPath);
             }
-
-            _currentAudioPath = null;
-            _runCancellation?.Dispose();
-            _runCancellation = null;
         }
     }
 
