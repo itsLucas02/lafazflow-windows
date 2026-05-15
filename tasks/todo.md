@@ -130,3 +130,18 @@
 - Transcript preview remains layered above the shell and does not participate in the shell layout.
 - Focused `MiniRecorderViewModelTests` pass, 9 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 41 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Cursor Terminal Paste And Test Correction
+- [x] Capture lessons from the `test`/`that's` and Cursor terminal paste corrections.
+- [x] Add failing tests for targeted testing-dictation correction.
+- [x] Add failing tests for Cursor/VS Code paste key selection.
+- [x] Implement targeted offline correction for testing phrases without globally rewriting normal `that's`.
+- [x] Use `Ctrl+Shift+V` for Cursor/VS Code targets while keeping `Ctrl+V` for normal apps.
+- [x] Verify with focused tests, full build/test, launch smoke, and public-readiness scan.
+
+## Review: Cursor Terminal Paste And Test Correction
+- Added contextual offline correction for testing phrases where local Whisper hears `test` as `that's`.
+- Preserved ordinary `that's` sentences such as `That's correct`.
+- Added paste key gesture policy: Cursor/VS Code targets use `Ctrl+Shift+V`; generic apps keep `Ctrl+V`.
+- Focused vocabulary/paste policy tests pass, 19 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 50 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

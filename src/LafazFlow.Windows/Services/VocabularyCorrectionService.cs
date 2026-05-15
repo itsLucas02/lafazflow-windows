@@ -35,11 +35,34 @@ public static partial class VocabularyCorrectionService
             corrected = pattern.Replace(corrected, replacement);
         }
 
-        return corrected;
+        return FixTestingDictationThats(corrected);
     }
 
     private static Regex PhraseRegex(string phrase)
     {
         return new Regex($@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(phrase)}(?![\p{{L}}\p{{N}}])", RegexOptions.IgnoreCase);
     }
+
+    private static string FixTestingDictationThats(string text)
+    {
+        var corrected = RepeatedThatsRegex().Replace(text, match =>
+        {
+            var replacement = ThatsRegex().Replace(match.Value, "test");
+            return char.IsUpper(match.Value[0])
+                ? char.ToUpperInvariant(replacement[0]) + replacement[1..]
+                : replacement;
+        });
+
+        return TestingLeadThatsRegex().Replace(corrected, match =>
+            char.IsUpper(match.Value[0]) ? "Test" : "test");
+    }
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])that['’]?s(?:\s*,\s*that['’]?s)+(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex RepeatedThatsRegex();
+
+    [GeneratedRegex(@"that['’]?s", RegexOptions.IgnoreCase)]
+    private static partial Regex ThatsRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])that['’]?s(?=\s+(?:\d|one\b|two\b|three\b|1-2-3\b))", RegexOptions.IgnoreCase)]
+    private static partial Regex TestingLeadThatsRegex();
 }

@@ -9,6 +9,7 @@ namespace LafazFlow.Windows.Services;
 public sealed class ClipboardPasteService
 {
     private const ushort VirtualKeyControl = 0x11;
+    private const ushort VirtualKeyShift = 0x10;
     private const ushort VirtualKeyV = 0x56;
     private const uint InputKeyboard = 1;
     private const uint KeyEventKeyUp = 0x0002;
@@ -20,9 +21,11 @@ public sealed class ClipboardPasteService
         IntPtr targetWindow,
         CancellationToken cancellationToken)
     {
+        var targetProcessName = GetProcessName(targetWindow);
         var shouldRestoreClipboard = ClipboardRestorePolicy.ShouldRestore(
-            GetProcessName(targetWindow),
+            targetProcessName,
             restoreClipboard);
+        var pasteGesture = PasteKeyGesturePolicy.GetGesture(targetProcessName);
         var previousClipboard = shouldRestoreClipboard
             ? await GetClipboardSnapshotWithRetryAsync(cancellationToken)
             : null;
@@ -36,7 +39,7 @@ public sealed class ClipboardPasteService
             await Task.Delay(50, cancellationToken);
         }
 
-        SendCtrlV();
+        SendPasteGesture(pasteGesture);
 
         if (shouldRestoreClipboard && previousClipboard is not null)
         {
@@ -120,6 +123,17 @@ public sealed class ClipboardPasteService
         throw new InvalidOperationException("Clipboard text could not be written.", lastError);
     }
 
+    private static void SendPasteGesture(PasteKeyGesture gesture)
+    {
+        if (gesture == PasteKeyGesture.ControlShiftV)
+        {
+            SendCtrlShiftV();
+            return;
+        }
+
+        SendCtrlV();
+    }
+
     private static void SendCtrlV()
     {
         var inputs = new[]
@@ -127,6 +141,25 @@ public sealed class ClipboardPasteService
             CreateKeyboardInput(VirtualKeyControl, 0),
             CreateKeyboardInput(VirtualKeyV, 0),
             CreateKeyboardInput(VirtualKeyV, KeyEventKeyUp),
+            CreateKeyboardInput(VirtualKeyControl, KeyEventKeyUp)
+        };
+
+        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
+        if (sent != inputs.Length)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "SendInput failed to dispatch paste keys.");
+        }
+    }
+
+    private static void SendCtrlShiftV()
+    {
+        var inputs = new[]
+        {
+            CreateKeyboardInput(VirtualKeyControl, 0),
+            CreateKeyboardInput(VirtualKeyShift, 0),
+            CreateKeyboardInput(VirtualKeyV, 0),
+            CreateKeyboardInput(VirtualKeyV, KeyEventKeyUp),
+            CreateKeyboardInput(VirtualKeyShift, KeyEventKeyUp),
             CreateKeyboardInput(VirtualKeyControl, KeyEventKeyUp)
         };
 

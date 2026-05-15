@@ -43,3 +43,11 @@
 ## Keep the recorder shell layout fixed
 - Pattern: Secondary content such as transcript previews or processing details can accidentally push the main recorder controls away from their expected position.
 - Rule: The main mini recorder shell must keep fixed dimensions and a fixed bottom-center anchor; supplemental content should overlay around it without participating in shell layout.
+
+## Handle Cursor terminal paste as a distinct shortcut
+- Pattern: Cursor's integrated terminal can reject plain `Ctrl+V` paste and show clipboard/image paste errors, while manual terminal paste uses `Ctrl+Shift+V`.
+- Rule: Treat Cursor/VS Code-like targets as terminal-safe paste targets and dispatch `Ctrl+Shift+V` instead of plain `Ctrl+V`.
+
+## Keep homophone corrections contextual
+- Pattern: Fast local Whisper can hear dictated `test` as `that's`, especially in testing phrases.
+- Rule: Correct `that's` to `test` only in testing-dictation patterns; do not globally rewrite ordinary `that's` sentences.

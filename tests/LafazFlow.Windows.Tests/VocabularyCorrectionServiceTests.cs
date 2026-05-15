@@ -37,6 +37,25 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal("Open MediBrave.", corrected);
     }
 
+    [Theory]
+    [InlineData("That's 1-2-3 over.", "Test 1-2-3 over.")]
+    [InlineData("That's one, two, three, over.", "Test one, two, three, over.")]
+    [InlineData("That's, that's, that's.", "Test, test, test.")]
+    public void ApplyDefaultsFixesTestingDictationThatsVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Fact]
+    public void ApplyDefaultsPreservesNormalThatsSentences()
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults("That's correct, and that's okay.");
+
+        Assert.Equal("That's correct, and that's okay.", corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {
