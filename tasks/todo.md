@@ -180,3 +180,15 @@
 - Added a controller regression test proving queued paste is invoked through the window dispatcher.
 - Focused `RecorderControllerTests` pass, 3 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 60 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Add Commit And Shadcn Vocabulary
+- [x] Add failing tests for `commit` and `shadcn` dictation variants.
+- [x] Add offline vocabulary corrections without globally rewriting normal `come in`.
+- [x] Verify with focused vocabulary tests, full build/test, launch smoke, public-readiness scan, then commit and push.
+
+## Review: Add Commit And Shadcn Vocabulary
+- Added offline corrections for `comit`, `git come in`, `git comes in`, `come in and push`, and `comes in and push`.
+- Preserved normal `come in` sentences outside coding/push contexts.
+- Added offline corrections for `Chat CN`, `ChatCN`, `shad cn`, and `shad c n` to `shadcn`.
+- Focused `VocabularyCorrectionServiceTests` pass, 23 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 68 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

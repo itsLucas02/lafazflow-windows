@@ -64,6 +64,37 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal("VoiceInk rapidness, not rapidness.", corrected);
     }
 
+    [Theory]
+    [InlineData("Run git comit now.", "Run git commit now.")]
+    [InlineData("Run git come in now.", "Run git commit now.")]
+    [InlineData("Please come in and push.", "Please commit and push.")]
+    [InlineData("It comes in and push.", "It commit and push.")]
+    public void ApplyDefaultsFixesCommitCodingVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Fact]
+    public void ApplyDefaultsPreservesNormalComeInSentence()
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults("Please come in when you are ready.");
+
+        Assert.Equal("Please come in when you are ready.", corrected);
+    }
+
+    [Theory]
+    [InlineData("Use Chat CN components.", "Use shadcn components.")]
+    [InlineData("Install ChatCN UI.", "Install shadcn UI.")]
+    [InlineData("Open shad cn docs.", "Open shadcn docs.")]
+    public void ApplyDefaultsFixesShadcnVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {

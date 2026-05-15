@@ -59,3 +59,7 @@
 ## Keep clipboard calls on the STA UI thread
 - Pattern: Background queue workers run on MTA threads, but WPF clipboard/OLE APIs require an STA thread and fail with `Current thread must be set to single thread apartment`.
 - Rule: Run transcription work in the background, but marshal clipboard read/write and paste dispatch through the WPF UI dispatcher.
+
+## Keep coding homophones constrained
+- Pattern: Coding terms such as `commit` and `shadcn` can be misheard as normal speech like `come in`, `comes in`, or `Chat CN`.
+- Rule: Add deterministic vocabulary for coding terms, but avoid globally rewriting ordinary English phrases when the phrase has common non-coding meaning.
