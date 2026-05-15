@@ -13,6 +13,7 @@ public sealed class RecorderController
     private readonly WhisperCliTranscriptionService _transcription;
     private readonly ClipboardPasteService _clipboardPaste;
     private readonly SettingsStore _settingsStore;
+    private readonly SoundCueService _soundCues;
     private string? _currentAudioPath;
     private IntPtr _targetWindow;
     private CancellationTokenSource? _runCancellation;
@@ -23,7 +24,8 @@ public sealed class RecorderController
         AudioCaptureService audioCapture,
         WhisperCliTranscriptionService transcription,
         ClipboardPasteService clipboardPaste,
-        SettingsStore settingsStore)
+        SettingsStore settingsStore,
+        SoundCueService? soundCues = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -31,6 +33,7 @@ public sealed class RecorderController
         _transcription = transcription;
         _clipboardPaste = clipboardPaste;
         _settingsStore = settingsStore;
+        _soundCues = soundCues ?? new SoundCueService();
         _audioCapture.AudioLevelChanged += level =>
             _window.Dispatcher.BeginInvoke(() => _viewModel.AudioLevel = level);
     }
@@ -71,6 +74,7 @@ public sealed class RecorderController
             "Recordings");
         _currentAudioPath = _audioCapture.Start(recordingsRoot);
         _viewModel.State = RecordingState.Recording;
+        _soundCues.PlayRecordingStarted();
         _window.ShowBottomCenter();
     }
 
@@ -85,6 +89,7 @@ public sealed class RecorderController
         var cancellationToken = _runCancellation?.Token ?? CancellationToken.None;
         _audioCapture.Stop();
         _viewModel.State = RecordingState.Transcribing;
+        _soundCues.PlayTranscribingStarted();
 
         try
         {
@@ -117,11 +122,13 @@ public sealed class RecorderController
 
             _window.Hide();
             _viewModel.State = RecordingState.Idle;
+            _soundCues.PlayCompleted();
         }
         catch (Exception error)
         {
             var message = ShortError(error);
             _viewModel.SetError(message);
+            _soundCues.PlayError();
             LogError(error.ToString());
         }
         finally

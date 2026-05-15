@@ -90,3 +90,15 @@
 - Transcribing/enhancing status now pulses with animated dots, and processing bars continue moving instead of freezing.
 - Focused view-model tests pass; full `dotnet build` and `dotnet test` pass, 38 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Fix Main Bar Stability And Sound Cues
+- [x] Replace preview `StackPanel` layout with a non-shifting overlay above the fixed recorder shell.
+- [x] Add local system sound cues for recording start, stop/transcribing, completion, and error.
+- [x] Keep the transcription model, vocabulary, and paste behavior unchanged.
+- [x] Verify with build/test, launch smoke, and public-readiness scan.
+
+## Review: Fix Main Bar Stability And Sound Cues
+- Main recorder shell is fixed at bottom-center again; transcript preview overlays above it and no longer shifts the bar.
+- Added local Windows system sound cues for recording start, transcribing start, completion, and error.
+- Full `dotnet build` and `dotnet test` pass, 38 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
