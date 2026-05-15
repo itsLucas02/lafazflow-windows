@@ -11,10 +11,12 @@ public sealed class WhisperCliTranscriptionServiceTests
             @"C:\Models\ggml-base.en.bin",
             @"C:\Audio\sample.wav",
             @"C:\Audio\sample",
-            "");
+            "",
+            16);
 
         Assert.Contains("-m \"C:\\Models\\ggml-base.en.bin\"", args);
         Assert.Contains("-f \"C:\\Audio\\sample.wav\"", args);
+        Assert.Contains("-t 16", args);
         Assert.Contains("-otxt", args);
         Assert.Contains("-nt", args);
         Assert.Contains("-tp 0", args);
@@ -28,7 +30,8 @@ public sealed class WhisperCliTranscriptionServiceTests
             @"C:\Models\ggml-large-v3-turbo.bin",
             @"C:\Audio\sample.wav",
             @"C:\Audio\sample",
-            "Supabase Vercel Tailscale \"quoted\"");
+            "Supabase Vercel Tailscale \"quoted\"",
+            16);
 
         Assert.Contains("--prompt \"Supabase Vercel Tailscale \\\"quoted\\\"\"", args);
         Assert.Contains("--carry-initial-prompt", args);

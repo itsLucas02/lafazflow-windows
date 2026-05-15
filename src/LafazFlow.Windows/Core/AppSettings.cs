@@ -12,6 +12,7 @@ public sealed record AppSettings
     public HotkeyMode HotkeyMode { get; init; } = HotkeyMode.Hybrid;
     public string WhisperCliPath { get; init; } = "";
     public string ModelPath { get; init; } = "";
+    public int WhisperThreads { get; init; } = 16;
     public bool RestoreClipboardAfterPaste { get; init; } = true;
     public int ClipboardRestoreDelayMs { get; init; } = DefaultClipboardRestoreDelayMs;
     public bool AppendTrailingSpace { get; init; } = true;

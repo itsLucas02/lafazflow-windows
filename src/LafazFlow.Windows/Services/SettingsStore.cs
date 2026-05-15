@@ -8,11 +8,11 @@ public sealed class SettingsStore
 {
     private static readonly string[] ModelPriority =
     [
-        "ggml-large-v3-turbo-q5_0.bin",
-        "ggml-large-v3-turbo.bin",
-        "ggml-medium.en.bin",
+        "ggml-base.en.bin",
         "ggml-small.en.bin",
-        "ggml-base.en.bin"
+        "ggml-medium.en.bin",
+        "ggml-large-v3-turbo-q5_0.bin",
+        "ggml-large-v3-turbo.bin"
     ];
 
     private readonly string _settingsPath;
@@ -97,6 +97,11 @@ public sealed class SettingsStore
         if (string.IsNullOrWhiteSpace(migrated.WhisperInitialPrompt))
         {
             migrated = migrated with { WhisperInitialPrompt = AppSettings.DefaultWhisperInitialPrompt };
+        }
+
+        if (migrated.WhisperThreads <= 0)
+        {
+            migrated = migrated with { WhisperThreads = AppSettings.Default.WhisperThreads };
         }
 
         if (ShouldUpgradeDefaultModel(migrated.ModelPath))

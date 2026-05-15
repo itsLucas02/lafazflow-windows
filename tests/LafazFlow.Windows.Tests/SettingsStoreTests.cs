@@ -17,6 +17,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(HotkeyMode.Hybrid, settings.HotkeyMode);
         Assert.True(settings.RestoreClipboardAfterPaste);
         Assert.Equal(1500, settings.ClipboardRestoreDelayMs);
+        Assert.Equal(16, settings.WhisperThreads);
         Assert.True(settings.AppendTrailingSpace);
         Assert.True(settings.EnableVocabularyCorrections);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
@@ -36,6 +37,7 @@ public sealed class SettingsStoreTests
             ModelPath = @"C:\Models\ggml-base.en.bin",
             AppendTrailingSpace = true,
             ClipboardRestoreDelayMs = 2000,
+            WhisperThreads = 12,
             WhisperInitialPrompt = "Supabase Vercel Tailscale"
         };
 
@@ -63,7 +65,7 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
-    public void LoadPrefersQuantizedLargeTurboWhenNoSettingsFileExists()
+    public void LoadPrefersBaseEnglishForDictationSpeedWhenNoSettingsFileExists()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var whisperCliPath = Path.GetTempFileName();
@@ -78,7 +80,7 @@ public sealed class SettingsStoreTests
 
         var settings = store.Load();
 
-        Assert.Equal(quantizedLargeTurboPath, settings.ModelPath);
+        Assert.Equal(baseModelPath, settings.ModelPath);
         File.Delete(whisperCliPath);
     }
 
@@ -103,7 +105,7 @@ public sealed class SettingsStoreTests
 
         var migrated = store.Load();
 
-        Assert.Equal(quantizedLargeTurboPath, migrated.ModelPath);
+        Assert.Equal(oldDefaultPath, migrated.ModelPath);
         Assert.Equal(1500, migrated.ClipboardRestoreDelayMs);
 
         var customModelPath = Path.Combine(modelRoot, "custom.bin");

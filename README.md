@@ -14,15 +14,17 @@ Cloud transcription and AI enhancement are not part of the MVP.
 
 ## Local model upgrade
 
-The app auto-detects local Whisper models in `C:\Models\whisper` and prefers the fast VoiceInk-like local option:
+The app auto-detects local Whisper models in `C:\Models\whisper` and prefers the fastest dictation-friendly option:
 
-1. `ggml-large-v3-turbo-q5_0.bin`
-2. `ggml-large-v3-turbo.bin`
+1. `ggml-base.en.bin`
+2. `ggml-small.en.bin`
 3. `ggml-medium.en.bin`
-4. `ggml-small.en.bin`
-5. `ggml-base.en.bin`
+4. `ggml-large-v3-turbo-q5_0.bin`
+5. `ggml-large-v3-turbo.bin`
 
-To install the preferred fast quantized large turbo model:
+`ggml-base.en.bin` is the default because it keeps short dictations close to real-time on Windows. The larger models can improve accuracy, but without Mac/Metal-style acceleration they feel too slow for everyday dictation.
+
+To install the optional quantized large turbo quality model:
 
 ```powershell
 .\scripts\install-fast-voiceink-model.ps1

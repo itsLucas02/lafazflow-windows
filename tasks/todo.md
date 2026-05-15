@@ -71,3 +71,6 @@
 - Q5 model priority verification: targeted settings tests pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
 - App launch smoke after Q5 priority change: pass; app started and was stopped cleanly.
 - Public-readiness scan after Q5 priority change found no credentials. Matches are documentation references and `CancellationToken`.
+- Latency benchmark on `Hey, my name is Lucas. Can you tell me your name?`: `ggml-base.en.bin` with 16 threads was about 0.59s; `ggml-large-v3-turbo-q5_0.bin` with 16 threads was about 7.14s.
+- Default model priority changed back to `ggml-base.en.bin` for real-time dictation speed, with Q5 retained as optional quality mode.
+- Whisper CLI arguments now include `-t 16` by default on this machine.

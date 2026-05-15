@@ -24,13 +24,15 @@ public sealed class WhisperCliTranscriptionService
         string modelPath,
         string audioPath,
         string outputBasePath,
-        string initialPrompt)
+        string initialPrompt,
+        int threads)
     {
         var promptArgs = string.IsNullOrWhiteSpace(initialPrompt)
             ? ""
             : $" --prompt {Quote(initialPrompt)} --carry-initial-prompt";
+        var safeThreads = Math.Clamp(threads, 1, Environment.ProcessorCount);
 
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -otxt -nt -tp 0{promptArgs} -of {Quote(outputBasePath)}";
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -tp 0{promptArgs} -of {Quote(outputBasePath)}";
     }
 
     public async Task<string> TranscribeAsync(
@@ -38,6 +40,7 @@ public sealed class WhisperCliTranscriptionService
         string modelPath,
         string audioPath,
         string initialPrompt,
+        int threads,
         CancellationToken cancellationToken)
     {
         var pathError = ValidatePaths(whisperCliPath, modelPath);
@@ -58,7 +61,7 @@ public sealed class WhisperCliTranscriptionService
         var startInfo = new ProcessStartInfo
         {
             FileName = whisperCliPath,
-            Arguments = BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt),
+            Arguments = BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt, threads),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

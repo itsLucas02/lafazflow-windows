@@ -93,6 +93,7 @@ public sealed class RecorderController
                 settings.ModelPath,
                 _currentAudioPath,
                 settings.WhisperInitialPrompt,
+                settings.WhisperThreads,
                 cancellationToken);
 
             if (settings.EnableVocabularyCorrections)
