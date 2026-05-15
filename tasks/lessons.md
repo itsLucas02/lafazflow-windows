@@ -55,3 +55,7 @@
 ## Prefer rapid queueing over blocking the recorder
 - Pattern: Awaiting the full transcription and paste path before returning to idle makes rapid dictation feel slower than VoiceInk.
 - Rule: Stop recording quickly, enqueue the audio for sequential background processing, and allow the next recording while previous jobs are still transcribing.
+
+## Keep clipboard calls on the STA UI thread
+- Pattern: Background queue workers run on MTA threads, but WPF clipboard/OLE APIs require an STA thread and fail with `Current thread must be set to single thread apartment`.
+- Rule: Run transcription work in the background, but marshal clipboard read/write and paste dispatch through the WPF UI dispatcher.

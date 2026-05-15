@@ -167,3 +167,16 @@
 - Added offline `repeteness` -> `rapidness` vocabulary correction.
 - Focused queue/controller/hotkey/view-model/vocabulary tests pass; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 59 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Fix Queued Clipboard STA Regression
+- [x] Inspect runtime log for the clipped `Clipboard data coul...` recorder error.
+- [x] Add a regression test proving queued paste runs through the recorder window dispatcher.
+- [x] Marshal queued paste operations back to the WPF STA dispatcher.
+- [x] Verify with focused tests, full build/test, launch smoke, public-readiness scan, then commit and push.
+
+## Review: Fix Queued Clipboard STA Regression
+- Root cause: queued transcription jobs run on background MTA threads, while WPF clipboard/OLE APIs require STA.
+- Queued paste now runs through the mini recorder window dispatcher; Whisper transcription still runs in the background.
+- Added a controller regression test proving queued paste is invoked through the window dispatcher.
+- Focused `RecorderControllerTests` pass, 3 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 60 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

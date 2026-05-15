@@ -81,6 +81,31 @@ public sealed class RecorderControllerTests
         Assert.Equal(["first.wav ", "second.wav "], paste.Texts);
     }
 
+    [Fact]
+    public async Task QueuedJobPastesThroughWindowDispatcher()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var transcription = new FakeTranscriptionService(_ => Task.FromResult("hello"));
+        var paste = new FakeClipboardPasteService(() => window.IsInsideInvokeAsync);
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            transcription,
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.True(paste.WasPastedInsideWindowDispatcher);
+    }
+
     private static SettingsStore CreateSettingsStore()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -97,6 +122,8 @@ public sealed class RecorderControllerTests
 
     private sealed class FakeMiniRecorderWindow : IMiniRecorderWindow
     {
+        public bool IsInsideInvokeAsync { get; private set; }
+
         public void ShowBottomCenter()
         {
         }
@@ -109,6 +136,19 @@ public sealed class RecorderControllerTests
         {
             action();
             return Task.CompletedTask;
+        }
+
+        public async Task InvokeAsync(Func<Task> action)
+        {
+            IsInsideInvokeAsync = true;
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                IsInsideInvokeAsync = false;
+            }
         }
     }
 
@@ -160,9 +200,18 @@ public sealed class RecorderControllerTests
 
     private sealed class FakeClipboardPasteService : IClipboardPasteService
     {
+        private readonly Func<bool>? _isInsideWindowDispatcher;
+
+        public FakeClipboardPasteService(Func<bool>? isInsideWindowDispatcher = null)
+        {
+            _isInsideWindowDispatcher = isInsideWindowDispatcher;
+        }
+
         public List<string> Texts { get; } = [];
 
         public List<IntPtr> TargetWindows { get; } = [];
+
+        public bool WasPastedInsideWindowDispatcher { get; private set; }
 
         public Task PasteAsync(
             string text,
@@ -171,6 +220,7 @@ public sealed class RecorderControllerTests
             IntPtr targetWindow,
             CancellationToken cancellationToken)
         {
+            WasPastedInsideWindowDispatcher = _isInsideWindowDispatcher?.Invoke() ?? false;
             Texts.Add(text);
             TargetWindows.Add(targetWindow);
             return Task.CompletedTask;

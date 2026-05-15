@@ -138,12 +138,12 @@ public sealed class RecorderController
 
             await _window.InvokeAsync(() => _viewModel.AddCompletedTranscript(transcript));
 
-            await _clipboardPaste.PasteAsync(
-                transcript,
-                job.Settings.RestoreClipboardAfterPaste,
-                job.Settings.ClipboardRestoreDelayMs,
-                job.TargetWindow,
-                cancellationToken);
+            await _window.InvokeAsync(() => _clipboardPaste.PasteAsync(
+                    transcript,
+                    job.Settings.RestoreClipboardAfterPaste,
+                    job.Settings.ClipboardRestoreDelayMs,
+                    job.TargetWindow,
+                    cancellationToken));
 
             await _window.InvokeAsync(() =>
             {

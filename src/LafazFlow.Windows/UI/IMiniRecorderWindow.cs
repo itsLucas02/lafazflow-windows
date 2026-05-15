@@ -7,4 +7,6 @@ public interface IMiniRecorderWindow
     void Hide();
 
     Task InvokeAsync(Action action);
+
+    Task InvokeAsync(Func<Task> action);
 }

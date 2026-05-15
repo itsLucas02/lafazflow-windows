@@ -49,6 +49,12 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         return Dispatcher.InvokeAsync(action).Task;
     }
 
+    public async Task InvokeAsync(Func<Task> action)
+    {
+        var operation = await Dispatcher.InvokeAsync(action);
+        await operation;
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         CompositionTarget.Rendering -= OnRendering;
