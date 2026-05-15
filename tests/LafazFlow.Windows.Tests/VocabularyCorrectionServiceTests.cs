@@ -8,9 +8,22 @@ public sealed class VocabularyCorrectionServiceTests
     public void ApplyDefaultsFixesTechnicalTerms()
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(
-            "Testing Super B's, Vircell, Tail, skill, netlify, and mintlify.");
+            "Testing Super B's, Vircell, Tail, skill, netlify, mintlify, and Maddy Breath.");
 
-        Assert.Equal("Testing Supabase, Vercel, Tailscale, Netlify, and Mintlify.", corrected);
+        Assert.Equal("Testing Supabase, Vercel, Tailscale, Netlify, Mintlify, and MediBrave.", corrected);
+    }
+
+    [Theory]
+    [InlineData("medibrief")]
+    [InlineData("Mad brave")]
+    [InlineData("medi brave")]
+    [InlineData("maddy brave")]
+    [InlineData("Maddy Breath")]
+    public void ApplyDefaultsFixesMediBraveVariants(string variant)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults($"Open {variant}.");
+
+        Assert.Equal("Open MediBrave.", corrected);
     }
 
     [Fact]

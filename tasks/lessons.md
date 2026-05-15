@@ -31,3 +31,7 @@
 ## Optimize for VoiceInk-like latency before maximum accuracy
 - Pattern: Full `large-v3-turbo` made Windows dictation feel much slower than VoiceInk, even though it stayed local and offline.
 - Rule: On this Windows `whisper.cpp` setup, prefer `ggml-base.en.bin` for default dictation latency and use vocabulary correction for technical terms; Q5 is optional quality mode, not the default.
+
+## Keep brand/product names in local vocabulary
+- Pattern: Fast local models can hear uncommon product names phonetically, such as `MediBrave` becoming `Maddy Breath`, `medibrief`, or `Mad brave`.
+- Rule: Add high-value owner/product vocabulary variants to deterministic offline corrections with regression tests.
