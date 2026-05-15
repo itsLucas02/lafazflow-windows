@@ -17,6 +17,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 
     private readonly object _lock = new();
     private readonly List<byte> _audioBuffer = [];
+    private readonly LiveTranscriptStabilizer _stabilizer = new();
     private CancellationTokenSource? _sessionCancellation;
     private Task? _previewLoop;
     private AppSettings? _settings;
@@ -33,6 +34,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         _settings = settings;
         _onPartialTranscript = onPartialTranscript;
         _lastPreview = "";
+        _stabilizer.Reset();
         lock (_lock)
         {
             _audioBuffer.Clear();
@@ -70,6 +72,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         _settings = null;
         _onPartialTranscript = null;
         _lastPreview = "";
+        _stabilizer.Reset();
         lock (_lock)
         {
             _audioBuffer.Clear();
@@ -109,13 +112,19 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             }
 
             var preview = await TranscribeSnapshotAsync(snapshot, cancellationToken);
-            if (string.IsNullOrWhiteSpace(preview) || string.Equals(preview, _lastPreview, StringComparison.Ordinal))
+            if (!_stabilizer.TryAccept(preview, out var stablePreview))
+            {
+                LogPreviewSuppression(_stabilizer.LastSuppressionReason);
+                continue;
+            }
+
+            if (string.Equals(stablePreview, _lastPreview, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            _lastPreview = preview;
-            _onPartialTranscript?.Invoke(preview);
+            _lastPreview = stablePreview;
+            _onPartialTranscript?.Invoke(stablePreview);
         }
     }
 
@@ -242,6 +251,29 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         try
         {
             File.Delete(path);
+        }
+        catch
+        {
+        }
+    }
+
+    private static void LogPreviewSuppression(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason) || string.Equals(reason, "empty", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            var logRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "LafazFlow",
+                "Logs");
+            Directory.CreateDirectory(logRoot);
+            File.AppendAllText(
+                Path.Combine(logRoot, "lafazflow.log"),
+                $"[{DateTimeOffset.Now:O}] Live preview suppressed: {reason}.{Environment.NewLine}");
         }
         catch
         {

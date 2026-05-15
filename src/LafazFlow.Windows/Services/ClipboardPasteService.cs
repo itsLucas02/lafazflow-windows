@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using WpfClipboard = System.Windows.Clipboard;
@@ -13,6 +14,7 @@ public sealed class ClipboardPasteService : IClipboardPasteService
     private const ushort VirtualKeyV = 0x56;
     private const uint InputKeyboard = 1;
     private const uint KeyEventKeyUp = 0x0002;
+    private const int PasteRetryDelayMs = 90;
 
     public async Task PasteAsync(
         string text,
@@ -22,11 +24,9 @@ public sealed class ClipboardPasteService : IClipboardPasteService
         CancellationToken cancellationToken)
     {
         var targetProcessName = GetProcessName(targetWindow);
-        var shouldRestoreClipboard = ClipboardRestorePolicy.ShouldRestore(
-            targetProcessName,
-            restoreClipboard);
-        var pasteGesture = PasteKeyGesturePolicy.GetGesture(targetProcessName);
-        var previousClipboard = shouldRestoreClipboard
+        var profile = PasteTargetProfile.FromProcessName(targetProcessName, restoreClipboard);
+        LogPasteProfile(profile);
+        var previousClipboard = profile.ShouldRestoreClipboard
             ? await GetClipboardSnapshotWithRetryAsync(cancellationToken)
             : null;
 
@@ -39,9 +39,9 @@ public sealed class ClipboardPasteService : IClipboardPasteService
             await Task.Delay(50, cancellationToken);
         }
 
-        SendPasteGesture(pasteGesture);
+        await SendPasteGestureWithRetryAsync(profile, cancellationToken);
 
-        if (shouldRestoreClipboard && previousClipboard is not null)
+        if (profile.ShouldRestoreClipboard && previousClipboard is not null)
         {
             await Task.Delay(Math.Max(restoreDelayMs, 1500), cancellationToken);
             await SetClipboardDataWithRetryAsync(previousClipboard, cancellationToken);
@@ -134,6 +134,38 @@ public sealed class ClipboardPasteService : IClipboardPasteService
         SendCtrlV();
     }
 
+    private static async Task SendPasteGestureWithRetryAsync(
+        PasteTargetProfile profile,
+        CancellationToken cancellationToken)
+    {
+        Exception? lastError = null;
+        for (var attempt = 1; attempt <= profile.MaxPasteAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                SendPasteGesture(profile.Gesture);
+                if (attempt > 1)
+                {
+                    Log($"Paste gesture succeeded on retry {attempt} for {SafeProcessName(profile.ProcessName)}.");
+                }
+
+                return;
+            }
+            catch (Exception error) when (attempt < profile.MaxPasteAttempts)
+            {
+                lastError = error;
+                Log($"Paste gesture attempt {attempt} failed for {SafeProcessName(profile.ProcessName)}: {error.GetType().Name}.");
+                await Task.Delay(PasteRetryDelayMs, cancellationToken);
+            }
+        }
+
+        if (lastError is not null)
+        {
+            throw lastError;
+        }
+    }
+
     private static void SendCtrlV()
     {
         var inputs = new[]
@@ -190,6 +222,35 @@ public sealed class ClipboardPasteService : IClipboardPasteService
         catch
         {
             return null;
+        }
+    }
+
+    private static void LogPasteProfile(PasteTargetProfile profile)
+    {
+        Log(
+            $"Paste target={SafeProcessName(profile.ProcessName)}, gesture={profile.Gesture}, restore={profile.ShouldRestoreClipboard}, attempts={profile.MaxPasteAttempts}.");
+    }
+
+    private static string SafeProcessName(string? processName)
+    {
+        return string.IsNullOrWhiteSpace(processName) ? "unknown" : processName;
+    }
+
+    private static void Log(string message)
+    {
+        try
+        {
+            var logRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "LafazFlow",
+                "Logs");
+            Directory.CreateDirectory(logRoot);
+            File.AppendAllText(
+                Path.Combine(logRoot, "lafazflow.log"),
+                $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
+        }
+        catch
+        {
         }
     }
 
