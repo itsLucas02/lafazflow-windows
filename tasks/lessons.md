@@ -79,3 +79,7 @@
 ## Never let live preview block final paste
 - Pattern: A live preview cleanup path can delay or prevent the final transcription queue, leaving a completed recording visible but never pasted.
 - Rule: Treat final transcription/paste as higher priority than preview cleanup; enqueue the final job immediately and stop preview work asynchronously.
+
+## Bind read-only WPF TextBox values one-way
+- Pattern: `TextBox.Text` defaults to TwoWay binding even when the control is read-only, so binding it to a getter-only view-model property can crash during layout.
+- Rule: For read-only display fields in WPF, use `Mode=OneWay` explicitly or use a non-editable display control.

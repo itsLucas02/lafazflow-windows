@@ -97,7 +97,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding SettingsFolder}" IsReadOnly="True" />
+                    <TextBox Grid.Column="0" Text="{Binding SettingsFolder, Mode=OneWay}" IsReadOnly="True" />
                     <Button Grid.Column="1" Content="Open" Click="OpenSettingsFolder_OnClick" />
                 </Grid>
 
@@ -107,7 +107,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding LogsFolder}" IsReadOnly="True" />
+                    <TextBox Grid.Column="0" Text="{Binding LogsFolder, Mode=OneWay}" IsReadOnly="True" />
                     <Button Grid.Column="1" Content="Open" Click="OpenLogsFolder_OnClick" />
                 </Grid>
 
@@ -117,7 +117,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding RecordingsFolder}" IsReadOnly="True" />
+                    <TextBox Grid.Column="0" Text="{Binding RecordingsFolder, Mode=OneWay}" IsReadOnly="True" />
                     <Button Grid.Column="1" Content="Open" Click="OpenRecordingsFolder_OnClick" />
                 </Grid>
 

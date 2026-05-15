@@ -292,3 +292,10 @@
 - Settings, logs, and recordings folders are shown with open-folder actions.
 - Focused settings tests pass, 5 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 123 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+
+## Review: Fix Settings Window Crash
+- Root cause: read-only folder display fields used default TwoWay `TextBox.Text` bindings against getter-only properties.
+- Fixed the folder fields to bind one-way and added a XAML regression test for the binding mode.
+- Focused settings tests pass, 6 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 124 tests.
+- Manual right-click smoke passed: right-clicking the actual mini recorder shell opened `LafazFlow Settings` and the app stayed running.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
