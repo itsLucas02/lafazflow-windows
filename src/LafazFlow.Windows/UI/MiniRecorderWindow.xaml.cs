@@ -10,6 +10,8 @@ namespace LafazFlow.Windows.UI;
 
 public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 {
+    private static readonly WpfColor AudioBarColor = WpfColor.FromRgb(0x17, 0x5d, 0xdc);
+
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
     private readonly WpfRectangle[] _processingDots;
@@ -122,7 +124,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             RadiusX = 1.5,
             RadiusY = 1.5,
             Margin = new Thickness(1, 0, 1, 0),
-            Fill = new SolidColorBrush(WpfColor.FromArgb(128, 255, 255, 255))
+            Fill = new SolidColorBrush(WpfColor.FromArgb(230, AudioBarColor.R, AudioBarColor.G, AudioBarColor.B))
         };
     }
 
