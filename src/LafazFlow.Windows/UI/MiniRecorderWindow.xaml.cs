@@ -234,8 +234,9 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     {
         for (var index = 0; index < _processingDots.Length; index++)
         {
-            var distance = Math.Abs(index - _viewModel.ProcessingPulseStep);
-            _processingDots[index].Opacity = distance == 0 ? 0.85 : 0.25;
+            _processingDots[index].Opacity = MiniRecorderVisualSpec.CalculateProcessingDotOpacity(
+                index,
+                _viewModel.ProcessingPulseStep);
         }
     }
 

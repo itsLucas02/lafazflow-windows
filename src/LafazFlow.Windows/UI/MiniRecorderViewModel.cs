@@ -7,9 +7,6 @@ namespace LafazFlow.Windows.UI;
 
 public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 {
-    private const double AudioSmoothingPreviousWeight = 0.6;
-    private const double AudioSmoothingNextWeight = 0.4;
-
     private RecordingState _state = RecordingState.Idle;
     private double _audioLevel;
     private bool _hasAudioSample;
@@ -56,10 +53,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         get => _audioLevel;
         set
         {
-            var clamped = Math.Clamp(value, 0, 1);
-            var smoothed = _hasAudioSample
-                ? _audioLevel * AudioSmoothingPreviousWeight + clamped * AudioSmoothingNextWeight
-                : clamped;
+            var smoothed = MiniRecorderVisualSpec.SmoothAudioLevel(_audioLevel, value, _hasAudioSample);
 
             if (Math.Abs(_audioLevel - smoothed) < double.Epsilon)
             {
@@ -168,7 +162,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
             return;
         }
 
-        _processingPulseStep = (_processingPulseStep + 1) % 5;
+        _processingPulseStep = (_processingPulseStep + 1) % MiniRecorderVisualSpec.ProcessingPulseStepCount;
         OnPropertyChanged(nameof(ProcessingPulseStep));
     }
 

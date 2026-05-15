@@ -15,19 +15,17 @@ public sealed class MiniRecorderVisualSpecTests
         Assert.Equal(56, MiniRecorderVisualSpec.LiveTranscriptPanelHeight);
     }
 
-    [Theory]
-    [InlineData(false, 4)]
-    [InlineData(true, 4)]
-    public void VisualizerBarsStayFlatWhenInactiveOrSilent(bool isRecording, double expectedHeight)
+    [Fact]
+    public void VisualizerBarsStayFlatWhenInactive()
     {
         var height = MiniRecorderVisualSpec.CalculateBarHeight(
             index: 7,
             barCount: 15,
             smoothedAudioLevel: 0,
             timeSeconds: 0,
-            isRecording: isRecording);
+            isRecording: false);
 
-        Assert.Equal(expectedHeight, height, precision: 6);
+        Assert.Equal(4, height, precision: 6);
     }
 
     [Fact]
@@ -47,6 +45,55 @@ public sealed class MiniRecorderVisualSpecTests
     public void ProcessingPulseUsesReferenceTranscribingRhythm()
     {
         Assert.Equal(180, MiniRecorderVisualSpec.TranscribingPulseMilliseconds);
+    }
+
+    [Fact]
+    public void ProcessingDotsUseTrailingCascadeOpacity()
+    {
+        Assert.Equal(0.88, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(2, 2), precision: 6);
+        Assert.Equal(0.58, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(1, 2), precision: 6);
+        Assert.Equal(0.34, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(0, 2), precision: 6);
+        Assert.Equal(0.22, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(4, 2), precision: 6);
+    }
+
+    [Fact]
+    public void QuietRecordingUsesSubtleIdleBreathingMotion()
+    {
+        var first = MiniRecorderVisualSpec.CalculateBarHeight(
+            index: 7,
+            barCount: 15,
+            smoothedAudioLevel: 0,
+            timeSeconds: 0,
+            isRecording: true);
+        var second = MiniRecorderVisualSpec.CalculateBarHeight(
+            index: 7,
+            barCount: 15,
+            smoothedAudioLevel: 0,
+            timeSeconds: 0.5,
+            isRecording: true);
+
+        Assert.InRange(first, MiniRecorderVisualSpec.BarMinHeight, MiniRecorderVisualSpec.BarMinHeight + 2);
+        Assert.InRange(second, MiniRecorderVisualSpec.BarMinHeight, MiniRecorderVisualSpec.BarMinHeight + 2);
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public void ActiveAudioBarsRiseHigherThanIdleBreathing()
+    {
+        var idle = MiniRecorderVisualSpec.CalculateBarHeight(
+            index: 7,
+            barCount: 15,
+            smoothedAudioLevel: 0,
+            timeSeconds: 0.25,
+            isRecording: true);
+        var active = MiniRecorderVisualSpec.CalculateBarHeight(
+            index: 7,
+            barCount: 15,
+            smoothedAudioLevel: 0.8,
+            timeSeconds: 0.25,
+            isRecording: true);
+
+        Assert.True(active > idle + 8);
     }
 
     [Fact]

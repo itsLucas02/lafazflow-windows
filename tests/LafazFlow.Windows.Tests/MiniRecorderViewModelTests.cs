@@ -93,14 +93,12 @@ public sealed class MiniRecorderViewModelTests
             State = RecordingState.Transcribing
         };
 
-        viewModel.AdvanceProcessingPulse();
+        for (var index = 0; index < 7; index++)
+        {
+            viewModel.AdvanceProcessingPulse();
+        }
 
-        Assert.Equal(1, viewModel.ProcessingPulseStep);
-        Assert.Equal("", viewModel.StatusText);
-
-        viewModel.AdvanceProcessingPulse();
-
-        Assert.Equal(2, viewModel.ProcessingPulseStep);
+        Assert.Equal(0, viewModel.ProcessingPulseStep);
         Assert.Equal("", viewModel.StatusText);
     }
 
@@ -144,14 +142,38 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
-    public void AudioLevelUsesReferenceStyleSmoothing()
+    public void AudioLevelUsesSlowReleaseSmoothing()
     {
         var viewModel = new MiniRecorderViewModel();
 
         viewModel.AudioLevel = 1;
         viewModel.AudioLevel = 0;
 
-        Assert.Equal(0.6, viewModel.AudioLevel, precision: 6);
+        Assert.Equal(0.78, viewModel.AudioLevel, precision: 6);
+    }
+
+    [Fact]
+    public void AudioLevelUsesFastAttackAndSlowRelease()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.AudioLevel = 0.2;
+        viewModel.AudioLevel = 1;
+        var attackLevel = viewModel.AudioLevel;
+        viewModel.AudioLevel = 0;
+
+        Assert.True(attackLevel > 0.65);
+        Assert.True(viewModel.AudioLevel > 0.35);
+    }
+
+    [Fact]
+    public void AudioLevelNoiseGateSettlesQuietInputToSilence()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.AudioLevel = 0.02;
+
+        Assert.Equal(0, viewModel.AudioLevel);
     }
 
     [Fact]
