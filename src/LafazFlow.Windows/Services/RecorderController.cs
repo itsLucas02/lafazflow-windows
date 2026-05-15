@@ -105,7 +105,7 @@ public sealed class RecorderController
         var runCancellation = _runCancellation;
 
         _audioCapture.Stop();
-        StopLivePreview();
+        _ = StopLivePreviewAsync();
         _currentAudioPath = null;
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
@@ -143,11 +143,11 @@ public sealed class RecorderController
         }
     }
 
-    private void StopLivePreview()
+    private async Task StopLivePreviewAsync()
     {
         try
         {
-            _livePreview.StopAsync().GetAwaiter().GetResult();
+            await _livePreview.StopAsync();
         }
         catch (Exception error)
         {

@@ -112,6 +112,42 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task SlowLivePreviewStopDoesNotDelayFinalTranscriptionQueue()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var previewCanStop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var preview = new FakeLiveTranscriptPreviewService { StopGate = previewCanStop.Task };
+        var transcriptionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(audioPath =>
+            {
+                transcriptionStarted.SetResult();
+                return Task.FromResult($"{audioPath} transcript");
+            }),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)123,
+            preview);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+
+        await transcriptionStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.Equal(RecordingState.Idle, viewModel.State);
+
+        previewCanStop.SetResult();
+        await preview.StoppedTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.WaitForPendingTranscriptionsAsync();
+        Assert.True(preview.Stopped);
+    }
+
+    [Fact]
     public async Task QueuedJobsPasteToTheirCapturedTargetWindowsInOrder()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -296,12 +332,17 @@ public sealed class RecorderControllerTests
     private sealed class FakeLiveTranscriptPreviewService : ILiveTranscriptPreviewService
     {
         private Action<string>? _onPartialTranscript;
+        private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool Started { get; private set; }
 
         public bool Stopped { get; private set; }
 
+        public Task StoppedTask => _stopped.Task;
+
         public bool ThrowOnStart { get; init; }
+
+        public Task? StopGate { get; init; }
 
         public List<byte[]> Chunks { get; } = [];
 
@@ -325,10 +366,15 @@ public sealed class RecorderControllerTests
             Chunks.Add(audioChunk);
         }
 
-        public Task StopAsync()
+        public async Task StopAsync()
         {
+            if (StopGate is not null)
+            {
+                await StopGate;
+            }
+
             Stopped = true;
-            return Task.CompletedTask;
+            _stopped.TrySetResult();
         }
 
         public void EmitPartial(string text)

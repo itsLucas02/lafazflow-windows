@@ -75,3 +75,7 @@
 ## Capture repeated ASR phonetics exactly
 - Pattern: Uncommon coding terms can produce several stable phonetic outputs from the fast local model even when the owner tries multiple pronunciations.
 - Rule: Add regression tests from the owner’s actual observed transcript variants and correct them offline instead of assuming one pronunciation will solve it.
+
+## Never let live preview block final paste
+- Pattern: A live preview cleanup path can delay or prevent the final transcription queue, leaving a completed recording visible but never pasted.
+- Rule: Treat final transcription/paste as higher priority than preview cleanup; enqueue the final job immediately and stop preview work asynchronously.
