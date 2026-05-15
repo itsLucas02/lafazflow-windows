@@ -220,3 +220,15 @@
 - Focused `DoubleShiftDetectorTests` and `VocabularyCorrectionServiceTests` pass, 29 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 70 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
 - Trademark scan found no current tracked-file matches.
+
+## Plan: Expand Shadcn Phonetic Vocabulary
+- [x] Add failing tests for the latest observed `shadcn` phonetic outputs.
+- [x] Add deterministic offline corrections for those variants.
+- [x] Verify with focused tests, full build/test, public-readiness scan, trademark scan, then commit and push.
+
+## Review: Expand Shadcn Phonetic Vocabulary
+- Added offline corrections for the latest observed `shadcn` variants: `Shit, CN`, `Shut the end`, `Sh*t-C-N`, `Shut-see-in`, `Shat-C-N`, and `Shetxian`.
+- Focused `VocabularyCorrectionServiceTests` pass, 29 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 76 tests.
+- App launch smoke passed after stopping the previous running LafazFlow process that locked the Windows executable.
+- Public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+- Trademark scan found no current tracked-file matches.

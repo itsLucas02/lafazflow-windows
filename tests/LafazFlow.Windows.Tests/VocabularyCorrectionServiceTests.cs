@@ -80,6 +80,12 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Use Chet's the end components.", "Use shadcn components.")]
     [InlineData("Install Shut CN UI.", "Install shadcn UI.")]
     [InlineData("Open Sh*t's the end docs.", "Open shadcn docs.")]
+    [InlineData("Install Shit, CN UI.", "Install shadcn UI.")]
+    [InlineData("Open Shut the end docs.", "Open shadcn docs.")]
+    [InlineData("Use Sh*t-C-N components.", "Use shadcn components.")]
+    [InlineData("Install Shut-see-in UI.", "Install shadcn UI.")]
+    [InlineData("Use Shat-C-N components.", "Use shadcn components.")]
+    [InlineData("Open Shetxian docs.", "Open shadcn docs.")]
     public void ApplyDefaultsFixesShadcnVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);

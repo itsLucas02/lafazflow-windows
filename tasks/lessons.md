@@ -71,3 +71,7 @@
 ## Make hotkeys forgiving under real dictation timing
 - Pattern: A double-tap window that works while starting may feel unreliable when stopping after speech, especially if the second tap is slightly slower or a key-up event is missed.
 - Rule: Prefer a forgiving double-tap window and stale key-down recovery over a brittle modifier sequence.
+
+## Capture repeated ASR phonetics exactly
+- Pattern: Uncommon coding terms can produce several stable phonetic outputs from the fast local model even when the owner tries multiple pronunciations.
+- Rule: Add regression tests from the owner’s actual observed transcript variants and correct them offline instead of assuming one pronunciation will solve it.
