@@ -97,6 +97,31 @@ public sealed class MiniRecorderVisualSpecTests
     }
 
     [Fact]
+    public void AudioBarColorUsesAquaPaletteByHeight()
+    {
+        var shortColor = MiniRecorderVisualSpec.CalculateAudioBarColor(MiniRecorderVisualSpec.BarMinHeight);
+        var tallColor = MiniRecorderVisualSpec.CalculateAudioBarColor(MiniRecorderVisualSpec.BarMaxHeight);
+
+        Assert.Equal(7, shortColor.Red);
+        Assert.Equal(190, shortColor.Green);
+        Assert.Equal(184, shortColor.Blue);
+        Assert.Equal(196, tallColor.Red);
+        Assert.Equal(255, tallColor.Green);
+        Assert.Equal(249, tallColor.Blue);
+    }
+
+    [Fact]
+    public void AudioBarColorBrightensAsBarsGrow()
+    {
+        var shortColor = MiniRecorderVisualSpec.CalculateAudioBarColor(MiniRecorderVisualSpec.BarMinHeight + 1);
+        var tallColor = MiniRecorderVisualSpec.CalculateAudioBarColor(MiniRecorderVisualSpec.BarMaxHeight - 1);
+
+        Assert.True(tallColor.Red > shortColor.Red);
+        Assert.True(tallColor.Green > shortColor.Green);
+        Assert.True(tallColor.Blue > shortColor.Blue);
+    }
+
+    [Fact]
     public void WindowEntranceAndExitUseShortReferenceStyleMotion()
     {
         Assert.Equal(180, MiniRecorderVisualSpec.WindowEntranceMilliseconds);

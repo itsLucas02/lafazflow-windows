@@ -10,8 +10,6 @@ namespace LafazFlow.Windows.UI;
 
 public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 {
-    private static readonly WpfColor AudioBarColor = WpfColor.FromRgb(0x17, 0x5d, 0xdc);
-
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
     private readonly WpfRectangle[] _processingDots;
@@ -124,8 +122,13 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             RadiusX = 1.5,
             RadiusY = 1.5,
             Margin = new Thickness(1, 0, 1, 0),
-            Fill = new SolidColorBrush(WpfColor.FromArgb(230, AudioBarColor.R, AudioBarColor.G, AudioBarColor.B))
+            Fill = new SolidColorBrush(ToWpfColor(MiniRecorderVisualSpec.CalculateAudioBarColor(4)))
         };
+    }
+
+    private static WpfColor ToWpfColor(AudioBarColor color)
+    {
+        return WpfColor.FromArgb(230, color.Red, color.Green, color.Blue);
     }
 
     private static WpfRectangle CreateProcessingDot()
@@ -166,12 +169,17 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 
         for (var index = 0; index < _bars.Length; index++)
         {
-            _bars[index].Height = MiniRecorderVisualSpec.CalculateBarHeight(
+            var height = MiniRecorderVisualSpec.CalculateBarHeight(
                 index,
                 _bars.Length,
                 _viewModel.AudioLevel,
                 time,
                 _viewModel.IsRecording);
+            _bars[index].Height = height;
+            if (_bars[index].Fill is SolidColorBrush brush)
+            {
+                brush.Color = ToWpfColor(MiniRecorderVisualSpec.CalculateAudioBarColor(height));
+            }
         }
     }
 

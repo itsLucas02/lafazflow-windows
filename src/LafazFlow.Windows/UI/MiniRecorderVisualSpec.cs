@@ -2,6 +2,15 @@ namespace LafazFlow.Windows.UI;
 
 public static class MiniRecorderVisualSpec
 {
+    private static readonly AudioBarColor[] AudioBarPalette =
+    [
+        new(0x07, 0xbe, 0xb8),
+        new(0x3d, 0xcc, 0xc7),
+        new(0x68, 0xd8, 0xd6),
+        new(0x9c, 0xea, 0xef),
+        new(0xc4, 0xff, 0xf9)
+    ];
+
     public const double CompactWidth = 184;
     public const double ExpandedWidth = 300;
     public const double ControlBarHeight = 40;
@@ -84,5 +93,33 @@ public static class MiniRecorderVisualSpec
             2 => 0.34,
             _ => 0.22
         };
+    }
+
+    public static AudioBarColor CalculateAudioBarColor(double barHeight)
+    {
+        var normalized = Math.Clamp((barHeight - BarMinHeight) / (BarMaxHeight - BarMinHeight), 0, 1);
+        var scaled = normalized * (AudioBarPalette.Length - 1);
+        var lowerIndex = (int)Math.Floor(scaled);
+        var upperIndex = Math.Min(lowerIndex + 1, AudioBarPalette.Length - 1);
+        var amount = scaled - lowerIndex;
+
+        return AudioBarColor.Lerp(AudioBarPalette[lowerIndex], AudioBarPalette[upperIndex], amount);
+    }
+}
+
+public readonly record struct AudioBarColor(byte Red, byte Green, byte Blue)
+{
+    public static AudioBarColor Lerp(AudioBarColor start, AudioBarColor end, double amount)
+    {
+        var clamped = Math.Clamp(amount, 0, 1);
+        return new AudioBarColor(
+            Interpolate(start.Red, end.Red, clamped),
+            Interpolate(start.Green, end.Green, clamped),
+            Interpolate(start.Blue, end.Blue, clamped));
+    }
+
+    private static byte Interpolate(byte start, byte end, double amount)
+    {
+        return (byte)Math.Round(start + (end - start) * amount);
     }
 }
