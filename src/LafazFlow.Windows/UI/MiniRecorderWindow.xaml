@@ -29,7 +29,8 @@
                 Effect="{StaticResource RecorderShadow}"
                 VerticalAlignment="Bottom"
                 HorizontalAlignment="Center"
-                MouseLeftButtonDown="RecorderShell_OnMouseLeftButtonDown">
+                MouseLeftButtonDown="RecorderShell_OnMouseLeftButtonDown"
+                MouseRightButtonUp="RecorderShell_OnMouseRightButtonUp">
             <Grid ClipToBounds="True">
                 <Grid.RowDefinitions>
                     <RowDefinition x:Name="TranscriptRow" Height="0" />

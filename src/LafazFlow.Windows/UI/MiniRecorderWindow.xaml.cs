@@ -299,4 +299,10 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     {
         DragMove();
     }
+
+    private void RecorderShell_OnMouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _viewModel.RequestSettings();
+        e.Handled = true;
+    }
 }

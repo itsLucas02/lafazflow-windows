@@ -17,6 +17,8 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    public event Action? SettingsRequested;
+
     public RecordingState State
     {
         get => _state;
@@ -177,6 +179,11 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(ShowProcessingIndicator));
         OnPropertyChanged(nameof(HasStatusText));
         OnPropertyChanged(nameof(ProcessingPulseStep));
+    }
+
+    public void RequestSettings()
+    {
+        SettingsRequested?.Invoke();
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

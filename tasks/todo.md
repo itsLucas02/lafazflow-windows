@@ -277,3 +277,18 @@
 - Focused vocabulary/settings tests pass, 39 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 97 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Settings And Model UX
+- [x] Add a right-click settings entry point to the mini recorder shell.
+- [x] Add a settings window for Whisper CLI path, model path, threads, paste behavior, preview, vocabulary, and diagnostics toggles.
+- [x] Validate settings before save and keep invalid changes out of persisted config.
+- [x] Show local settings, logs, and recordings folders with open-folder actions.
+- [x] Verify with focused tests, full build/test, public-readiness scan, launch smoke, then commit and push.
+
+## Review: Settings And Model UX
+- Added a right-click settings entry point on the floating mini recorder.
+- Added a settings window for local Whisper paths, model path, threads, preview/vocabulary/paste behavior, clipboard restore delay, and diagnostics retention.
+- Invalid Whisper CLI/model paths are rejected before saving, and numeric settings are clamped to safe local values.
+- Settings, logs, and recordings folders are shown with open-folder actions.
+- Focused settings tests pass, 5 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 123 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.

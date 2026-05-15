@@ -1,0 +1,145 @@
+<Window x:Class="LafazFlow.Windows.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LafazFlow Settings"
+        Width="560"
+        Height="640"
+        MinWidth="520"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="#101114">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E8EAED" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,4,8,10" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="Background" Value="#191B20" />
+            <Setter Property="Foreground" Value="#F8F9FA" />
+            <Setter Property="BorderBrush" Value="#30343B" />
+            <Setter Property="CaretBrush" Value="#F8F9FA" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="Padding" Value="12,4" />
+            <Setter Property="Margin" Value="0,4,0,10" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#E8EAED" />
+            <Setter Property="Margin" Value="0,4,0,8" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="LafazFlow Settings"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="White" />
+            <TextBlock Text="Changes apply to the next dictation."
+                       Foreground="#9AA0A6"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Whisper CLI" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding WhisperCliPath, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse" Click="BrowseWhisperCli_OnClick" />
+                </Grid>
+
+                <TextBlock Text="Model" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse" Click="BrowseModel_OnClick" />
+                </Grid>
+
+                <TextBlock Text="Whisper Threads" FontWeight="SemiBold" />
+                <TextBox Text="{Binding WhisperThreads, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="Behavior" FontWeight="SemiBold" Margin="0,8,0,4" />
+                <CheckBox Content="Show live transcript preview"
+                          IsChecked="{Binding ShowLiveTranscriptPreview}" />
+                <CheckBox Content="Apply vocabulary corrections"
+                          IsChecked="{Binding EnableVocabularyCorrections}" />
+                <CheckBox Content="Append trailing space after paste"
+                          IsChecked="{Binding AppendTrailingSpace}" />
+                <CheckBox Content="Restore clipboard after paste"
+                          IsChecked="{Binding RestoreClipboardAfterPaste}" />
+
+                <TextBlock Text="Clipboard Restore Delay (ms)" FontWeight="SemiBold" />
+                <TextBox Text="{Binding ClipboardRestoreDelayMs, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="Diagnostics" FontWeight="SemiBold" Margin="0,8,0,4" />
+                <CheckBox Content="Keep recordings for diagnostics"
+                          IsChecked="{Binding KeepRecordingsForDiagnostics}" />
+
+                <TextBlock Text="Settings Folder" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding SettingsFolder}" IsReadOnly="True" />
+                    <Button Grid.Column="1" Content="Open" Click="OpenSettingsFolder_OnClick" />
+                </Grid>
+
+                <TextBlock Text="Logs Folder" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding LogsFolder}" IsReadOnly="True" />
+                    <Button Grid.Column="1" Content="Open" Click="OpenLogsFolder_OnClick" />
+                </Grid>
+
+                <TextBlock Text="Recordings Folder" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding RecordingsFolder}" IsReadOnly="True" />
+                    <Button Grid.Column="1" Content="Open" Click="OpenRecordingsFolder_OnClick" />
+                </Grid>
+
+                <TextBlock Text="{Binding ValidationMessage}"
+                           Foreground="#FFB4AB"
+                           TextWrapping="Wrap"
+                           Margin="0,6,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Cancel"
+                    Width="88"
+                    Margin="0,0,8,0"
+                    Click="Cancel_OnClick" />
+            <Button Content="Save"
+                    Width="88"
+                    Margin="0"
+                    Click="Save_OnClick" />
+        </StackPanel>
+    </Grid>
+</Window>

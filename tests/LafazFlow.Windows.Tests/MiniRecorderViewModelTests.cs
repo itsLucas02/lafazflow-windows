@@ -220,4 +220,16 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.Equal(0, viewModel.AudioLevel);
     }
+
+    [Fact]
+    public void SettingsRequestCanBeRaisedFromRecorder()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var raised = false;
+        viewModel.SettingsRequested += () => raised = true;
+
+        viewModel.RequestSettings();
+
+        Assert.True(raised);
+    }
 }

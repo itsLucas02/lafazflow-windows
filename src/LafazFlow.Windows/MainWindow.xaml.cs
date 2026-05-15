@@ -11,7 +11,9 @@ public partial class MainWindow : Window
     private readonly MiniRecorderWindow _miniRecorderWindow;
     private readonly AudioCaptureService _audioCaptureService = new();
     private readonly DoubleShiftHotkeyService _hotkeyService = new();
+    private readonly SettingsStore _settingsStore = new();
     private readonly RecorderController _recorderController;
+    private SettingsWindow? _settingsWindow;
 
     public MainWindow()
     {
@@ -23,8 +25,9 @@ public partial class MainWindow : Window
             _audioCaptureService,
             new WhisperCliTranscriptionService(),
             new ClipboardPasteService(),
-            new SettingsStore(),
+            _settingsStore,
             livePreview: new RollingWhisperLiveTranscriptPreviewService());
+        _miniRecorderViewModel.SettingsRequested += OnSettingsRequested;
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
@@ -41,13 +44,32 @@ public partial class MainWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _hotkeyService.DoubleShiftPressed -= OnDoubleShiftPressed;
+        _miniRecorderViewModel.SettingsRequested -= OnSettingsRequested;
         _hotkeyService.Dispose();
         _audioCaptureService.Dispose();
+        _settingsWindow?.Close();
         _miniRecorderWindow.Close();
     }
 
     private void OnDoubleShiftPressed()
     {
         _ = Dispatcher.BeginInvoke(async () => await _recorderController.ToggleAsync());
+    }
+
+    private void OnSettingsRequested()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (_settingsWindow is { IsVisible: true })
+            {
+                _settingsWindow.Activate();
+                return;
+            }
+
+            _settingsWindow = new SettingsWindow(SettingsViewModel.Load(_settingsStore));
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+            _settingsWindow.Show();
+            _settingsWindow.Activate();
+        });
     }
 }
