@@ -7,8 +7,13 @@ namespace LafazFlow.Windows.UI;
 
 public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 {
+    private const double AudioSmoothingPreviousWeight = 0.6;
+    private const double AudioSmoothingNextWeight = 0.4;
+
     private RecordingState _state = RecordingState.Idle;
     private double _audioLevel;
+    private bool _hasAudioSample;
+    private string _partialTranscript = "";
     private string _statusText = "";
     private int _processingPulseStep;
     private int _pendingTranscriptionCount;
@@ -27,13 +32,22 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
             _state = value;
             _processingPulseStep = 0;
+            if (value != RecordingState.Recording)
+            {
+                PartialTranscript = "";
+                _audioLevel = 0;
+                _hasAudioSample = false;
+            }
+
             StatusText = value == RecordingState.Error ? "Error" : "";
             OnPropertyChanged();
+            OnPropertyChanged(nameof(AudioLevel));
             OnPropertyChanged(nameof(IsRecording));
             OnPropertyChanged(nameof(IsProcessing));
             OnPropertyChanged(nameof(ShowProcessingIndicator));
             OnPropertyChanged(nameof(HasStatusText));
             OnPropertyChanged(nameof(ProcessingPulseStep));
+            OnPropertyChanged(nameof(HasLiveTranscript));
         }
     }
 
@@ -43,13 +57,35 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         set
         {
             var clamped = Math.Clamp(value, 0, 1);
-            if (Math.Abs(_audioLevel - clamped) < double.Epsilon)
+            var smoothed = _hasAudioSample
+                ? _audioLevel * AudioSmoothingPreviousWeight + clamped * AudioSmoothingNextWeight
+                : clamped;
+
+            if (Math.Abs(_audioLevel - smoothed) < double.Epsilon)
             {
                 return;
             }
 
-            _audioLevel = clamped;
+            _hasAudioSample = true;
+            _audioLevel = smoothed;
             OnPropertyChanged();
+        }
+    }
+
+    public string PartialTranscript
+    {
+        get => _partialTranscript;
+        set
+        {
+            var next = value.Trim();
+            if (_partialTranscript == next)
+            {
+                return;
+            }
+
+            _partialTranscript = next;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasLiveTranscript));
         }
     }
 
@@ -78,6 +114,8 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     public int ProcessingPulseStep => _processingPulseStep;
 
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
+
+    public bool HasLiveTranscript => IsRecording && !string.IsNullOrWhiteSpace(PartialTranscript);
 
     public int PendingTranscriptionCount
     {

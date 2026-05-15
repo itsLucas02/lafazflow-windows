@@ -142,4 +142,60 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.Equal(expected, viewModel.AudioLevel);
     }
+
+    [Fact]
+    public void AudioLevelUsesReferenceStyleSmoothing()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.AudioLevel = 1;
+        viewModel.AudioLevel = 0;
+
+        Assert.Equal(0.6, viewModel.AudioLevel, precision: 6);
+    }
+
+    [Fact]
+    public void PartialTranscriptOnlyShowsLiveTextWhileRecording()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            PartialTranscript = "Testing one two.",
+            State = RecordingState.Idle
+        };
+
+        Assert.False(viewModel.HasLiveTranscript);
+
+        viewModel.State = RecordingState.Recording;
+
+        Assert.True(viewModel.HasLiveTranscript);
+    }
+
+    [Fact]
+    public void PartialTranscriptClearsWhenReturningToIdle()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            State = RecordingState.Recording,
+            PartialTranscript = "Live words"
+        };
+
+        viewModel.State = RecordingState.Idle;
+
+        Assert.Equal("", viewModel.PartialTranscript);
+        Assert.False(viewModel.HasLiveTranscript);
+    }
+
+    [Fact]
+    public void AudioLevelResetsWhenRecordingStops()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            State = RecordingState.Recording,
+            AudioLevel = 1
+        };
+
+        viewModel.State = RecordingState.Idle;
+
+        Assert.Equal(0, viewModel.AudioLevel);
+    }
 }

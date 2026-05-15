@@ -248,3 +248,19 @@
 - Focused `SoundCueServiceTests` pass, 7 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 83 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
 - Attribution scan now intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Bottom Mini Recorder UI Parity
+- [x] Add tests for smoothed audio levels and live transcript readiness.
+- [x] Add tests for recorder layout constants, visualizer height math, and processing rhythm.
+- [x] Implement EMA audio smoothing and partial transcript state.
+- [x] Add testable visual constants and visualizer calculations matching the macOS reference workflow.
+- [x] Polish WPF shell material, side-label opacity, fade transitions, and processing dot timing.
+- [x] Verify with focused tests, full build/test, launch smoke, public-readiness scan, then commit and push.
+
+## Review: Bottom Mini Recorder UI Parity
+- Added reference-style audio meter smoothing, reset-on-stop behavior, and live transcript readiness state without faking live text.
+- Added testable mini recorder visual constants and visualizer height calculation matching the bottom mini recorder reference dimensions and 15-bar behavior.
+- Polished the WPF shell with black-glass styling, subtle side labels, softer border/shadow, 200 ms state fades, 180 ms processing dot rhythm, and prepared 184-to-300 px expansion for future live text.
+- Focused mini recorder UI tests pass, 21 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 92 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

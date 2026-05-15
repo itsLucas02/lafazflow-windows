@@ -11,89 +11,104 @@
         Topmost="True"
         ResizeMode="NoResize">
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <DropShadowEffect x:Key="RecorderShadow"
+                          BlurRadius="18"
+                          ShadowDepth="4"
+                          Direction="270"
+                          Opacity="0.38"
+                          Color="#000000" />
     </Window.Resources>
     <Grid>
-        <Border Width="260"
-                MinHeight="28"
-                Margin="0,0,0,48"
-                Padding="12,6"
-                CornerRadius="8"
-                Background="#DD111111"
-                VerticalAlignment="Bottom"
-                HorizontalAlignment="Center"
-                Visibility="{Binding HasRecentTranscripts, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <TextBlock Text="{Binding LastTranscriptPreview}"
-                       Foreground="#CCFFFFFF"
-                       FontSize="10"
-                       TextTrimming="CharacterEllipsis"
-                       MaxWidth="236" />
-        </Border>
         <Border x:Name="RecorderShell"
                 Width="184"
                 Height="40"
                 CornerRadius="20"
-                Background="Black"
+                Background="#F0000000"
+                BorderBrush="#18FFFFFF"
+                BorderThickness="0.5"
+                Effect="{StaticResource RecorderShadow}"
                 VerticalAlignment="Bottom"
                 HorizontalAlignment="Center"
                 MouseLeftButtonDown="RecorderShell_OnMouseLeftButtonDown">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="36" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="36" />
-                </Grid.ColumnDefinitions>
+            <Grid ClipToBounds="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition x:Name="TranscriptRow" Height="0" />
+                    <RowDefinition Height="40" />
+                </Grid.RowDefinitions>
 
-                <TextBlock Grid.Column="0"
-                           Text="OK"
-                           Foreground="#99FFFFFF"
-                           FontSize="10"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                <Border Grid.Row="0"
+                        x:Name="LiveTranscriptPanel"
+                        Padding="16,6"
+                        BorderBrush="#26FFFFFF"
+                        BorderThickness="0,0,0,0.5"
+                        Opacity="0">
+                    <TextBlock Text="{Binding PartialTranscript}"
+                               Foreground="#CCFFFFFF"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis"
+                               MaxHeight="44" />
+                </Border>
 
-                <ItemsControl Grid.Column="1"
-                              x:Name="Visualizer"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="36" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="36" />
+                    </Grid.ColumnDefinitions>
 
-                <ItemsControl Grid.Column="1"
-                              x:Name="ProcessingDots"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"
-                              Visibility="Collapsed">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                    <TextBlock Grid.Column="0"
+                               Text="OK"
+                               Foreground="#7FFFFFFF"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
 
-                <TextBlock Grid.Column="1"
-                           x:Name="StatusTextBlock"
-                           Text="{Binding StatusText}"
-                           Foreground="White"
-                           FontSize="11"
-                           FontWeight="Medium"
-                           MinWidth="90"
-                           TextAlignment="Center"
-                           TextTrimming="CharacterEllipsis"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                    <ItemsControl Grid.Column="1"
+                                  x:Name="Visualizer"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
 
-                <TextBlock Grid.Column="2"
-                           Text="AI"
-                           Foreground="#99FFFFFF"
-                           FontSize="10"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                    <ItemsControl Grid.Column="1"
+                                  x:Name="ProcessingDots"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Opacity="0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <TextBlock Grid.Column="1"
+                               x:Name="StatusTextBlock"
+                               Text="{Binding StatusText}"
+                               Foreground="White"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               MinWidth="90"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Opacity="0" />
+
+                    <TextBlock Grid.Column="2"
+                               Text="AI"
+                               Foreground="#7FFFFFFF"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Grid>
             </Grid>
         </Border>
     </Grid>
