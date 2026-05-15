@@ -67,3 +67,7 @@
 ## Avoid third-party trademark references in public materials
 - Pattern: Public README, docs, task notes, tests, and script names can accidentally preserve reference-product names.
 - Rule: Use neutral wording such as `macOS reference workflow` and do not add vocabulary corrections that emit third-party product names unless explicitly approved for public use.
+
+## Make hotkeys forgiving under real dictation timing
+- Pattern: A double-tap window that works while starting may feel unreliable when stopping after speech, especially if the second tap is slightly slower or a key-up event is missed.
+- Rule: Prefer a forgiving double-tap window and stale key-down recovery over a brittle modifier sequence.

@@ -13,7 +13,7 @@ public sealed class DoubleShiftHotkeyService : IDisposable
     private const int VkShift = 0x10;
     private const int VkLeftShift = 0xA0;
     private const int VkRightShift = 0xA1;
-    private static readonly TimeSpan DoublePressWindow = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan DoublePressWindow = TimeSpan.FromMilliseconds(500);
 
     private readonly LowLevelKeyboardProc _proc;
     private readonly DoubleShiftDetector _detector = new(DoublePressWindow);

@@ -77,6 +77,9 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Use Chat CN components.", "Use shadcn components.")]
     [InlineData("Install ChatCN UI.", "Install shadcn UI.")]
     [InlineData("Open shad cn docs.", "Open shadcn docs.")]
+    [InlineData("Use Chet's the end components.", "Use shadcn components.")]
+    [InlineData("Install Shut CN UI.", "Install shadcn UI.")]
+    [InlineData("Open Sh*t's the end docs.", "Open shadcn docs.")]
     public void ApplyDefaultsFixesShadcnVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);

@@ -27,6 +27,18 @@ public sealed class DoubleShiftDetectorTests
     }
 
     [Fact]
+    public void SecondKeyDownInsideRelaxedWindowTriggers()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(500));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        detector.RegisterKeyUp();
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddMilliseconds(450), isRepeat: false);
+
+        Assert.True(triggered);
+    }
+
+    [Fact]
     public void KeyRepeatDoesNotTrigger()
     {
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
@@ -47,5 +59,18 @@ public sealed class DoubleShiftDetectorTests
         var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddMilliseconds(500), isRepeat: false);
 
         Assert.False(triggered);
+    }
+
+    [Fact]
+    public void StaleDownStateDoesNotBlockFutureDoubleShift()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(500));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddSeconds(2), isRepeat: false);
+        detector.RegisterKeyUp();
+        var triggered = detector.RegisterKeyDown(DateTimeOffset.UnixEpoch.AddSeconds(2).AddMilliseconds(300), isRepeat: false);
+
+        Assert.True(triggered);
     }
 }

@@ -206,3 +206,17 @@
 - Removed the app-name vocabulary correction that produced the trademarked output.
 - Focused `VocabularyCorrectionServiceTests` pass, 20 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 65 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Trademark scan found no current tracked-file matches.
+
+## Plan: Improve Shadcn Dictation And Stop Hotkey Reliability
+- [x] Add failing tests for newly observed `shadcn` misrecognitions.
+- [x] Add failing tests for a more forgiving double Shift stop gesture and stale key-down recovery.
+- [x] Add offline `shadcn` corrections for the newly observed phrases.
+- [x] Widen double Shift timing and recover if a Shift key-up is missed.
+- [x] Verify with focused tests, full build/test, launch smoke, public-readiness scan, trademark scan, then commit and push.
+
+## Review: Improve Shadcn Dictation And Stop Hotkey Reliability
+- Added offline corrections for the newly observed `shadcn` variants: `Chet's the end`, `Shut CN`, and `Sh*t's the end`.
+- Increased double Shift detection from 350 ms to 500 ms and added stale key-down recovery so a missed Shift key-up does not block the next double-tap.
+- Focused `DoubleShiftDetectorTests` and `VocabularyCorrectionServiceTests` pass, 29 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 70 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+- Trademark scan found no current tracked-file matches.
