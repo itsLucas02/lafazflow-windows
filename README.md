@@ -1,6 +1,6 @@
 # LafazFlow Windows
 
-Windows-native LafazFlow client, built from the macOS LafazFlow/VoiceInk experience as a reference.
+Windows-native LafazFlow client, built from the existing macOS LafazFlow workflow as a reference.
 
 The first milestone is local and offline:
 
@@ -27,7 +27,7 @@ The app auto-detects local Whisper models in `C:\Models\whisper` and prefers the
 To install the optional quantized large turbo quality model:
 
 ```powershell
-.\scripts\install-fast-voiceink-model.ps1
+.\scripts\install-fast-dictation-model.ps1
 ```
 
 Model files are ignored by git and must not be committed.

@@ -1,7 +1,7 @@
 # LafazFlow Windows MVP Design
 
 ## Purpose
-Build a Windows-native LafazFlow client that recreates the daily macOS VoiceInk/LafazFlow dictation loop as closely as practical while staying local, offline, and privacy-first by default.
+Build a Windows-native LafazFlow client that recreates the daily macOS the macOS reference app/LafazFlow dictation loop as closely as practical while staying local, offline, and privacy-first by default.
 
 The first release is not a full feature clone. It is the smallest usable Windows workflow that preserves the owner's muscle memory:
 

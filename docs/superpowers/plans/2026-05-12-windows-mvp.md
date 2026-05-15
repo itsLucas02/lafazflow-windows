@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first Windows-native LafazFlow offline dictation loop with a VoiceInk-like floating recorder, local WAV recording, local `whisper-cli.exe` transcription, and paste-to-active-window behavior.
+**Goal:** Build the first Windows-native LafazFlow offline dictation loop with a compact floating recorder, local WAV recording, local `whisper-cli.exe` transcription, and paste-to-active-window behavior.
 
 **Architecture:** Create a .NET 9 WPF app with small services around double Shift detection, recording, transcription, clipboard paste, and local JSON settings. The first Whisper integration uses a process bridge to a user-configured `whisper-cli.exe` and `.bin` model path so the offline flow can be verified before native bindings.
 
@@ -108,7 +108,7 @@ Create `README.md` with:
 ```markdown
 # LafazFlow Windows
 
-Windows-native LafazFlow client, built from the macOS LafazFlow/VoiceInk experience as a reference.
+Windows-native LafazFlow client, built from the existing macOS LafazFlow workflow as a reference.
 
 The first milestone is local and offline:
 

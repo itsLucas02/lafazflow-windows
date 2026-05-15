@@ -28,8 +28,8 @@
 - Pattern: `SendInput` can silently fail if the managed `INPUT` struct is smaller than the native Win32 structure, even when clipboard transcription succeeds.
 - Rule: Add regression tests for native struct sizes and check `SendInput` return values instead of ignoring them.
 
-## Optimize for VoiceInk-like latency before maximum accuracy
-- Pattern: Full `large-v3-turbo` made Windows dictation feel much slower than VoiceInk, even though it stayed local and offline.
+## Optimize for rapid dictation latency before maximum accuracy
+- Pattern: Full `large-v3-turbo` made Windows dictation feel much slower than the macOS reference app, even though it stayed local and offline.
 - Rule: On this Windows `whisper.cpp` setup, prefer `ggml-base.en.bin` for default dictation latency and use vocabulary correction for technical terms; Q5 is optional quality mode, not the default.
 
 ## Keep brand/product names in local vocabulary
@@ -37,7 +37,7 @@
 - Rule: Add high-value owner/product vocabulary variants to deterministic offline corrections with regression tests.
 
 ## Do not use Windows notification sounds as app cues
-- Pattern: Windows system sounds like `Hand`, `Exclamation`, and `Asterisk` feel like OS error/notification alerts, not soft VoiceInk-style feedback.
+- Pattern: Windows system sounds like `Hand`, `Exclamation`, and `Asterisk` feel like OS error/notification alerts, not soft the macOS reference app-style feedback.
 - Rule: Keep app cues muted until proper gentle bundled sounds are designed or sourced.
 
 ## Keep the recorder shell layout fixed
@@ -53,7 +53,7 @@
 - Rule: Correct `that's` to `test` only in testing-dictation patterns; do not globally rewrite ordinary `that's` sentences.
 
 ## Prefer rapid queueing over blocking the recorder
-- Pattern: Awaiting the full transcription and paste path before returning to idle makes rapid dictation feel slower than VoiceInk.
+- Pattern: Awaiting the full transcription and paste path before returning to idle makes rapid dictation feel slower than the macOS reference app.
 - Rule: Stop recording quickly, enqueue the audio for sequential background processing, and allow the next recording while previous jobs are still transcribing.
 
 ## Keep clipboard calls on the STA UI thread
@@ -63,3 +63,7 @@
 ## Keep coding homophones constrained
 - Pattern: Coding terms such as `commit` and `shadcn` can be misheard as normal speech like `come in`, `comes in`, or `Chat CN`.
 - Rule: Add deterministic vocabulary for coding terms, but avoid globally rewriting ordinary English phrases when the phrase has common non-coding meaning.
+
+## Avoid third-party trademark references in public materials
+- Pattern: Public README, docs, task notes, tests, and script names can accidentally preserve reference-product names.
+- Rule: Use neutral wording such as `macOS reference workflow` and do not add vocabulary corrections that emit third-party product names unless explicitly approved for public use.

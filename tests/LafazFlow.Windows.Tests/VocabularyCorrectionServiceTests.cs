@@ -14,17 +14,6 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
-    [InlineData("voice ink")]
-    [InlineData("voicing")]
-    [InlineData("voice in")]
-    public void ApplyDefaultsFixesVoiceInkVariants(string variant)
-    {
-        var corrected = VocabularyCorrectionService.ApplyDefaults($"Open {variant}.");
-
-        Assert.Equal("Open VoiceInk.", corrected);
-    }
-
-    [Theory]
     [InlineData("medibrief")]
     [InlineData("Mad brave")]
     [InlineData("medi brave")]
@@ -59,9 +48,9 @@ public sealed class VocabularyCorrectionServiceTests
     [Fact]
     public void ApplyDefaultsFixesRapidnessMisrecognition()
     {
-        var corrected = VocabularyCorrectionService.ApplyDefaults("VoiceInk rapidness, not repeteness.");
+        var corrected = VocabularyCorrectionService.ApplyDefaults("LafazFlow rapidness, not repeteness.");
 
-        Assert.Equal("VoiceInk rapidness, not rapidness.", corrected);
+        Assert.Equal("LafazFlow rapidness, not rapidness.", corrected);
     }
 
     [Theory]

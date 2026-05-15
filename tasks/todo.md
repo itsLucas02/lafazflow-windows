@@ -65,8 +65,8 @@
 - SendInput interop fixed and now throws a visible error if key dispatch fails.
 - SendInput interop verification: targeted native structure test pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
 - Public-readiness scan after SendInput interop fix found no credentials. Matches are documentation references and `CancellationToken`.
-- Model latency correction: full `ggml-large-v3-turbo.bin` was too slow for VoiceInk-like dictation, so default priority now prefers `ggml-large-v3-turbo-q5_0.bin`.
-- Added `scripts/install-fast-voiceink-model.ps1` for the preferred 547 MiB quantized model.
+- Model latency correction: full `ggml-large-v3-turbo.bin` was too slow for rapid dictation, so default priority now prefers `ggml-large-v3-turbo-q5_0.bin`.
+- Added `scripts/install-fast-dictation-model.ps1` for the preferred 547 MiB quantized model.
 - Installed `C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin` locally for the owner.
 - Q5 model priority verification: targeted settings tests pass; `dotnet build` pass; full `dotnet test` pass, 30 tests.
 - App launch smoke after Q5 priority change: pass; app started and was stopped cleanly.
@@ -77,14 +77,14 @@
 - Added offline vocabulary corrections for `MediBrave` variants: `Maddy Breath`, `medibrief`, `Mad brave`, `medi brave`, and `maddy brave`.
 - MediBrave vocabulary regression tests pass, 7 targeted tests.
 
-## Plan: VoiceInk Parity UX Slice 1
+## Plan: the macOS reference app Parity UX Slice 1
 - [x] Add view-model support for a small recent transcript queue.
 - [x] Show the most recent completed transcript in the mini recorder shell.
 - [x] Add a processing pulse so transcribing feels alive instead of static.
 - [x] Keep transcription/model/paste behavior unchanged.
 - [x] Verify with focused view-model tests, full build/test, launch smoke, and public-readiness scan.
 
-## Review: VoiceInk Parity UX Slice 1
+## Review: the macOS reference app Parity UX Slice 1
 - Added an in-memory recent transcript queue capped at 5 items.
 - Mini recorder now shows the latest completed transcript as a compact preview below the shell.
 - Transcribing/enhancing status now pulses with animated dots, and processing bars continue moving instead of freezing.
@@ -103,29 +103,29 @@
 - Full `dotnet build` and `dotnet test` pass, 38 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
 
-## Plan: Remove Bad Sound Cues And Add VoiceInk Vocabulary
+## Plan: Remove Bad Sound Cues And Add the macOS reference app Vocabulary
 - [x] Remove Windows notification/error-style sound cues.
-- [x] Add offline vocabulary corrections for `VoiceInk` variants: `voice ink`, `voice in`, and `voicing`.
+- [x] Add offline vocabulary corrections for `the macOS reference app` variants: `app namek`, `app name`, and `app name`.
 - [x] Verify with targeted vocabulary tests, full build/test, launch smoke, and public-readiness scan.
 
-## Review: Remove Bad Sound Cues And Add VoiceInk Vocabulary
+## Review: Remove Bad Sound Cues And Add the macOS reference app Vocabulary
 - Muted the current system sound cue implementation because Windows notification sounds felt like OS errors.
-- Added deterministic offline `VoiceInk` corrections for `voice ink`, `voice in`, and `voicing`.
+- Added deterministic offline `the macOS reference app` corrections for `app namek`, `app name`, and `app name`.
 - Targeted vocabulary tests pass, 10 tests; full `dotnet build` and `dotnet test` pass, 41 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
 
-## Plan: VoiceInk Recorder Mechanics Slice
+## Plan: Reference Recorder Mechanics Slice
 - [x] Update lessons from the fixed-recorder-shell correction.
 - [x] Add view-model tests for processing dots instead of processing text.
-- [x] Match the compact VoiceInk recorder shell dimensions more closely: 184px wide, 40px tall, fixed bottom anchor.
+- [x] Match the compact the macOS reference app recorder shell dimensions more closely: 184px wide, 40px tall, fixed bottom anchor.
 - [x] Replace transcribing/enhancing center text with a five-dot processing indicator.
 - [x] Keep transcript preview layered above the shell without shifting the main bar.
 - [x] Verify with focused tests, full build/test, launch smoke, and public-readiness scan.
 
-## Review: VoiceInk Recorder Mechanics Slice
+## Review: Reference Recorder Mechanics Slice
 - Added a layout-stability lesson for the mini recorder shell.
 - Processing states now expose a five-step processing indicator instead of mutating center text.
-- Mini recorder shell now uses a fixed 184px by 40px compact bar, closer to VoiceInk's compact dimensions.
+- Mini recorder shell now uses a fixed 184px by 40px compact bar, closer to the reference compact dimensions.
 - Transcribing/enhancing now show five pulsing dots in the center, while error details still use text.
 - Transcript preview remains layered above the shell and does not participate in the shell layout.
 - Focused `MiniRecorderViewModelTests` pass, 9 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 41 tests.
@@ -192,3 +192,17 @@
 - Added offline corrections for `Chat CN`, `ChatCN`, `shad cn`, and `shad c n` to `shadcn`.
 - Focused `VocabularyCorrectionServiceTests` pass, 23 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 68 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Scrub Third-Party Trademark References
+- [x] Scan tracked repository content for the trademarked reference app name and close variants.
+- [x] Replace public docs/task wording with neutral LafazFlow/macOS reference workflow wording.
+- [x] Rename the optional model install script to a neutral filename.
+- [x] Remove vocabulary correction code/tests that emitted the trademarked name.
+- [x] Verify with focused tests, full build/test, launch smoke, public-readiness scan, and a clean trademark scan.
+
+## Review: Scrub Third-Party Trademark References
+- Current tracked files no longer mention the trademarked reference app name or close variants.
+- Renamed `scripts/install-fast-dictation-model.ps1` and updated README/docs references.
+- Removed the app-name vocabulary correction that produced the trademarked output.
+- Focused `VocabularyCorrectionServiceTests` pass, 20 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 65 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Trademark scan found no current tracked-file matches.
