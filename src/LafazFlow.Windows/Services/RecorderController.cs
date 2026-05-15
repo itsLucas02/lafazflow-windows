@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.UI;
@@ -15,9 +16,11 @@ public sealed class RecorderController
     private readonly SettingsStore _settingsStore;
     private readonly SoundCueService _soundCues;
     private readonly ILiveTranscriptPreviewService _livePreview;
+    private readonly ILatencyReporter _latencyReporter;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly DictationQueueProcessor _queue;
     private string? _currentAudioPath;
+    private LatencyTrace? _currentLatencyTrace;
     private IntPtr _targetWindow;
     private CancellationTokenSource? _runCancellation;
 
@@ -30,7 +33,8 @@ public sealed class RecorderController
         SettingsStore settingsStore,
         SoundCueService? soundCues = null,
         Func<IntPtr>? getForegroundWindow = null,
-        ILiveTranscriptPreviewService? livePreview = null)
+        ILiveTranscriptPreviewService? livePreview = null,
+        ILatencyReporter? latencyReporter = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -40,6 +44,7 @@ public sealed class RecorderController
         _settingsStore = settingsStore;
         _soundCues = soundCues ?? new SoundCueService();
         _livePreview = livePreview ?? new NullLiveTranscriptPreviewService();
+        _latencyReporter = latencyReporter ?? new FileLatencyReporter();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
@@ -79,12 +84,20 @@ public sealed class RecorderController
         }
 
         _targetWindow = _getForegroundWindow();
+        _currentLatencyTrace = new LatencyTrace
+        {
+            ModelPath = settings.ModelPath,
+            Threads = settings.WhisperThreads,
+            TargetProcessName = GetProcessName(_targetWindow)
+        };
+        _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingStart);
         _runCancellation = new CancellationTokenSource();
         var recordingsRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",
             "Recordings");
         _currentAudioPath = _audioCapture.Start(recordingsRoot);
+        _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
         StartLivePreview(settings, _runCancellation.Token);
         _soundCues.PlayRecordingStarted();
@@ -99,19 +112,23 @@ public sealed class RecorderController
         }
 
         var settings = _settingsStore.Load();
+        _currentLatencyTrace?.Mark(LatencyCheckpoint.StopRequested);
         var cancellationToken = _runCancellation?.Token ?? CancellationToken.None;
         var audioPath = _currentAudioPath;
         var targetWindow = _targetWindow;
+        var latencyTrace = _currentLatencyTrace;
         var runCancellation = _runCancellation;
 
         _audioCapture.Stop();
         _ = StopLivePreviewAsync();
         _currentAudioPath = null;
+        _currentLatencyTrace = null;
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
         _viewModel.State = RecordingState.Idle;
         _soundCues.PlayTranscribingStarted();
-        _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings), cancellationToken)
+        latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
+        _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
             .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
         return Task.CompletedTask;
     }
@@ -162,8 +179,11 @@ public sealed class RecorderController
 
     private async Task ProcessJobAsync(DictationJob job, CancellationToken cancellationToken)
     {
+        var succeeded = false;
+        Exception? capturedError = null;
         try
         {
+            job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
             var transcript = await _transcription.TranscribeAsync(
                 job.Settings.WhisperCliPath,
                 job.Settings.ModelPath,
@@ -171,7 +191,9 @@ public sealed class RecorderController
                 job.Settings.WhisperInitialPrompt,
                 job.Settings.WhisperThreads,
                 cancellationToken);
+            job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperFinished);
 
+            job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingStarted);
             if (job.Settings.EnableVocabularyCorrections)
             {
                 transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
@@ -181,15 +203,20 @@ public sealed class RecorderController
             {
                 transcript = PasteTextFormatter.EnsureTrailingSeparator(transcript);
             }
+            job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingFinished);
 
+            job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateStarted);
             await _window.InvokeAsync(() => _viewModel.AddCompletedTranscript(transcript));
+            job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateFinished);
 
+            job.LatencyTrace?.Mark(LatencyCheckpoint.PasteStarted);
             await _window.InvokeAsync(() => _clipboardPaste.PasteAsync(
                     transcript,
                     job.Settings.RestoreClipboardAfterPaste,
                     job.Settings.ClipboardRestoreDelayMs,
                     job.TargetWindow,
                     cancellationToken));
+            job.LatencyTrace?.Mark(LatencyCheckpoint.PasteFinished);
 
             await _window.InvokeAsync(() =>
             {
@@ -199,9 +226,11 @@ public sealed class RecorderController
                 }
             });
             _soundCues.PlayCompleted();
+            succeeded = true;
         }
         catch (Exception error)
         {
+            capturedError = error;
             var message = ShortError(error);
             await _window.InvokeAsync(() => _viewModel.SetError(message));
             _soundCues.PlayError();
@@ -209,9 +238,24 @@ public sealed class RecorderController
         }
         finally
         {
+            job.LatencyTrace?.Mark(LatencyCheckpoint.CleanupStarted);
             if (!job.Settings.KeepRecordingsForDiagnostics)
             {
                 TryDelete(job.AudioPath);
+            }
+            job.LatencyTrace?.Mark(LatencyCheckpoint.CleanupFinished);
+            if (job.LatencyTrace is not null)
+            {
+                if (succeeded)
+                {
+                    job.LatencyTrace.Complete();
+                }
+                else
+                {
+                    job.LatencyTrace.Fail(capturedError ?? new InvalidOperationException("Dictation failed."));
+                }
+
+                _latencyReporter.Report(job.LatencyTrace);
             }
         }
     }
@@ -248,4 +292,30 @@ public sealed class RecorderController
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+
+    private static string? GetProcessName(IntPtr windowHandle)
+    {
+        if (windowHandle == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        _ = GetWindowThreadProcessId(windowHandle, out var processId);
+        if (processId == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            return Process.GetProcessById((int)processId).ProcessName;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 }

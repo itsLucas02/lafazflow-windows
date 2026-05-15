@@ -201,6 +201,64 @@ public sealed class RecorderControllerTests
         Assert.True(paste.WasPastedInsideWindowDispatcher);
     }
 
+    [Fact]
+    public async Task CompletedDictationReportsLatency()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var reporter = new FakeLatencyReporter();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            latencyReporter: reporter);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        var trace = Assert.Single(reporter.Traces);
+        Assert.Equal(LatencyStatus.Completed, trace.Status);
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.RecordingStart));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.QueueStarted));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.WhisperFinished));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.PasteFinished));
+    }
+
+    [Fact]
+    public async Task FailedDictationReportsLatency()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var reporter = new FakeLatencyReporter();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => throw new InvalidOperationException("boom")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            latencyReporter: reporter);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        var trace = Assert.Single(reporter.Traces);
+        Assert.Equal(LatencyStatus.Failed, trace.Status);
+        Assert.Equal("InvalidOperationException", trace.ErrorKind);
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.Failed));
+    }
+
     private static SettingsStore CreateSettingsStore()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -326,6 +384,16 @@ public sealed class RecorderControllerTests
             Texts.Add(text);
             TargetWindows.Add(targetWindow);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FakeLatencyReporter : ILatencyReporter
+    {
+        public List<LatencyTrace> Traces { get; } = [];
+
+        public void Report(LatencyTrace trace)
+        {
+            Traces.Add(trace);
         }
     }
 

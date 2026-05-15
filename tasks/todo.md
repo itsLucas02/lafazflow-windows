@@ -299,3 +299,17 @@
 - Focused settings tests pass, 6 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 124 tests.
 - Manual right-click smoke passed: right-clicking the actual mini recorder shell opened `LafazFlow Settings` and the app stayed running.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+
+## Plan: Latency Instrumentation
+- [x] Add a privacy-safe latency trace model and log formatter.
+- [x] Carry latency traces through recording, queueing, transcription, formatting, UI update, paste, cleanup, and failure paths.
+- [x] Append one local `LATENCY` summary line per completed or failed dictation job.
+- [x] Add regression tests for stage timing, privacy-safe formatting, success reporting, and failure reporting.
+- [x] Verify with focused tests, full build/test, public-readiness scan, launch smoke, then commit and push.
+
+## Review: Latency Instrumentation
+- Added local-only latency traces for recording setup, recording duration, stop-to-queue, queue wait, Whisper, post-processing, UI update, paste, cleanup, and totals.
+- Added one safe `LATENCY` line per completed or failed dictation job in `%LocalAppData%\LafazFlow\Logs\lafazflow.log`.
+- Latency log lines include model filename, thread count, target process name, stage timings, status, and exception type only; transcript text and full local paths are not logged.
+- Focused latency/controller tests pass, 5 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 129 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.

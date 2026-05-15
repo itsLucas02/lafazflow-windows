@@ -45,6 +45,7 @@ public sealed class DictationQueueProcessor
     {
         try
         {
+            job.LatencyTrace?.Mark(LatencyCheckpoint.QueueStarted);
             await _processJobAsync(job, cancellationToken);
         }
         catch
