@@ -76,3 +76,17 @@
 - Whisper CLI arguments now include `-t 16` by default on this machine.
 - Added offline vocabulary corrections for `MediBrave` variants: `Maddy Breath`, `medibrief`, `Mad brave`, `medi brave`, and `maddy brave`.
 - MediBrave vocabulary regression tests pass, 7 targeted tests.
+
+## Plan: VoiceInk Parity UX Slice 1
+- [x] Add view-model support for a small recent transcript queue.
+- [x] Show the most recent completed transcript in the mini recorder shell.
+- [x] Add a processing pulse so transcribing feels alive instead of static.
+- [x] Keep transcription/model/paste behavior unchanged.
+- [x] Verify with focused view-model tests, full build/test, launch smoke, and public-readiness scan.
+
+## Review: VoiceInk Parity UX Slice 1
+- Added an in-memory recent transcript queue capped at 5 items.
+- Mini recorder now shows the latest completed transcript as a compact preview below the shell.
+- Transcribing/enhancing status now pulses with animated dots, and processing bars continue moving instead of freezing.
+- Focused view-model tests pass; full `dotnet build` and `dotnet test` pass, 38 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

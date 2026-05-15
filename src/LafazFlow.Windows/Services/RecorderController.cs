@@ -106,6 +106,8 @@ public sealed class RecorderController
                 transcript = PasteTextFormatter.EnsureTrailingSeparator(transcript);
             }
 
+            _viewModel.AddCompletedTranscript(transcript);
+
             await _clipboardPaste.PasteAsync(
                 transcript,
                 settings.RestoreClipboardAfterPaste,

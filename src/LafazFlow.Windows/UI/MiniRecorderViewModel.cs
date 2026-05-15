@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using LafazFlow.Windows.Core;
 
@@ -9,6 +10,8 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     private RecordingState _state = RecordingState.Idle;
     private double _audioLevel;
     private string _statusText = "";
+    private string _statusBaseText = "";
+    private int _processingPulseStep;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -23,13 +26,14 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
             }
 
             _state = value;
-            StatusText = value switch
+            _processingPulseStep = 0;
+            SetStatusBaseText(value switch
             {
                 RecordingState.Transcribing => "Transcribing",
                 RecordingState.Enhancing => "Enhancing",
                 RecordingState.Error => "Error",
                 _ => ""
-            };
+            });
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsRecording));
             OnPropertyChanged(nameof(IsProcessing));
@@ -75,9 +79,45 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
 
+    public ObservableCollection<string> RecentTranscripts { get; } = [];
+
+    public bool HasRecentTranscripts => RecentTranscripts.Count > 0;
+
+    public string LastTranscriptPreview => HasRecentTranscripts ? RecentTranscripts[0] : "";
+
+    public void AddCompletedTranscript(string transcript)
+    {
+        var trimmed = transcript.Trim();
+        if (trimmed.Length == 0)
+        {
+            return;
+        }
+
+        RecentTranscripts.Insert(0, trimmed);
+        while (RecentTranscripts.Count > 5)
+        {
+            RecentTranscripts.RemoveAt(RecentTranscripts.Count - 1);
+        }
+
+        OnPropertyChanged(nameof(HasRecentTranscripts));
+        OnPropertyChanged(nameof(LastTranscriptPreview));
+    }
+
+    public void AdvanceProcessingPulse()
+    {
+        if (!IsProcessing || string.IsNullOrWhiteSpace(_statusBaseText))
+        {
+            return;
+        }
+
+        _processingPulseStep = (_processingPulseStep + 1) % 4;
+        StatusText = _statusBaseText + new string('.', _processingPulseStep);
+    }
+
     public void SetError(string message)
     {
         _state = RecordingState.Error;
+        _statusBaseText = message;
         StatusText = message;
         OnPropertyChanged(nameof(State));
         OnPropertyChanged(nameof(IsRecording));
@@ -88,5 +128,11 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private void SetStatusBaseText(string statusText)
+    {
+        _statusBaseText = statusText;
+        StatusText = statusText;
     }
 }

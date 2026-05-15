@@ -64,10 +64,15 @@ public partial class MiniRecorderWindow : Window
             return;
         }
 
+        var previousRender = _lastRender;
         _lastRender = now;
         var time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         var amplitude = Math.Pow(_viewModel.AudioLevel, 0.7);
         Visualizer.Visibility = _viewModel.HasStatusText ? WpfVisibility.Hidden : WpfVisibility.Visible;
+        if (_viewModel.IsProcessing && (now.Millisecond / 250) != (previousRender.Millisecond / 250))
+        {
+            _viewModel.AdvanceProcessingPulse();
+        }
 
         for (var index = 0; index < _bars.Length; index++)
         {
@@ -76,6 +81,8 @@ public partial class MiniRecorderWindow : Window
             var centerBoost = 1.0 - centerDistance * 0.4;
             _bars[index].Height = _viewModel.IsRecording
                 ? Math.Max(4, 4 + amplitude * wave * centerBoost * 24)
+                : _viewModel.IsProcessing
+                    ? Math.Max(4, 5 + wave * centerBoost * 10)
                 : 4;
         }
     }

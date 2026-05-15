@@ -32,6 +32,51 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
+    public void CompletedTranscriptsAreQueuedNewestFirst()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.AddCompletedTranscript("First transcript.");
+        viewModel.AddCompletedTranscript("Second transcript.");
+
+        Assert.Equal("Second transcript.", viewModel.LastTranscriptPreview);
+        Assert.Equal(["Second transcript.", "First transcript."], viewModel.RecentTranscripts);
+        Assert.True(viewModel.HasRecentTranscripts);
+    }
+
+    [Fact]
+    public void CompletedTranscriptQueueKeepsFiveItems()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        for (var index = 1; index <= 7; index++)
+        {
+            viewModel.AddCompletedTranscript($"Transcript {index}.");
+        }
+
+        Assert.Equal(5, viewModel.RecentTranscripts.Count);
+        Assert.Equal("Transcript 7.", viewModel.RecentTranscripts[0]);
+        Assert.Equal("Transcript 3.", viewModel.RecentTranscripts[^1]);
+    }
+
+    [Fact]
+    public void ProcessingPulseCyclesStatusText()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            State = RecordingState.Transcribing
+        };
+
+        viewModel.AdvanceProcessingPulse();
+
+        Assert.Equal("Transcribing.", viewModel.StatusText);
+
+        viewModel.AdvanceProcessingPulse();
+
+        Assert.Equal("Transcribing..", viewModel.StatusText);
+    }
+
+    [Fact]
     public void SetErrorReportsErrorDetail()
     {
         var viewModel = new MiniRecorderViewModel();
