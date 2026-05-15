@@ -14,6 +14,17 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("voice ink")]
+    [InlineData("voicing")]
+    [InlineData("voice in")]
+    public void ApplyDefaultsFixesVoiceInkVariants(string variant)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults($"Open {variant}.");
+
+        Assert.Equal("Open VoiceInk.", corrected);
+    }
+
+    [Theory]
     [InlineData("medibrief")]
     [InlineData("Mad brave")]
     [InlineData("medi brave")]

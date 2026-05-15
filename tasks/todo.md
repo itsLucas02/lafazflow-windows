@@ -102,3 +102,14 @@
 - Added local Windows system sound cues for recording start, transcribing start, completion, and error.
 - Full `dotnet build` and `dotnet test` pass, 38 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: Remove Bad Sound Cues And Add VoiceInk Vocabulary
+- [x] Remove Windows notification/error-style sound cues.
+- [x] Add offline vocabulary corrections for `VoiceInk` variants: `voice ink`, `voice in`, and `voicing`.
+- [x] Verify with targeted vocabulary tests, full build/test, launch smoke, and public-readiness scan.
+
+## Review: Remove Bad Sound Cues And Add VoiceInk Vocabulary
+- Muted the current system sound cue implementation because Windows notification sounds felt like OS errors.
+- Added deterministic offline `VoiceInk` corrections for `voice ink`, `voice in`, and `voicing`.
+- Targeted vocabulary tests pass, 10 tests; full `dotnet build` and `dotnet test` pass, 41 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.

@@ -35,3 +35,7 @@
 ## Keep brand/product names in local vocabulary
 - Pattern: Fast local models can hear uncommon product names phonetically, such as `MediBrave` becoming `Maddy Breath`, `medibrief`, or `Mad brave`.
 - Rule: Add high-value owner/product vocabulary variants to deterministic offline corrections with regression tests.
+
+## Do not use Windows notification sounds as app cues
+- Pattern: Windows system sounds like `Hand`, `Exclamation`, and `Asterisk` feel like OS error/notification alerts, not soft VoiceInk-style feedback.
+- Rule: Keep app cues muted until proper gentle bundled sounds are designed or sourced.
