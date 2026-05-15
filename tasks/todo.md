@@ -264,3 +264,16 @@
 - Focused mini recorder UI tests pass, 21 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 92 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Add Luqman Owner Name Vocabulary
+- [x] Add failing tests for observed `Luqman` name variants and spelled-out form.
+- [x] Add `Luqman` to the default Whisper prompt.
+- [x] Add deterministic offline corrections for `Lukamine`, `Lukman`, `Luqmen`, `L-U-Q-M-A-N`, and `S-N-L-U-Q-M-E-N`.
+- [x] Verify with focused tests, full build/test, launch smoke, public-readiness scan, then commit and push.
+
+## Review: Add Luqman Owner Name Vocabulary
+- Added `Luqman` to the default Whisper prompt so new settings include the owner name as local context.
+- Added offline corrections for observed name variants and spelled forms: `Lukamine`, `Lukman`, `Luqmen`, `L-U-Q-M-A-N`, and `S-N-L-U-Q-M-E-N`.
+- Focused vocabulary/settings tests pass, 39 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 97 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words such as `password` and `secret`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

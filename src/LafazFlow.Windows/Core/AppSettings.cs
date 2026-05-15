@@ -5,7 +5,7 @@ public sealed record AppSettings
     public const int CurrentSchemaVersion = 1;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
-        "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow.";
+        "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow, Luqman.";
 
     public int SettingsSchemaVersion { get; init; } = CurrentSchemaVersion;
     public string HotkeyGesture { get; init; } = "DoubleShift";

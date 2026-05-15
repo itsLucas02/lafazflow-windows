@@ -27,6 +27,19 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("My name is Lukamine.", "My name is Luqman.")]
+    [InlineData("My name is Lukman.", "My name is Luqman.")]
+    [InlineData("My name is Luqmen.", "My name is Luqman.")]
+    [InlineData("My name is L-U-Q-M-A-N.", "My name is Luqman.")]
+    [InlineData("My name is S-N-L-U-Q-M-E-N.", "My name is Luqman.")]
+    public void ApplyDefaultsFixesLuqmanVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
     [InlineData("That's 1-2-3 over.", "Test 1-2-3 over.")]
     [InlineData("That's one, two, three, over.", "Test one, two, three, over.")]
     [InlineData("That's, that's, that's.", "Test, test, test.")]

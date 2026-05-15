@@ -21,6 +21,7 @@ public sealed class SettingsStoreTests
         Assert.True(settings.AppendTrailingSpace);
         Assert.True(settings.EnableVocabularyCorrections);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
+        Assert.Contains("Luqman", settings.WhisperInitialPrompt);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
 
