@@ -19,7 +19,7 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
-    public void TranscribingStateReportsProcessingStatus()
+    public void TranscribingStateReportsProcessingIndicator()
     {
         var viewModel = new MiniRecorderViewModel();
 
@@ -27,8 +27,9 @@ public sealed class MiniRecorderViewModelTests
 
         Assert.False(viewModel.IsRecording);
         Assert.True(viewModel.IsProcessing);
-        Assert.True(viewModel.HasStatusText);
-        Assert.Equal("Transcribing", viewModel.StatusText);
+        Assert.True(viewModel.ShowProcessingIndicator);
+        Assert.False(viewModel.HasStatusText);
+        Assert.Equal("", viewModel.StatusText);
     }
 
     [Fact]
@@ -60,7 +61,7 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
-    public void ProcessingPulseCyclesStatusText()
+    public void ProcessingPulseCyclesIndicatorStep()
     {
         var viewModel = new MiniRecorderViewModel
         {
@@ -69,11 +70,13 @@ public sealed class MiniRecorderViewModelTests
 
         viewModel.AdvanceProcessingPulse();
 
-        Assert.Equal("Transcribing.", viewModel.StatusText);
+        Assert.Equal(1, viewModel.ProcessingPulseStep);
+        Assert.Equal("", viewModel.StatusText);
 
         viewModel.AdvanceProcessingPulse();
 
-        Assert.Equal("Transcribing..", viewModel.StatusText);
+        Assert.Equal(2, viewModel.ProcessingPulseStep);
+        Assert.Equal("", viewModel.StatusText);
     }
 
     [Fact]
@@ -84,6 +87,7 @@ public sealed class MiniRecorderViewModelTests
         viewModel.SetError("Whisper model was not found.");
 
         Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.False(viewModel.ShowProcessingIndicator);
         Assert.True(viewModel.HasStatusText);
         Assert.Equal("Whisper model was not found.", viewModel.StatusText);
     }

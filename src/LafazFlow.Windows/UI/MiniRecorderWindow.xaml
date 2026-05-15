@@ -30,7 +30,7 @@
                        MaxWidth="236" />
         </Border>
         <Border x:Name="RecorderShell"
-                Width="300"
+                Width="184"
                 Height="40"
                 CornerRadius="20"
                 Background="Black"
@@ -39,9 +39,9 @@
                 MouseLeftButtonDown="RecorderShell_OnMouseLeftButtonDown">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="44" />
+                    <ColumnDefinition Width="36" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="44" />
+                    <ColumnDefinition Width="36" />
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
@@ -63,7 +63,20 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
 
+                <ItemsControl Grid.Column="1"
+                              x:Name="ProcessingDots"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Visibility="Collapsed">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+
                 <TextBlock Grid.Column="1"
+                           x:Name="StatusTextBlock"
                            Text="{Binding StatusText}"
                            Foreground="White"
                            FontSize="11"

@@ -10,6 +10,7 @@ public partial class MiniRecorderWindow : Window
 {
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
+    private readonly WpfRectangle[] _processingDots;
     private readonly double[] _phases;
     private DateTime _lastRender = DateTime.UtcNow;
 
@@ -19,11 +20,17 @@ public partial class MiniRecorderWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         _bars = Enumerable.Range(0, 15).Select(_ => CreateBar()).ToArray();
+        _processingDots = Enumerable.Range(0, 5).Select(_ => CreateProcessingDot()).ToArray();
         _phases = Enumerable.Range(0, 15).Select(index => index * 0.4).ToArray();
 
         foreach (var bar in _bars)
         {
             Visualizer.Items.Add(bar);
+        }
+
+        foreach (var dot in _processingDots)
+        {
+            ProcessingDots.Items.Add(dot);
         }
 
         CompositionTarget.Rendering += OnRendering;
@@ -56,6 +63,20 @@ public partial class MiniRecorderWindow : Window
         };
     }
 
+    private static WpfRectangle CreateProcessingDot()
+    {
+        return new WpfRectangle
+        {
+            Width = 3,
+            Height = 3,
+            RadiusX = 1.5,
+            RadiusY = 1.5,
+            Margin = new Thickness(2, 0, 2, 0),
+            Fill = new SolidColorBrush(WpfColor.FromArgb(230, 255, 255, 255)),
+            Opacity = 0.35
+        };
+    }
+
     private void OnRendering(object? sender, EventArgs e)
     {
         var now = DateTime.UtcNow;
@@ -68,11 +89,22 @@ public partial class MiniRecorderWindow : Window
         _lastRender = now;
         var time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         var amplitude = Math.Pow(_viewModel.AudioLevel, 0.7);
-        Visualizer.Visibility = _viewModel.HasStatusText ? WpfVisibility.Hidden : WpfVisibility.Visible;
-        if (_viewModel.IsProcessing && (now.Millisecond / 250) != (previousRender.Millisecond / 250))
+        Visualizer.Visibility = !_viewModel.ShowProcessingIndicator && !_viewModel.HasStatusText
+            ? WpfVisibility.Visible
+            : WpfVisibility.Hidden;
+        ProcessingDots.Visibility = _viewModel.ShowProcessingIndicator
+            ? WpfVisibility.Visible
+            : WpfVisibility.Collapsed;
+        StatusTextBlock.Visibility = _viewModel.HasStatusText
+            ? WpfVisibility.Visible
+            : WpfVisibility.Collapsed;
+
+        if (_viewModel.ShowProcessingIndicator && (now.Millisecond / 300) != (previousRender.Millisecond / 300))
         {
             _viewModel.AdvanceProcessingPulse();
         }
+
+        UpdateProcessingDots();
 
         for (var index = 0; index < _bars.Length; index++)
         {
@@ -81,9 +113,16 @@ public partial class MiniRecorderWindow : Window
             var centerBoost = 1.0 - centerDistance * 0.4;
             _bars[index].Height = _viewModel.IsRecording
                 ? Math.Max(4, 4 + amplitude * wave * centerBoost * 24)
-                : _viewModel.IsProcessing
-                    ? Math.Max(4, 5 + wave * centerBoost * 10)
                 : 4;
+        }
+    }
+
+    private void UpdateProcessingDots()
+    {
+        for (var index = 0; index < _processingDots.Length; index++)
+        {
+            var distance = Math.Abs(index - _viewModel.ProcessingPulseStep);
+            _processingDots[index].Opacity = distance == 0 ? 1.0 : distance == 1 ? 0.62 : 0.32;
         }
     }
 

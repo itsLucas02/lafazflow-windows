@@ -39,3 +39,7 @@
 ## Do not use Windows notification sounds as app cues
 - Pattern: Windows system sounds like `Hand`, `Exclamation`, and `Asterisk` feel like OS error/notification alerts, not soft VoiceInk-style feedback.
 - Rule: Keep app cues muted until proper gentle bundled sounds are designed or sourced.
+
+## Keep the recorder shell layout fixed
+- Pattern: Secondary content such as transcript previews or processing details can accidentally push the main recorder controls away from their expected position.
+- Rule: The main mini recorder shell must keep fixed dimensions and a fixed bottom-center anchor; supplemental content should overlay around it without participating in shell layout.

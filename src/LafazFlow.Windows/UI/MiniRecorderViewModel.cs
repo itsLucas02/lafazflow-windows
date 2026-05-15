@@ -10,7 +10,6 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     private RecordingState _state = RecordingState.Idle;
     private double _audioLevel;
     private string _statusText = "";
-    private string _statusBaseText = "";
     private int _processingPulseStep;
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -27,17 +26,13 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
             _state = value;
             _processingPulseStep = 0;
-            SetStatusBaseText(value switch
-            {
-                RecordingState.Transcribing => "Transcribing",
-                RecordingState.Enhancing => "Enhancing",
-                RecordingState.Error => "Error",
-                _ => ""
-            });
+            StatusText = value == RecordingState.Error ? "Error" : "";
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsRecording));
             OnPropertyChanged(nameof(IsProcessing));
+            OnPropertyChanged(nameof(ShowProcessingIndicator));
             OnPropertyChanged(nameof(HasStatusText));
+            OnPropertyChanged(nameof(ProcessingPulseStep));
         }
     }
 
@@ -77,6 +72,10 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public bool IsProcessing => State is RecordingState.Transcribing or RecordingState.Enhancing;
 
+    public bool ShowProcessingIndicator => IsProcessing;
+
+    public int ProcessingPulseStep => _processingPulseStep;
+
     public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
 
     public ObservableCollection<string> RecentTranscripts { get; } = [];
@@ -105,24 +104,26 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     public void AdvanceProcessingPulse()
     {
-        if (!IsProcessing || string.IsNullOrWhiteSpace(_statusBaseText))
+        if (!IsProcessing)
         {
             return;
         }
 
-        _processingPulseStep = (_processingPulseStep + 1) % 4;
-        StatusText = _statusBaseText + new string('.', _processingPulseStep);
+        _processingPulseStep = (_processingPulseStep + 1) % 5;
+        OnPropertyChanged(nameof(ProcessingPulseStep));
     }
 
     public void SetError(string message)
     {
         _state = RecordingState.Error;
-        _statusBaseText = message;
+        _processingPulseStep = 0;
         StatusText = message;
         OnPropertyChanged(nameof(State));
         OnPropertyChanged(nameof(IsRecording));
         OnPropertyChanged(nameof(IsProcessing));
+        OnPropertyChanged(nameof(ShowProcessingIndicator));
         OnPropertyChanged(nameof(HasStatusText));
+        OnPropertyChanged(nameof(ProcessingPulseStep));
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -130,9 +131,4 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private void SetStatusBaseText(string statusText)
-    {
-        _statusBaseText = statusText;
-        StatusText = statusText;
-    }
 }

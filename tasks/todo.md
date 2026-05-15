@@ -113,3 +113,20 @@
 - Added deterministic offline `VoiceInk` corrections for `voice ink`, `voice in`, and `voicing`.
 - Targeted vocabulary tests pass, 10 tests; full `dotnet build` and `dotnet test` pass, 41 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
+
+## Plan: VoiceInk Recorder Mechanics Slice
+- [x] Update lessons from the fixed-recorder-shell correction.
+- [x] Add view-model tests for processing dots instead of processing text.
+- [x] Match the compact VoiceInk recorder shell dimensions more closely: 184px wide, 40px tall, fixed bottom anchor.
+- [x] Replace transcribing/enhancing center text with a five-dot processing indicator.
+- [x] Keep transcript preview layered above the shell without shifting the main bar.
+- [x] Verify with focused tests, full build/test, launch smoke, and public-readiness scan.
+
+## Review: VoiceInk Recorder Mechanics Slice
+- Added a layout-stability lesson for the mini recorder shell.
+- Processing states now expose a five-step processing indicator instead of mutating center text.
+- Mini recorder shell now uses a fixed 184px by 40px compact bar, closer to VoiceInk's compact dimensions.
+- Transcribing/enhancing now show five pulsing dots in the center, while error details still use text.
+- Transcript preview remains layered above the shell and does not participate in the shell layout.
+- Focused `MiniRecorderViewModelTests` pass, 9 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 41 tests.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are documentation references and `CancellationToken`.
