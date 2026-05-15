@@ -202,6 +202,122 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task StopShowsProcessingCueBeforeAudioStopCompletes()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var releaseAudioStop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var audio = new FakeAudioCaptureService("first.wav")
+        {
+            StopGate = releaseAudioStop.Task
+        };
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var soundCues = CreateSoundCueService(soundPlayer);
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            soundCues,
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        var stopTask = controller.ToggleAsync();
+        await audio.StopStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var stateDuringStop = viewModel.State;
+        var showProcessingDuringStop = viewModel.ShowProcessingIndicator;
+        var playedPathsDuringStop = soundPlayer.PlayedPaths.ToArray();
+        var stopCompletedDuringStop = audio.StopCompleted.Task.IsCompleted;
+
+        releaseAudioStop.SetResult();
+        await stopTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(RecordingState.Transcribing, stateDuringStop);
+        Assert.True(showProcessingDuringStop);
+        Assert.EndsWith("recstop.mp3", playedPathsDuringStop.Last());
+        Assert.False(stopCompletedDuringStop);
+    }
+
+    [Fact]
+    public async Task ToggleDuringStopHandoffDoesNotStartNewRecording()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var releaseAudioStop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var audio = new FakeAudioCaptureService("first.wav", "second.wav")
+        {
+            StopGate = releaseAudioStop.Task
+        };
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            CreateSoundCueService(new RecordingSoundCuePlayer()),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        var stopTask = controller.ToggleAsync();
+        await audio.StopStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var secondToggleTask = controller.ToggleAsync();
+        await Task.Delay(100);
+        var startCountDuringStop = audio.StartCount;
+        var stateDuringStop = viewModel.State;
+
+        releaseAudioStop.SetResult();
+        await stopTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await secondToggleTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(1, startCountDuringStop);
+        Assert.Equal(RecordingState.Transcribing, stateDuringStop);
+    }
+
+    [Fact]
+    public async Task RecordingCanRestartAfterStoppedJobIsQueued()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav", "second.wav");
+        var transcriptionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseTranscription = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transcription = new FakeTranscriptionService(async audioPath =>
+        {
+            transcriptionStarted.TrySetResult();
+            await releaseTranscription.Task;
+            return $"{audioPath} transcript";
+        });
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            transcription,
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            CreateSoundCueService(new RecordingSoundCuePlayer()),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await transcriptionStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.Equal(RecordingState.Idle, viewModel.State);
+
+        await controller.ToggleAsync();
+
+        Assert.Equal(RecordingState.Recording, viewModel.State);
+        Assert.Equal(2, audio.StartCount);
+        Assert.Equal("second.wav", audio.CurrentPath);
+
+        releaseTranscription.SetResult();
+        await controller.WaitForPendingTranscriptionsAsync();
+    }
+
+    [Fact]
     public async Task CompletedDictationReportsLatency()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -273,6 +389,17 @@ public sealed class RecorderControllerTests
         return store;
     }
 
+    private static SoundCueService CreateSoundCueService(RecordingSoundCuePlayer player)
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1]);
+        File.WriteAllBytes(Path.Combine(root, "recstop.mp3"), [1]);
+        File.WriteAllBytes(Path.Combine(root, "pastess.mp3"), [1]);
+        File.WriteAllBytes(Path.Combine(root, "esc.wav"), [1]);
+        return new SoundCueService(root, player);
+    }
+
     private sealed class FakeMiniRecorderWindow : IMiniRecorderWindow
     {
         public bool IsInsideInvokeAsync { get; private set; }
@@ -320,8 +447,17 @@ public sealed class RecorderControllerTests
 
         public string? CurrentPath { get; private set; }
 
+        public int StartCount { get; private set; }
+
+        public Task? StopGate { get; init; }
+
+        public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource StopCompleted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public string Start(string outputDirectory)
         {
+            StartCount++;
             CurrentPath = _paths.Dequeue();
             AudioLevelChanged?.Invoke(0.5);
             return CurrentPath;
@@ -329,6 +465,9 @@ public sealed class RecorderControllerTests
 
         public void Stop()
         {
+            StopStarted.TrySetResult();
+            StopGate?.GetAwaiter().GetResult();
+            StopCompleted.TrySetResult();
         }
 
         public void EmitAudioChunk(byte[] audioChunk)
@@ -394,6 +533,16 @@ public sealed class RecorderControllerTests
         public void Report(LatencyTrace trace)
         {
             Traces.Add(trace);
+        }
+    }
+
+    private sealed class RecordingSoundCuePlayer : ISoundCuePlayer
+    {
+        public List<string> PlayedPaths { get; } = [];
+
+        public void Play(string path, float volume)
+        {
+            PlayedPaths.Add(path);
         }
     }
 

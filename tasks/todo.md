@@ -313,3 +313,19 @@
 - Latency log lines include model filename, thread count, target process name, stage timings, status, and exception type only; transcript text and full local paths are not logged.
 - Focused latency/controller tests pass, 5 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 129 tests.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+
+## Plan: Stop Responsiveness UX Tuning
+- [x] Add regression tests for immediate stop feedback before audio stop completes.
+- [x] Add regression tests that prevent a second toggle from starting a new recording during stop handoff.
+- [x] Add regression tests that allow a new recording after the stopped job is queued.
+- [x] Move audio stop/final queue handoff off the UI path while keeping final transcription authoritative.
+- [x] Verify with focused tests, full build/test, public-readiness scan, launch smoke, then commit and push.
+
+## Review: Stop Responsiveness UX Tuning
+- Stopping now switches the recorder into the transcribing handoff state and plays the stop cue before audio stop/finalization completes.
+- Audio stop and queue handoff now run in the background, so the mini bar can repaint processing dots during the stop-to-queue gap.
+- Double Shift is ignored during the short stop handoff, then rapid next recording is allowed again once the stopped job is queued.
+- Clipboard restore defaults, local model behavior, final transcript authority, and paste policy are unchanged.
+- Focused stop-handoff tests pass, 3 tests; focused controller/view-model tests pass, 30 tests.
+- Full `dotnet test` passes, 132 tests; full `dotnet build` passes with 0 warnings.
+- App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.

@@ -23,6 +23,7 @@ public sealed class RecorderController
     private LatencyTrace? _currentLatencyTrace;
     private IntPtr _targetWindow;
     private CancellationTokenSource? _runCancellation;
+    private Task _stopHandoffTask = Task.CompletedTask;
 
     public RecorderController(
         MiniRecorderViewModel viewModel,
@@ -63,7 +64,10 @@ public sealed class RecorderController
             return;
         }
 
-        if (_viewModel.State is RecordingState.Busy)
+        if (_viewModel.State is RecordingState.Starting
+            or RecordingState.Transcribing
+            or RecordingState.Enhancing
+            or RecordingState.Busy)
         {
             return;
         }
@@ -119,17 +123,53 @@ public sealed class RecorderController
         var latencyTrace = _currentLatencyTrace;
         var runCancellation = _runCancellation;
 
-        _audioCapture.Stop();
-        _ = StopLivePreviewAsync();
         _currentAudioPath = null;
         _currentLatencyTrace = null;
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
-        _viewModel.State = RecordingState.Idle;
+        _viewModel.State = RecordingState.Transcribing;
         _soundCues.PlayTranscribingStarted();
-        latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
-        _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
-            .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
+        _window.ShowBottomCenter();
+        _stopHandoffTask = Task.Run(async () =>
+        {
+            var queued = false;
+            try
+            {
+                _audioCapture.Stop();
+                _ = StopLivePreviewAsync();
+                latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
+                _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
+                    .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
+                queued = true;
+            }
+            catch (Exception error)
+            {
+                var message = ShortError(error);
+                await _window.InvokeAsync(() => _viewModel.SetError(message));
+                _soundCues.PlayError();
+                LogError(error.ToString());
+                if (latencyTrace is not null)
+                {
+                    latencyTrace.Fail(error);
+                    _latencyReporter.Report(latencyTrace);
+                }
+
+                runCancellation?.Dispose();
+            }
+            finally
+            {
+                if (queued)
+                {
+                    await _window.InvokeAsync(() =>
+                    {
+                        if (_viewModel.State == RecordingState.Transcribing)
+                        {
+                            _viewModel.State = RecordingState.Idle;
+                        }
+                    });
+                }
+            }
+        });
         return Task.CompletedTask;
     }
 
@@ -174,7 +214,13 @@ public sealed class RecorderController
 
     public Task WaitForPendingTranscriptionsAsync()
     {
-        return _queue.WhenIdleAsync();
+        return WaitForStopHandoffAndQueueAsync();
+    }
+
+    private async Task WaitForStopHandoffAndQueueAsync()
+    {
+        await _stopHandoffTask;
+        await _queue.WhenIdleAsync();
     }
 
     private async Task ProcessJobAsync(DictationJob job, CancellationToken cancellationToken)
