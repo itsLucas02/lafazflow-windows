@@ -27,7 +27,7 @@ public sealed class ClipboardPasteService : IClipboardPasteService
         var profile = PasteTargetProfile.FromProcessName(targetProcessName, restoreClipboard);
         LogPasteProfile(profile);
         var previousClipboard = profile.ShouldRestoreClipboard
-            ? await GetClipboardSnapshotWithRetryAsync(cancellationToken)
+            ? await TryGetClipboardSnapshotWithRetryAsync(cancellationToken)
             : null;
 
         await SetTextWithRetryAsync(text, cancellationToken);
@@ -48,7 +48,7 @@ public sealed class ClipboardPasteService : IClipboardPasteService
         }
     }
 
-    private static async Task<System.Windows.IDataObject?> GetClipboardSnapshotWithRetryAsync(CancellationToken cancellationToken)
+    private static async Task<System.Windows.IDataObject?> TryGetClipboardSnapshotWithRetryAsync(CancellationToken cancellationToken)
     {
         Exception? lastError = null;
         for (var attempt = 0; attempt < 5; attempt++)
@@ -61,17 +61,13 @@ public sealed class ClipboardPasteService : IClipboardPasteService
                     return null;
                 }
 
-                var snapshot = new System.Windows.DataObject();
-                foreach (var format in source.GetFormats(autoConvert: false))
+                if (ClipboardDataObjectSnapshot.TryCreate(source, Log, out var snapshot))
                 {
-                    var data = source.GetData(format, autoConvert: false);
-                    if (data is not null)
-                    {
-                        snapshot.SetData(format, data);
-                    }
+                    return snapshot;
                 }
 
-                return snapshot;
+                Log("Clipboard restore skipped because existing clipboard data could not be snapshotted.");
+                return null;
             }
             catch (Exception error)
             {
@@ -80,7 +76,8 @@ public sealed class ClipboardPasteService : IClipboardPasteService
             }
         }
 
-        throw new InvalidOperationException("Clipboard data could not be read.", lastError);
+        Log($"Clipboard restore skipped because existing clipboard data could not be read: {lastError?.GetType().Name ?? "Exception"}.");
+        return null;
     }
 
     private static async Task SetClipboardDataWithRetryAsync(System.Windows.IDataObject dataObject, CancellationToken cancellationToken)

@@ -83,3 +83,7 @@
 ## Bind read-only WPF TextBox values one-way
 - Pattern: `TextBox.Text` defaults to TwoWay binding even when the control is read-only, so binding it to a getter-only view-model property can crash during layout.
 - Rule: For read-only display fields in WPF, use `Mode=OneWay` explicitly or use a non-editable display control.
+
+## Treat clipboard restore as best-effort only
+- Pattern: IDEs can leave rich or image clipboard formats that throw `CLIPBRD_E_BAD_DATA` when read, causing dictation paste to fail before LafazFlow writes the transcript.
+- Rule: Never let previous-clipboard snapshot or restore failures block transcription paste; skip unreadable formats and continue with the text paste.

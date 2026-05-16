@@ -345,3 +345,19 @@
 - Focused preview/stabilizer tests pass, 10 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 139 tests.
 - Stable publish/launch smoke passed from `artifacts\stable-preview-calm\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Clipboard Bad Data Paste Recovery
+- [x] Reproduce the failure from logs and identify the failing clipboard boundary.
+- [x] Make clipboard restore snapshot best-effort so invalid existing clipboard data does not block transcript paste.
+- [x] Add regression coverage for unreadable clipboard formats and failed snapshot fallback.
+- [x] Update lessons with the owner correction pattern.
+- [x] Verify with focused clipboard tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Clipboard Bad Data Paste Recovery
+- Root cause: clipboard restore snapshotting read every existing clipboard format before paste, and Antigravity exposed a bad format that threw `CLIPBRD_E_BAD_DATA`.
+- Clipboard restore is now best-effort: unreadable formats are skipped, and a failed previous-clipboard snapshot no longer blocks writing and pasting the transcript.
+- Added `ClipboardDataObjectSnapshot` regression coverage for mixed readable/unreadable formats, all-unreadable data, and unreadable format lists.
+- Updated `tasks\lessons.md` so future clipboard restore work preserves paste as the primary behavior.
+- Focused clipboard tests pass, 12 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 142 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-clipboard-fix\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
