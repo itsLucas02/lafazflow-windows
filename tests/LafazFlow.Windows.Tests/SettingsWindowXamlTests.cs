@@ -27,6 +27,17 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Click=\"ClearLatency_OnClick\"", xaml);
     }
 
+    [Fact]
+    public void MiniRecorderWindowStaysOutOfTaskbar()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "MiniRecorderWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("ShowInTaskbar=\"False\"", xaml);
+        Assert.Contains("ShowActivated=\"False\"", xaml);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

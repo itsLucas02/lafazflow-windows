@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private readonly DoubleShiftHotkeyService _hotkeyService = new();
     private readonly SettingsStore _settingsStore = new();
     private readonly RecorderController _recorderController;
+    private readonly TrayIconService _trayIcon;
     private SettingsWindow? _settingsWindow;
 
     public MainWindow()
@@ -27,6 +28,11 @@ public partial class MainWindow : Window
             new ClipboardPasteService(),
             _settingsStore,
             livePreview: new RollingWhisperLiveTranscriptPreviewService());
+        _trayIcon = new TrayIconService(
+            _miniRecorderViewModel,
+            ShowSettingsFromShell,
+            TrayIconService.OpenLogsFolder,
+            () => System.Windows.Application.Current.Shutdown());
         _miniRecorderViewModel.SettingsRequested += OnSettingsRequested;
         Loaded += OnLoaded;
         Closed += OnClosed;
@@ -36,7 +42,6 @@ public partial class MainWindow : Window
     {
         Hide();
         _miniRecorderViewModel.State = RecordingState.Idle;
-        _miniRecorderWindow.ShowBottomCenter();
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
     }
@@ -45,6 +50,7 @@ public partial class MainWindow : Window
     {
         _hotkeyService.DoubleShiftPressed -= OnDoubleShiftPressed;
         _miniRecorderViewModel.SettingsRequested -= OnSettingsRequested;
+        _trayIcon.Dispose();
         _hotkeyService.Dispose();
         _audioCaptureService.Dispose();
         _settingsWindow?.Close();
@@ -57,6 +63,11 @@ public partial class MainWindow : Window
     }
 
     private void OnSettingsRequested()
+    {
+        ShowSettingsFromShell();
+    }
+
+    public void ShowSettingsFromShell()
     {
         Dispatcher.Invoke(() =>
         {

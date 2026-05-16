@@ -400,3 +400,21 @@
 - Focused latency/settings diagnostics tests pass, 18 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 155 tests.
 - Stable publish/launch smoke passed from `artifacts\stable-latency-viewer\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Windows Shell UX Polish
+- [x] Stop showing the mini recorder bar on app startup.
+- [x] Add a tray icon with Settings, Open Logs, and Exit actions.
+- [x] Update tray tooltip status for idle, recording, transcribing, pending jobs, and errors.
+- [x] Keep the single-instance mutex and signal the existing instance to open Settings on second launch.
+- [x] Verify with focused shell UX tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Windows Shell UX Polish
+- Startup now initializes the app in silent idle mode: hotkeys start, but the mini recorder bar stays hidden until dictation, processing, or errors need it.
+- Added a Windows tray icon using the app icon, with Settings, Open Logs, and Exit LafazFlow actions.
+- Added tray status text for idle, recording, transcribing, pending transcription, and error states.
+- Second launches still fail the single-instance mutex, but now signal the already-running instance to open/focus Settings before exiting.
+- Focused shell UX tests pass, 12 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 164 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-shell-polish\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Second-launch process smoke passed: the second process exited and the running process count stayed at one.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
