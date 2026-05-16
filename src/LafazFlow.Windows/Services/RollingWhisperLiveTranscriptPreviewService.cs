@@ -9,20 +9,42 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 {
     private const int SampleRate = 16000;
     private const int BytesPerSample = 2;
-    private const int PreviewIntervalMilliseconds = 1400;
-    private const int MinimumAudioMilliseconds = 1400;
-    private const int RollingWindowMilliseconds = 8000;
-    private const int MinimumBytes = SampleRate * BytesPerSample * MinimumAudioMilliseconds / 1000;
-    private const int RollingWindowBytes = SampleRate * BytesPerSample * RollingWindowMilliseconds / 1000;
 
     private readonly object _lock = new();
     private readonly List<byte> _audioBuffer = [];
     private readonly LiveTranscriptStabilizer _stabilizer = new();
+    private readonly RollingWhisperLiveTranscriptPreviewOptions _options;
+    private readonly Func<AppSettings, byte[], int, CancellationToken, Task<string>> _transcribeSnapshotAsync;
+    private readonly Action<string> _logMessage;
+    private readonly int _minimumBytes;
+    private readonly int _rollingWindowBytes;
+    private readonly int _minimumNewAudioBytes;
     private CancellationTokenSource? _sessionCancellation;
     private Task? _previewLoop;
     private AppSettings? _settings;
     private Action<string>? _onPartialTranscript;
     private string _lastPreview = "";
+    private long _totalAudioByteCount;
+    private long _lastAttemptTotalAudioByteCount;
+    private PreviewSessionStats _stats = new();
+
+    public RollingWhisperLiveTranscriptPreviewService()
+        : this(new RollingWhisperLiveTranscriptPreviewOptions(), null, null)
+    {
+    }
+
+    public RollingWhisperLiveTranscriptPreviewService(
+        RollingWhisperLiveTranscriptPreviewOptions options,
+        Func<AppSettings, byte[], int, CancellationToken, Task<string>>? transcribeSnapshotAsync = null,
+        Action<string>? logMessage = null)
+    {
+        _options = options;
+        _transcribeSnapshotAsync = transcribeSnapshotAsync ?? DefaultTranscribeSnapshotAsync;
+        _logMessage = logMessage ?? Log;
+        _minimumBytes = MillisecondsToPcmBytes(options.MinimumAudioMilliseconds);
+        _rollingWindowBytes = MillisecondsToPcmBytes(options.RollingWindowMilliseconds);
+        _minimumNewAudioBytes = MillisecondsToPcmBytes(options.MinimumNewAudioMilliseconds);
+    }
 
     public Task StartAsync(
         AppSettings settings,
@@ -34,6 +56,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         _settings = settings;
         _onPartialTranscript = onPartialTranscript;
         _lastPreview = "";
+        _totalAudioByteCount = 0;
+        _lastAttemptTotalAudioByteCount = 0;
+        _stats = new PreviewSessionStats();
         _stabilizer.Reset();
         lock (_lock)
         {
@@ -54,10 +79,11 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 
         lock (_lock)
         {
+            _totalAudioByteCount += audioChunk.Length;
             _audioBuffer.AddRange(audioChunk);
-            if (_audioBuffer.Count > RollingWindowBytes)
+            if (_audioBuffer.Count > _rollingWindowBytes)
             {
-                _audioBuffer.RemoveRange(0, _audioBuffer.Count - RollingWindowBytes);
+                _audioBuffer.RemoveRange(0, _audioBuffer.Count - _rollingWindowBytes);
             }
         }
     }
@@ -66,12 +92,16 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     {
         var cancellation = _sessionCancellation;
         var loop = _previewLoop;
+        var stats = _stats;
 
         _sessionCancellation = null;
         _previewLoop = null;
         _settings = null;
         _onPartialTranscript = null;
         _lastPreview = "";
+        _totalAudioByteCount = 0;
+        _lastAttemptTotalAudioByteCount = 0;
+        _stats = new PreviewSessionStats();
         _stabilizer.Reset();
         lock (_lock)
         {
@@ -96,6 +126,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         }
         finally
         {
+            LogPreviewSummary(stats);
             cancellation.Dispose();
         }
     }
@@ -104,41 +135,51 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await Task.Delay(PreviewIntervalMilliseconds, cancellationToken);
+            await Task.Delay(_options.PreviewIntervalMilliseconds, cancellationToken);
             var snapshot = SnapshotAudio();
-            if (snapshot.Length < MinimumBytes)
+            if (snapshot.Audio.Length < _minimumBytes
+                || snapshot.TotalAudioBytes - _lastAttemptTotalAudioByteCount < _minimumNewAudioBytes)
             {
                 continue;
             }
 
-            var preview = await TranscribeSnapshotAsync(snapshot, cancellationToken);
+            _lastAttemptTotalAudioByteCount = snapshot.TotalAudioBytes;
+            _stats.Attempted++;
+            var settings = _settings ?? throw new OperationCanceledException();
+            var threads = Math.Clamp(Math.Max(1, settings.WhisperThreads / 2), 1, Environment.ProcessorCount);
+            var preview = await _transcribeSnapshotAsync(settings, snapshot.Audio, threads, cancellationToken);
             if (!_stabilizer.TryAccept(preview, out var stablePreview))
             {
-                LogPreviewSuppression(_stabilizer.LastSuppressionReason);
+                _stats.CountSuppression(_stabilizer.LastSuppressionReason);
                 continue;
             }
 
             if (string.Equals(stablePreview, _lastPreview, StringComparison.Ordinal))
             {
+                _stats.Duplicate++;
                 continue;
             }
 
             _lastPreview = stablePreview;
+            _stats.Accepted++;
             _onPartialTranscript?.Invoke(stablePreview);
         }
     }
 
-    private byte[] SnapshotAudio()
+    private AudioSnapshot SnapshotAudio()
     {
         lock (_lock)
         {
-            return _audioBuffer.ToArray();
+            return new AudioSnapshot(_audioBuffer.ToArray(), _totalAudioByteCount);
         }
     }
 
-    private async Task<string> TranscribeSnapshotAsync(byte[] pcmAudio, CancellationToken cancellationToken)
+    private async Task<string> DefaultTranscribeSnapshotAsync(
+        AppSettings settings,
+        byte[] pcmAudio,
+        int threads,
+        CancellationToken cancellationToken)
     {
-        var settings = _settings ?? throw new OperationCanceledException();
         if (WhisperCliTranscriptionService.ValidatePaths(settings.WhisperCliPath, settings.ModelPath) is not null)
         {
             return "";
@@ -154,7 +195,6 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         try
         {
             await WriteWavAsync(audioPath, pcmAudio, cancellationToken);
-            var threads = Math.Clamp(Math.Max(1, settings.WhisperThreads / 2), 1, Environment.ProcessorCount);
             var transcript = await RunWhisperAsync(settings, audioPath, threads, cancellationToken);
             if (settings.EnableVocabularyCorrections)
             {
@@ -257,13 +297,19 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         }
     }
 
-    private static void LogPreviewSuppression(string reason)
+    private void LogPreviewSummary(PreviewSessionStats stats)
     {
-        if (string.IsNullOrWhiteSpace(reason) || string.Equals(reason, "empty", StringComparison.Ordinal))
+        if (stats.Attempted == 0)
         {
             return;
         }
 
+        _logMessage(
+            $"Live preview summary: attempted={stats.Attempted} accepted={stats.Accepted} duplicate={stats.Duplicate} regressive={stats.Regressive} empty={stats.Empty}.");
+    }
+
+    private static void Log(string message)
+    {
         try
         {
             var logRoot = Path.Combine(
@@ -273,10 +319,46 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             Directory.CreateDirectory(logRoot);
             File.AppendAllText(
                 Path.Combine(logRoot, "lafazflow.log"),
-                $"[{DateTimeOffset.Now:O}] Live preview suppressed: {reason}.{Environment.NewLine}");
+                $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
         }
         catch
         {
         }
     }
+
+    private static int MillisecondsToPcmBytes(int milliseconds)
+    {
+        return SampleRate * BytesPerSample * milliseconds / 1000;
+    }
+
+    private sealed class PreviewSessionStats
+    {
+        public int Attempted { get; set; }
+
+        public int Accepted { get; set; }
+
+        public int Duplicate { get; set; }
+
+        public int Regressive { get; set; }
+
+        public int Empty { get; set; }
+
+        public void CountSuppression(string reason)
+        {
+            switch (reason)
+            {
+                case "duplicate":
+                    Duplicate++;
+                    break;
+                case "regressive":
+                    Regressive++;
+                    break;
+                default:
+                    Empty++;
+                    break;
+            }
+        }
+    }
+
+    private sealed record AudioSnapshot(byte[] Audio, long TotalAudioBytes);
 }

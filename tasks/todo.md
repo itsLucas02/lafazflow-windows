@@ -329,3 +329,19 @@
 - Focused stop-handoff tests pass, 3 tests; focused controller/view-model tests pass, 30 tests.
 - Full `dotnet test` passes, 132 tests; full `dotnet build` passes with 0 warnings.
 - App launch smoke passed; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+
+## Plan: Live Preview Calmness Cleanup
+- [x] Keep live preview enabled while slowing preview cadence and rolling-window churn.
+- [x] Skip preview transcription when too little new audio has arrived.
+- [x] Replace per-suppression preview logs with one aggregate session summary.
+- [x] Preserve final transcription/paste authority and all local/offline behavior.
+- [x] Verify with focused preview tests, full build/test, public-readiness scan, launch smoke, then commit and push.
+
+## Review: Live Preview Calmness Cleanup
+- Live preview stays enabled by default, but preview cadence is calmer: 2200 ms interval, 1800 ms minimum audio, 6000 ms rolling window, and 1000 ms minimum new audio.
+- Preview Whisper snapshots are skipped when too little new audio arrived since the previous attempt.
+- Per-suppression log spam is replaced by one session summary with attempted, accepted, duplicate, regressive, and empty counts.
+- Final transcription, queueing, paste, clipboard restore, and model defaults are unchanged.
+- Focused preview/stabilizer tests pass, 10 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 139 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-preview-calm\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
