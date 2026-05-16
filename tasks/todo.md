@@ -361,3 +361,25 @@
 - Focused clipboard tests pass, 12 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 142 tests.
 - Stable publish/launch smoke passed from `artifacts\stable-clipboard-fix\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Later Today Backlog: Native-Feel Improvement Tracks
+- True local streaming preview / faster preview backend while keeping final transcript authoritative.
+- Latency viewer / diagnostics panel using existing local `LATENCY` logs.
+- Installer and release packaging with clean Windows setup guidance.
+- Advanced formatting and vocabulary, including developer dictation terminology.
+
+## Plan: Developer Dictation Cleanup
+- [x] Capture the owner-provided bad/good transcript pair as regression coverage.
+- [x] Add deterministic offline cleanup for high-confidence technical dictation errors.
+- [x] Expand the default local Whisper prompt with developer/shadcn vocabulary.
+- [x] Preserve local/offline behavior and final transcript authority.
+- [x] Verify with focused formatter/vocabulary/settings tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Developer Dictation Cleanup
+- Added regression coverage for the owner-provided bad/good developer dictation example.
+- Added offline cleanup for `reuse whatever we use have`, `Install one's reuse forever`, protected skill-token spacing, and the observed command sentence punctuation.
+- Expanded the default local Whisper prompt with developer terms including `shadcn/ui`, `components.json`, `Radix UI`, `Tailwind CSS`, `FieldGroup`, `InputGroup`, `npx shadcn@latest`, and `build-web-apps:shadcn`.
+- Bumped settings schema and migrated only the previous default prompt to the expanded developer prompt; custom prompts are preserved.
+- Focused vocabulary/settings tests pass, 42 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 145 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-dev-dictation-cleanup\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

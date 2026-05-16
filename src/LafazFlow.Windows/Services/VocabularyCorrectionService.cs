@@ -42,6 +42,11 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("shut-see-in"), "shadcn"),
         (PhraseRegex("shat-c-n"), "shadcn"),
         (PhraseRegex("shetxian"), "shadcn"),
+        (PhraseRegex("components dot json"), "components.json"),
+        (PhraseRegex("radix ui"), "Radix UI"),
+        (PhraseRegex("tailwind css"), "Tailwind CSS"),
+        (PhraseRegex("field group"), "FieldGroup"),
+        (PhraseRegex("input group"), "InputGroup"),
         (PhraseRegex("github"), "GitHub"),
         (PhraseRegex("power shell"), "PowerShell"),
         (PhraseRegex("powershell"), "PowerShell"),
@@ -56,7 +61,11 @@ public static partial class VocabularyCorrectionService
             corrected = pattern.Replace(corrected, replacement);
         }
 
-        return FixTestingDictationThats(corrected);
+        corrected = FixTestingDictationThats(corrected);
+        corrected = FixDeveloperDictationPhrases(corrected);
+        corrected = NormalizeProtectedDeveloperTokens(corrected);
+
+        return corrected;
     }
 
     private static Regex PhraseRegex(string phrase)
@@ -86,4 +95,40 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])that['’]?s(?=\s+(?:\d|one\b|two\b|three\b|1-2-3\b))", RegexOptions.IgnoreCase)]
     private static partial Regex TestingLeadThatsRegex();
+
+    private static string FixDeveloperDictationPhrases(string text)
+    {
+        var corrected = ReuseWhateverWeUseHaveRegex().Replace(text, "reuse whatever we have");
+        corrected = InstallOnesReuseForeverRegex().Replace(corrected, "Install once, reuse forever");
+        corrected = WhatDoYouThinkQuestionRegex().Replace(corrected, "what do you think.");
+
+        return corrected;
+    }
+
+    private static string NormalizeProtectedDeveloperTokens(string text)
+    {
+        var corrected = ShadcnUiSkillTokenRegex().Replace(text, "$shadcn-ui");
+        corrected = BuildWebAppsShadcnSkillTokenRegex().Replace(corrected, "$build-web-apps:shadcn");
+        corrected = SpaceBeforeProtectedPunctuationRegex().Replace(corrected, "$1");
+
+        return corrected;
+    }
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])reuse\s+whatever\s+we\s+use\s+have(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex ReuseWhateverWeUseHaveRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])install\s+one['â€™]?s\s+reuse\s+forever(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex InstallOnesReuseForeverRegex();
+
+    [GeneratedRegex(@"what\s+do\s+you\s+think\?(?=\s+Everything\s+is\s+documented)", RegexOptions.IgnoreCase)]
+    private static partial Regex WhatDoYouThinkQuestionRegex();
+
+    [GeneratedRegex(@"\$\s*shadcn\s*-\s*ui", RegexOptions.IgnoreCase)]
+    private static partial Regex ShadcnUiSkillTokenRegex();
+
+    [GeneratedRegex(@"\$\s*build\s*-\s*web\s*-\s*apps\s*:\s*shadcn", RegexOptions.IgnoreCase)]
+    private static partial Regex BuildWebAppsShadcnSkillTokenRegex();
+
+    [GeneratedRegex(@"\s+([.:])(?=\s|$)")]
+    private static partial Regex SpaceBeforeProtectedPunctuationRegex();
 }

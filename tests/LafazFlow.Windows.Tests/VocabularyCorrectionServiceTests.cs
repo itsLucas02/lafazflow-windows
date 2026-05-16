@@ -107,6 +107,16 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Fact]
+    public void ApplyDefaultsCleansDeveloperDictationExample()
+    {
+        var input = "We can take the placeholder name for a temporary branding name for now, since we haven't yet finalized on the branding name, and therefore I'm choosing Care Visit. We also need to make sure that our UI UX that are using shadcn is standardized and doesn't have variations, meaning that, you know, instead of importing multiple things, multiple methods or multiple variations for just one simple UI components, perhaps we can reuse, you know, reuse whatever we use have. Install one's reuse forever. you can see this from shadcn skills $shadcn-ui and $build-web-apps:shadcn . Go to those skills I mentioned and then tell me what do you think? Everything is documented in those skills documentation.";
+
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal("We can take the placeholder name for a temporary branding name for now, since we haven't yet finalized on the branding name, and therefore I'm choosing Care Visit. We also need to make sure that our UI UX that are using shadcn is standardized and doesn't have variations, meaning that, you know, instead of importing multiple things, multiple methods or multiple variations for just one simple UI components, perhaps we can reuse, you know, reuse whatever we have. Install once, reuse forever. you can see this from shadcn skills $shadcn-ui and $build-web-apps:shadcn. Go to those skills I mentioned and then tell me what do you think. Everything is documented in those skills documentation.", corrected);
+    }
+
+    [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults("Testing one, two, three.");

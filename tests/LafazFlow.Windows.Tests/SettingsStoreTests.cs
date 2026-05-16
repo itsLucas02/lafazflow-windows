@@ -23,6 +23,10 @@ public sealed class SettingsStoreTests
         Assert.True(settings.EnableVocabularyCorrections);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
         Assert.Contains("Luqman", settings.WhisperInitialPrompt);
+        Assert.Contains("shadcn/ui", settings.WhisperInitialPrompt);
+        Assert.Contains("components.json", settings.WhisperInitialPrompt);
+        Assert.Contains("npx shadcn@latest", settings.WhisperInitialPrompt);
+        Assert.Contains("build-web-apps:shadcn", settings.WhisperInitialPrompt);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
 
@@ -122,5 +126,39 @@ public sealed class SettingsStoreTests
         var custom = store.Load();
 
         Assert.Equal(customModelPath, custom.ModelPath);
+    }
+
+    [Fact]
+    public void LoadMigratesPreviousDefaultPromptToDeveloperPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 1,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow, Luqman."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("shadcn/ui", migrated.WhisperInitialPrompt);
+        Assert.Contains("build-web-apps:shadcn", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadPreservesCustomPromptDuringMigration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 1,
+            WhisperInitialPrompt = "My custom prompt"
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal("My custom prompt", migrated.WhisperInitialPrompt);
     }
 }

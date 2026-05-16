@@ -6,6 +6,9 @@ namespace LafazFlow.Windows.Services;
 
 public sealed class SettingsStore
 {
+    private const string PreviousDefaultWhisperInitialPrompt =
+        "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow, Luqman.";
+
     private static readonly string[] ModelPriority =
     [
         "ggml-base.en.bin",
@@ -94,7 +97,8 @@ public sealed class SettingsStore
             migrated = migrated with { ClipboardRestoreDelayMs = AppSettings.DefaultClipboardRestoreDelayMs };
         }
 
-        if (string.IsNullOrWhiteSpace(migrated.WhisperInitialPrompt))
+        if (string.IsNullOrWhiteSpace(migrated.WhisperInitialPrompt)
+            || string.Equals(migrated.WhisperInitialPrompt, PreviousDefaultWhisperInitialPrompt, StringComparison.Ordinal))
         {
             migrated = migrated with { WhisperInitialPrompt = AppSettings.DefaultWhisperInitialPrompt };
         }
