@@ -30,6 +30,16 @@
             <Setter Property="Foreground" Value="#E8EAED" />
             <Setter Property="Margin" Value="0,4,0,8" />
         </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="Margin" Value="0,4,0,10" />
+            <Setter Property="Background" Value="#191B20" />
+            <Setter Property="Foreground" Value="#F8F9FA" />
+            <Setter Property="BorderBrush" Value="#30343B" />
+            <Setter Property="GridLinesVisibility" Value="None" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+            <Setter Property="RowBackground" Value="#191B20" />
+            <Setter Property="AlternatingRowBackground" Value="#15171B" />
+        </Style>
     </Window.Resources>
 
     <Grid Margin="22">
@@ -90,6 +100,43 @@
                 <TextBlock Text="Diagnostics" FontWeight="SemiBold" Margin="0,8,0,4" />
                 <CheckBox Content="Keep recordings for diagnostics"
                           IsChecked="{Binding KeepRecordingsForDiagnostics}" />
+
+                <TextBlock Text="Recent Latency" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding LatencyDiagnosticsMessage}"
+                           Foreground="#9AA0A6"
+                           Margin="0,2,0,4" />
+                <DataGrid ItemsSource="{Binding RecentLatencyRows}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserReorderColumns="False"
+                          CanUserResizeRows="False"
+                          Height="180">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="78" />
+                        <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="92" />
+                        <DataGridTextColumn Header="Model" Binding="{Binding Model}" Width="130" />
+                        <DataGridTextColumn Header="Whisper" Binding="{Binding WhisperMs}" Width="70" />
+                        <DataGridTextColumn Header="Paste" Binding="{Binding PasteMs}" Width="64" />
+                        <DataGridTextColumn Header="Total" Binding="{Binding TotalStopToDoneMs}" Width="70" />
+                        <DataGridTextColumn Header="Error" Binding="{Binding Error}" Width="120" />
+                    </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Refresh"
+                            Width="86"
+                            Margin="0,0,8,10"
+                            Click="RefreshLatency_OnClick" />
+                    <Button Content="Open Logs"
+                            Width="92"
+                            Margin="0,0,8,10"
+                            Click="OpenLogsFolder_OnClick" />
+                    <Button Content="Clear Latency"
+                            Width="104"
+                            Margin="0,0,0,10"
+                            Click="ClearLatency_OnClick" />
+                </StackPanel>
 
                 <TextBlock Text="Settings Folder" FontWeight="SemiBold" />
                 <Grid>

@@ -14,6 +14,19 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Text=\"{Binding RecordingsFolder, Mode=OneWay}\"", xaml);
     }
 
+    [Fact]
+    public void SettingsWindowContainsLatencyDiagnosticsViewer()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("ItemsSource=\"{Binding RecentLatencyRows}\"", xaml);
+        Assert.Contains("Text=\"{Binding LatencyDiagnosticsMessage}\"", xaml);
+        Assert.Contains("Click=\"RefreshLatency_OnClick\"", xaml);
+        Assert.Contains("Click=\"ClearLatency_OnClick\"", xaml);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

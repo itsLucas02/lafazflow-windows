@@ -61,6 +61,16 @@ public partial class SettingsWindow : Window
         OpenFolder(_viewModel.RecordingsFolder);
     }
 
+    private void RefreshLatency_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshLatencyDiagnostics();
+    }
+
+    private void ClearLatency_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ClearLatencyDiagnostics();
+    }
+
     private void Cancel_OnClick(object sender, RoutedEventArgs e)
     {
         Close();

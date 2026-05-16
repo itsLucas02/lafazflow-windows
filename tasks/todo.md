@@ -383,3 +383,20 @@
 - Focused vocabulary/settings tests pass, 42 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 145 tests.
 - Stable publish/launch smoke passed from `artifacts\stable-dev-dictation-cleanup\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Latency Viewer Diagnostics Panel
+- [x] Add a parser for existing local `LATENCY` log lines.
+- [x] Add clear-history behavior that removes only latency lines and preserves other logs.
+- [x] Show the latest 20 latency rows inside Settings diagnostics.
+- [x] Add Refresh, Open Logs, and Clear Latency actions.
+- [x] Preserve privacy-safe diagnostics: no transcript text, no full paths, no audio data.
+- [x] Verify with focused diagnostics tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Latency Viewer Diagnostics Panel
+- Added a local latency diagnostics reader that parses existing `LATENCY key=value` lines into recent rows and ignores malformed/non-latency log lines.
+- Added Clear Latency behavior that rewrites `lafazflow.log` while preserving non-latency logs.
+- Extended Settings diagnostics with a recent latency table and Refresh, Open Logs, and Clear Latency actions.
+- The viewer uses the existing privacy-safe fields only: status, target, model filename, stage timings, totals, and exception type.
+- Focused latency/settings diagnostics tests pass, 18 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 155 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-latency-viewer\LafazFlow.Windows\LafazFlow.Windows.exe`; public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

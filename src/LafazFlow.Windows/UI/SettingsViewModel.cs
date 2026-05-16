@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using LafazFlow.Windows.Core;
@@ -9,6 +10,7 @@ namespace LafazFlow.Windows.UI;
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly SettingsStore _settingsStore;
+    private readonly LatencyDiagnosticLogStore _latencyDiagnostics;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
     private string _modelPath = "";
@@ -20,10 +22,15 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _enableVocabularyCorrections;
     private bool _keepRecordingsForDiagnostics;
     private string _validationMessage = "";
+    private string _latencyDiagnosticsMessage = "";
 
-    private SettingsViewModel(SettingsStore settingsStore, AppSettings settings)
+    private SettingsViewModel(
+        SettingsStore settingsStore,
+        AppSettings settings,
+        LatencyDiagnosticLogStore latencyDiagnostics)
     {
         _settingsStore = settingsStore;
+        _latencyDiagnostics = latencyDiagnostics;
         _sourceSettings = settings;
         WhisperCliPath = settings.WhisperCliPath;
         ModelPath = settings.ModelPath;
@@ -34,6 +41,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
+        RefreshLatencyDiagnostics();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -92,6 +100,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _keepRecordingsForDiagnostics, value);
     }
 
+    public ObservableCollection<LatencyDiagnosticRow> RecentLatencyRows { get; } = [];
+
+    public string LatencyDiagnosticsMessage
+    {
+        get => _latencyDiagnosticsMessage;
+        private set => SetProperty(ref _latencyDiagnosticsMessage, value);
+    }
+
     public string SettingsFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "LafazFlow");
@@ -124,9 +140,34 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public bool HasValidationMessage => !string.IsNullOrWhiteSpace(ValidationMessage);
 
-    public static SettingsViewModel Load(SettingsStore settingsStore)
+    public static SettingsViewModel Load(SettingsStore settingsStore, LatencyDiagnosticLogStore? latencyDiagnostics = null)
     {
-        return new SettingsViewModel(settingsStore, settingsStore.Load());
+        return new SettingsViewModel(
+            settingsStore,
+            settingsStore.Load(),
+            latencyDiagnostics ?? new LatencyDiagnosticLogStore());
+    }
+
+    public void RefreshLatencyDiagnostics()
+    {
+        RecentLatencyRows.Clear();
+        foreach (var row in _latencyDiagnostics.LoadRecent())
+        {
+            RecentLatencyRows.Add(row);
+        }
+
+        LatencyDiagnosticsMessage = RecentLatencyRows.Count == 0
+            ? "No latency entries yet."
+            : $"Showing latest {RecentLatencyRows.Count} latency entries.";
+    }
+
+    public void ClearLatencyDiagnostics()
+    {
+        var removed = _latencyDiagnostics.ClearLatencyLines();
+        RefreshLatencyDiagnostics();
+        LatencyDiagnosticsMessage = removed == 0
+            ? "No latency entries to clear."
+            : $"Cleared {removed} latency entries.";
     }
 
     public SettingsSaveResult Save()

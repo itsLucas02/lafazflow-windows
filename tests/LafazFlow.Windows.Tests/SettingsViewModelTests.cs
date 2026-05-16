@@ -113,4 +113,67 @@ public sealed class SettingsViewModelTests
         Assert.Equal(Environment.ProcessorCount, saved.WhisperThreads);
         Assert.Equal(AppSettings.DefaultClipboardRestoreDelayMs, saved.ClipboardRestoreDelayMs);
     }
+
+    [Fact]
+    public void LoadPopulatesRecentLatencyRows()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var logPath = CreateLatencyLog(
+            "[2026-05-16T16:13:56.3366097+08:00] LATENCY id=abc123 status=completed model=ggml-base.en.bin threads=16 target=Cursor recording_ms=100 queue_wait_ms=0 whisper_ms=20 paste_ms=30 total_stop_to_done_ms=50 total_record_to_done_ms=150 error=none");
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            new LatencyDiagnosticLogStore(logPath));
+
+        Assert.Single(viewModel.RecentLatencyRows);
+        Assert.Equal("abc123", viewModel.RecentLatencyRows[0].Id);
+        Assert.Equal("Showing latest 1 latency entries.", viewModel.LatencyDiagnosticsMessage);
+    }
+
+    [Fact]
+    public void RefreshLatencyDiagnosticsReloadsChangedLog()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var logPath = CreateLatencyLog("");
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            new LatencyDiagnosticLogStore(logPath));
+        File.WriteAllText(
+            logPath,
+            "[2026-05-16T16:13:56.3366097+08:00] LATENCY id=def456 status=failed model=ggml-base.en.bin threads=16 target=Antigravity recording_ms=100 queue_wait_ms=0 whisper_ms=20 paste_ms=na total_stop_to_done_ms=50 total_record_to_done_ms=150 error=InvalidOperationException");
+
+        viewModel.RefreshLatencyDiagnostics();
+
+        Assert.Single(viewModel.RecentLatencyRows);
+        Assert.Equal("def456", viewModel.RecentLatencyRows[0].Id);
+    }
+
+    [Fact]
+    public void ClearLatencyDiagnosticsRemovesLatencyRowsAndPreservesOtherLogs()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var otherLog = "[2026-05-16T16:13:55.0000000+08:00] Ordinary log.";
+        var logPath = CreateLatencyLog(
+            $"""
+            {otherLog}
+            [2026-05-16T16:13:56.3366097+08:00] LATENCY id=abc123 status=completed model=ggml-base.en.bin threads=16 target=Cursor recording_ms=100 queue_wait_ms=0 whisper_ms=20 paste_ms=30 total_stop_to_done_ms=50 total_record_to_done_ms=150 error=none
+            """);
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            new LatencyDiagnosticLogStore(logPath));
+
+        viewModel.ClearLatencyDiagnostics();
+
+        Assert.Empty(viewModel.RecentLatencyRows);
+        Assert.Equal("Cleared 1 latency entries.", viewModel.LatencyDiagnosticsMessage);
+        Assert.Equal([otherLog], File.ReadAllLines(logPath));
+    }
+
+    private static string CreateLatencyLog(string content)
+    {
+        var logPath = Path.Combine(
+            Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))).FullName,
+            "lafazflow.log");
+        File.WriteAllText(logPath, content);
+        return logPath;
+    }
 }
