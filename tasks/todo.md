@@ -432,3 +432,22 @@
 - Stable publish/launch smoke passed from `artifacts\stable-strip-blank-audio\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Strip Non-Speech Markers And Continue Casing
+- [x] Add regression tests for bracketed non-speech markers such as `[MUSIC PLAYING]`.
+- [x] Add regression tests for continuation casing after existing comma/colon/semicolon context.
+- [x] Extend transcript cleanup to remove known Whisper metadata markers without deleting normal bracketed user text.
+- [x] Add a best-effort focused text context reader and apply lowercase continuation only when target context is available.
+- [x] Update lessons with the owner correction pattern.
+- [x] Verify with focused tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Strip Non-Speech Markers And Continue Casing
+- Root cause: the formatter only stripped blank/silence/no-audio markers, so Whisper metadata such as `[MUSIC PLAYING]` leaked into final paste.
+- Added known non-speech marker cleanup for music, laughter, applause, noise, background noise, and inaudible captions while preserving normal bracketed user text.
+- Added best-effort target text context through Windows UI Automation and continuation casing for comma/colon/semicolon-style context.
+- Continuation casing preserves acronyms and the pronoun `I`; if an app does not expose focused text context, LafazFlow falls back to the existing sentence-start behavior.
+- Focused formatter/controller tests pass, 22 tests; full `dotnet test` passes, 183 tests.
+- Full `dotnet build` passes with 0 warnings.
+- Published and launch-smoked the stable build from `artifacts\stable-context-casing-markers\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

@@ -43,4 +43,16 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal(expected, formatted);
     }
+
+    [Theory]
+    [InlineData("hello world [MUSIC PLAYING].", "Hello world.")]
+    [InlineData("[Music playing] hello world", "Hello world.")]
+    [InlineData("hello [LAUGHTER] world", "Hello world.")]
+    [InlineData("keep [important note] here", "Keep [important note] here.")]
+    public void FormatRemovesKnownNonSpeechMarkersOnly(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
 }

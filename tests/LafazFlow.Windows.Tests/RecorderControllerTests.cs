@@ -348,6 +348,32 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task CompletedDictationUsesTargetTextContextForContinuationCasing()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("Hello, over.")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService("Whatever,"));
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["hello, over. "], paste.Texts);
+        Assert.Equal("hello, over.", viewModel.RecentTranscripts[0]);
+    }
+
+    [Fact]
     public async Task FailedDictationReportsLatency()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -533,6 +559,14 @@ public sealed class RecorderControllerTests
         public void Report(LatencyTrace trace)
         {
             Traces.Add(trace);
+        }
+    }
+
+    private sealed class FakeTargetTextContextService(string textBeforeCaret) : ITargetTextContextService
+    {
+        public string GetTextBeforeCaret(IntPtr targetWindow)
+        {
+            return textBeforeCaret;
         }
     }
 

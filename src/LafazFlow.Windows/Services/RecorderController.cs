@@ -17,6 +17,7 @@ public sealed class RecorderController
     private readonly SoundCueService _soundCues;
     private readonly ILiveTranscriptPreviewService _livePreview;
     private readonly ILatencyReporter _latencyReporter;
+    private readonly ITargetTextContextService _targetTextContext;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly DictationQueueProcessor _queue;
     private string? _currentAudioPath;
@@ -35,7 +36,8 @@ public sealed class RecorderController
         SoundCueService? soundCues = null,
         Func<IntPtr>? getForegroundWindow = null,
         ILiveTranscriptPreviewService? livePreview = null,
-        ILatencyReporter? latencyReporter = null)
+        ILatencyReporter? latencyReporter = null,
+        ITargetTextContextService? targetTextContext = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -46,6 +48,7 @@ public sealed class RecorderController
         _soundCues = soundCues ?? new SoundCueService();
         _livePreview = livePreview ?? new NullLiveTranscriptPreviewService();
         _latencyReporter = latencyReporter ?? new FileLatencyReporter();
+        _targetTextContext = targetTextContext ?? new FocusedTargetTextContextService();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
@@ -244,6 +247,9 @@ public sealed class RecorderController
             {
                 transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
             }
+
+            var targetContext = _targetTextContext.GetTextBeforeCaret(job.TargetWindow);
+            transcript = TextContinuationFormatter.ApplyTargetContext(transcript, targetContext);
 
             if (job.Settings.AppendTrailingSpace)
             {

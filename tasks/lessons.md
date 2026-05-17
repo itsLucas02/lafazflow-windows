@@ -91,3 +91,11 @@
 ## Strip ASR metadata markers before paste
 - Pattern: Whisper can emit bracketed non-speech markers such as `[BLANK_AUDIO]`, especially around silence at the end of a recording.
 - Rule: Treat bracketed audio-status markers as transcription metadata, not user content, and remove them in the transcript formatter before vocabulary correction and paste.
+
+## Strip known non-speech captions broadly
+- Pattern: Whisper can emit bracketed descriptive captions such as `[MUSIC PLAYING]`, `[LAUGHTER]`, or `[APPLAUSE]` that are not dictated user text.
+- Rule: Remove known ASR non-speech captions before paste, but do not delete arbitrary bracketed user content such as `[important note]`.
+
+## Make continuation casing context-aware when possible
+- Pattern: A new dictation pasted after existing mid-sentence punctuation like `Whatever,` should continue as `hello` instead of forcing `Hello`.
+- Rule: Use best-effort focused-field context to lowercase only the first normal word after comma/colon/semicolon context; preserve acronyms and the pronoun `I`, and fall back safely when an app does not expose text context.

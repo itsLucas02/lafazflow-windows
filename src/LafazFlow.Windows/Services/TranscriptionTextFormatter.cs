@@ -7,7 +7,7 @@ public static partial class TranscriptionTextFormatter
     public static string Format(string text)
     {
         var withoutTimestamps = TimestampLineRegex().Replace(text, " ");
-        var withoutAudioMarkers = AudioMarkerRegex().Replace(withoutTimestamps, " ");
+        var withoutAudioMarkers = NonSpeechMarkerRegex().Replace(withoutTimestamps, " ");
         var normalized = WhitespaceRegex().Replace(withoutAudioMarkers, " ").Trim();
         normalized = SpaceBeforePunctuationRegex().Replace(normalized, "$1");
         normalized = OrphanPunctuationRegex().Replace(normalized, "").Trim();
@@ -36,8 +36,8 @@ public static partial class TranscriptionTextFormatter
     [GeneratedRegex(@"\[[0-9:.]+\s*-->\s*[0-9:.]+\]")]
     private static partial Regex TimestampLineRegex();
 
-    [GeneratedRegex(@"\[\s*(?:BLANK|SILENCE|NO)\s*[_\s-]*AUDIO\s*\]", RegexOptions.IgnoreCase)]
-    private static partial Regex AudioMarkerRegex();
+    [GeneratedRegex(@"\[\s*(?:(?:BLANK|SILENCE|NO)\s*[_\s-]*AUDIO|MUSIC\s+PLAYING|MUSIC|LAUGHTER|APPLAUSE|NOISE|BACKGROUND\s+NOISE|INAUDIBLE)\s*\]", RegexOptions.IgnoreCase)]
+    private static partial Regex NonSpeechMarkerRegex();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();
