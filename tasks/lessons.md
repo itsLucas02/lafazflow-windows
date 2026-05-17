@@ -87,3 +87,7 @@
 ## Treat clipboard restore as best-effort only
 - Pattern: IDEs can leave rich or image clipboard formats that throw `CLIPBRD_E_BAD_DATA` when read, causing dictation paste to fail before LafazFlow writes the transcript.
 - Rule: Never let previous-clipboard snapshot or restore failures block transcription paste; skip unreadable formats and continue with the text paste.
+
+## Strip ASR metadata markers before paste
+- Pattern: Whisper can emit bracketed non-speech markers such as `[BLANK_AUDIO]`, especially around silence at the end of a recording.
+- Rule: Treat bracketed audio-status markers as transcription metadata, not user content, and remove them in the transcript formatter before vocabulary correction and paste.

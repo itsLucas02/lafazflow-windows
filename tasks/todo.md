@@ -418,3 +418,17 @@
 - Second-launch process smoke passed: the second process exited and the running process count stayed at one.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Strip Blank Audio Markers
+- [x] Add regression tests for Whisper `[BLANK_AUDIO]` marker leaks at the start, middle, and end of transcripts.
+- [x] Remove bracketed audio-status metadata markers in the transcript formatter before final paste.
+- [x] Update lessons so ASR metadata markers are treated as non-user content.
+- [x] Verify with focused formatter tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Strip Blank Audio Markers
+- Root cause: Whisper can emit `[BLANK_AUDIO]` as non-speech metadata, and `TranscriptionTextFormatter` only removed timestamps, whitespace noise, and spaces before punctuation.
+- Added formatter cleanup for bracketed audio markers such as `[BLANK_AUDIO]`, including casing/spacing variants.
+- Focused formatter tests pass, 8 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 169 tests.
+- Stable publish/launch smoke passed from `artifacts\stable-strip-blank-audio\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and `CancellationToken`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.

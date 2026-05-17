@@ -30,4 +30,17 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal("Hello world?", formatted);
     }
+
+    [Theory]
+    [InlineData("hello world [BLANK_AUDIO].", "Hello world.")]
+    [InlineData("hello world [BLANK_AUDIO]", "Hello world.")]
+    [InlineData("[BLANK_AUDIO] hello world", "Hello world.")]
+    [InlineData("hello [blank audio] world", "Hello world.")]
+    [InlineData("hello [BLANK_AUDIO] [BLANK_AUDIO].", "Hello.")]
+    public void FormatRemovesBlankAudioMarkers(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
 }
