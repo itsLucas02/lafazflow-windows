@@ -6,6 +6,10 @@ namespace LafazFlow.Windows.Services;
 
 public sealed class WhisperCliTranscriptionService : ITranscriptionService
 {
+    private const string EnglishOnlyPromptPrefix =
+        "English dictation only. Output English text only. Do not translate into Malay or Indonesian. "
+        + "Transcribe the spoken English words exactly.";
+
     public static string? ValidatePaths(string whisperCliPath, string modelPath)
     {
         return ValidatePaths(whisperCliPath, modelPath, WhisperDecodeOptions.Fast);
@@ -49,16 +53,18 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         int threads,
         WhisperDecodeOptions decodeOptions)
     {
-        var promptArgs = string.IsNullOrWhiteSpace(initialPrompt)
+        var prompt = BuildPrompt(initialPrompt);
+        var promptArgs = string.IsNullOrWhiteSpace(prompt)
             ? ""
-            : $" --prompt {Quote(initialPrompt)} --carry-initial-prompt";
+            : $" --prompt {Quote(prompt)} --carry-initial-prompt";
         var safeThreads = Math.Clamp(threads, 1, Environment.ProcessorCount);
+        var fallbackArgs = decodeOptions.NoFallback ? " -nf" : "";
         var nonSpeechArgs = decodeOptions.SuppressNonSpeechTokens ? " -sns" : "";
         var vadArgs = decodeOptions.EnableVad
             ? $" --vad -vm {Quote(decodeOptions.VadModelPath)} -vt 0.50 -vspd 250 -vsd 100 -vp 30 -vo 0.10"
             : "";
 
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -l en -tp {FormatTemperature(decodeOptions.Temperature)}{nonSpeechArgs}{vadArgs}{promptArgs} -of {Quote(outputBasePath)}";
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -l en -tp {FormatTemperature(decodeOptions.Temperature)}{fallbackArgs}{nonSpeechArgs}{vadArgs}{promptArgs} -of {Quote(outputBasePath)}";
     }
 
     public static WhisperRuntimeOptions ResolveRuntime(AppSettings settings)
@@ -76,7 +82,8 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         {
             decodeOptions = decodeOptions with
             {
-                Temperature = 0.2,
+                Temperature = 0,
+                NoFallback = true,
                 SuppressNonSpeechTokens = true
             };
         }
@@ -209,6 +216,13 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
     private static string Quote(string value)
     {
         return $"\"{value.Replace("\"", "\\\"")}\"";
+    }
+
+    private static string BuildPrompt(string initialPrompt)
+    {
+        return string.IsNullOrWhiteSpace(initialPrompt)
+            ? EnglishOnlyPromptPrefix
+            : $"{EnglishOnlyPromptPrefix} {initialPrompt.Trim()}";
     }
 
     private static string FormatTemperature(double temperature)

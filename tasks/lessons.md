@@ -111,3 +111,7 @@
 ## Patch every transcription launcher
 - Pattern: LafazFlow can launch Whisper from both final transcription and live preview; fixing only one path still leaves user-facing CUDA DLL errors.
 - Rule: When changing Whisper process environment or arguments, search every `ProcessStartInfo` path and keep preview and final transcription launch behavior aligned.
+
+## Enforce English-only dictation in decode settings
+- Pattern: A multilingual Whisper model can output Malay/Indonesian text from English audio even when `-l en` is present, especially with fallback sampling and a vocabulary-only prompt.
+- Rule: For English dictation mode, use deterministic decoding, disable fallback, and prepend an explicit English-only instruction before the vocabulary prompt.

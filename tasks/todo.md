@@ -503,3 +503,17 @@
 - Focused Whisper/live-preview tests pass, 13 tests; full `dotnet test` passes, 191 tests; `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Harden English-Only Dictation
+- [x] Reproduce the Malay/Indonesian output from the saved WAV that triggered the complaint.
+- [x] Compare old decode flags against stricter English-only decode flags on the same audio.
+- [x] Add deterministic English-only prompt prefix, temperature 0, and no-fallback decode settings.
+- [x] Verify focused tests, full build/test, publish/relaunch, public scan, then commit and push.
+
+## Review: Harden English-Only Dictation
+- Root cause: the multilingual quality model reproduced the observed Malay/Indonesian output on the saved English WAV with the old quality flags.
+- The same WAV returned English when decoded with deterministic temperature, no fallback, and an explicit English-only prompt prefix.
+- Quality and Fast decode now use `-tp 0` and `-nf`; prompts are prefixed with an English-only instruction before vocabulary terms.
+- Focused Whisper tests pass, 8 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 191 tests.
+- Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.

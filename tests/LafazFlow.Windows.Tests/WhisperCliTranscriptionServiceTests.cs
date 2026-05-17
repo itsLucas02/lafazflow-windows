@@ -21,6 +21,7 @@ public sealed class WhisperCliTranscriptionServiceTests
         Assert.Contains("-otxt", args);
         Assert.Contains("-nt", args);
         Assert.Contains("-tp 0", args);
+        Assert.Contains("-nf", args);
         Assert.Contains("-of \"C:\\Audio\\sample\"", args);
     }
 
@@ -34,7 +35,9 @@ public sealed class WhisperCliTranscriptionServiceTests
             "Supabase Vercel Tailscale \"quoted\"",
             16);
 
-        Assert.Contains("--prompt \"Supabase Vercel Tailscale \\\"quoted\\\"\"", args);
+        Assert.Contains("English dictation only.", args);
+        Assert.Contains("Do not translate into Malay or Indonesian.", args);
+        Assert.Contains("Supabase Vercel Tailscale \\\"quoted\\\"", args);
         Assert.Contains("--carry-initial-prompt", args);
     }
 
@@ -50,7 +53,8 @@ public sealed class WhisperCliTranscriptionServiceTests
             WhisperDecodeOptions.QualityWithVad(@"C:\Models\whisper\ggml-silero-v5.1.2.bin"));
 
         Assert.Contains("-l en", args);
-        Assert.Contains("-tp 0.2", args);
+        Assert.Contains("-tp 0", args);
+        Assert.Contains("-nf", args);
         Assert.Contains("-sns", args);
         Assert.Contains("--vad", args);
         Assert.Contains("-vm \"C:\\Models\\whisper\\ggml-silero-v5.1.2.bin\"", args);
@@ -80,7 +84,8 @@ public sealed class WhisperCliTranscriptionServiceTests
 
         Assert.Equal(@"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe", runtime.CliPath);
         Assert.Equal(@"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin", runtime.ModelPath);
-        Assert.Equal(0.2, runtime.DecodeOptions.Temperature);
+        Assert.Equal(0, runtime.DecodeOptions.Temperature);
+        Assert.True(runtime.DecodeOptions.NoFallback);
         Assert.True(runtime.DecodeOptions.EnableVad);
     }
 
