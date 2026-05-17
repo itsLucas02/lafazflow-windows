@@ -119,3 +119,7 @@
 ## Respect formatter and vocabulary pipeline order
 - Pattern: Formatter punctuation runs before vocabulary correction, so homophone fixes can create question phrases after a period has already been appended.
 - Rule: When vocabulary correction creates a conversational question lead-in, also repair the ending punctuation in that same correction pass.
+
+## Capture observed product-name phonetics immediately
+- Pattern: The local model can produce new stable phonetic variants for known product names, such as `superbiz` for `Supabase`.
+- Rule: Add exact observed product-name variants to the offline vocabulary table with focused regression tests instead of waiting for model changes.

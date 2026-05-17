@@ -532,3 +532,14 @@
 - Focused formatter/vocabulary tests pass, 68 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 208 tests.
 - Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Add Supabase Superbiz Correction
+- [x] Add a focused regression test for `superbiz` -> `Supabase`.
+- [x] Add the observed `superbiz` vocabulary correction.
+- [x] Verify focused vocabulary tests, full build/test, publish/relaunch, public scan, then commit and push.
+
+## Review: Add Supabase Superbiz Correction
+- Added the observed `superbiz` phonetic variant to the local offline Supabase vocabulary correction.
+- Focused vocabulary tests pass, 49 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 208 tests.
+- Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
