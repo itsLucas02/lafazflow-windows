@@ -99,3 +99,7 @@
 ## Make continuation casing context-aware when possible
 - Pattern: A new dictation pasted after existing mid-sentence punctuation like `Whatever,` should continue as `hello` instead of forcing `Hello`.
 - Rule: Use best-effort focused-field context to lowercase only the first normal word after comma/colon/semicolon context; preserve acronyms and the pronoun `I`, and fall back safely when an app does not expose text context.
+
+## Match the reference model before blaming model quality
+- Pattern: If the Windows port feels less accurate than the macOS reference workflow, first check whether it is using the same local model and comparable acceleration/VAD settings.
+- Rule: Keep the public default lightweight, but provide a local quality profile that uses the reference `ggml-large-v3-turbo-q5_0` model and focuses optimization work on CUDA/VAD/runtime parity.

@@ -517,6 +517,7 @@ public sealed class RecorderControllerTests
             string audioPath,
             string initialPrompt,
             int threads,
+            WhisperDecodeOptions decodeOptions,
             CancellationToken cancellationToken)
         {
             return _transcribeAsync(audioPath);

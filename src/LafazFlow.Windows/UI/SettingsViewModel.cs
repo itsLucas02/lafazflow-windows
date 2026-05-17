@@ -13,8 +13,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly LatencyDiagnosticLogStore _latencyDiagnostics;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
+    private string _cudaWhisperCliPath = "";
     private string _modelPath = "";
+    private string _qualityModelPath = "";
     private int _whisperThreads;
+    private TranscriptionProfile _transcriptionProfile;
+    private WhisperBackend _whisperBackend;
+    private bool _enableVad;
+    private string _vadModelPath = "";
     private bool _restoreClipboardAfterPaste;
     private int _clipboardRestoreDelayMs;
     private bool _appendTrailingSpace;
@@ -33,8 +39,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _latencyDiagnostics = latencyDiagnostics;
         _sourceSettings = settings;
         WhisperCliPath = settings.WhisperCliPath;
+        CudaWhisperCliPath = settings.CudaWhisperCliPath;
         ModelPath = settings.ModelPath;
+        QualityModelPath = settings.QualityModelPath;
         WhisperThreads = settings.WhisperThreads;
+        TranscriptionProfile = settings.TranscriptionProfile;
+        WhisperBackend = settings.WhisperBackend;
+        EnableVad = settings.EnableVad;
+        VadModelPath = settings.VadModelPath;
         RestoreClipboardAfterPaste = settings.RestoreClipboardAfterPaste;
         ClipboardRestoreDelayMs = settings.ClipboardRestoreDelayMs;
         AppendTrailingSpace = settings.AppendTrailingSpace;
@@ -52,10 +64,22 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _whisperCliPath, value);
     }
 
+    public string CudaWhisperCliPath
+    {
+        get => _cudaWhisperCliPath;
+        set => SetProperty(ref _cudaWhisperCliPath, value);
+    }
+
     public string ModelPath
     {
         get => _modelPath;
         set => SetProperty(ref _modelPath, value);
+    }
+
+    public string QualityModelPath
+    {
+        get => _qualityModelPath;
+        set => SetProperty(ref _qualityModelPath, value);
     }
 
     public int WhisperThreads
@@ -63,6 +87,36 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         get => _whisperThreads;
         set => SetProperty(ref _whisperThreads, value);
     }
+
+    public TranscriptionProfile TranscriptionProfile
+    {
+        get => _transcriptionProfile;
+        set => SetProperty(ref _transcriptionProfile, value);
+    }
+
+    public WhisperBackend WhisperBackend
+    {
+        get => _whisperBackend;
+        set => SetProperty(ref _whisperBackend, value);
+    }
+
+    public bool EnableVad
+    {
+        get => _enableVad;
+        set => SetProperty(ref _enableVad, value);
+    }
+
+    public string VadModelPath
+    {
+        get => _vadModelPath;
+        set => SetProperty(ref _vadModelPath, value);
+    }
+
+    public IReadOnlyList<TranscriptionProfile> TranscriptionProfiles { get; } =
+        Enum.GetValues<TranscriptionProfile>();
+
+    public IReadOnlyList<WhisperBackend> WhisperBackends { get; } =
+        Enum.GetValues<WhisperBackend>();
 
     public bool RestoreClipboardAfterPaste
     {
@@ -182,8 +236,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         var settings = _sourceSettings with
         {
             WhisperCliPath = WhisperCliPath.Trim(),
+            CudaWhisperCliPath = CudaWhisperCliPath.Trim(),
             ModelPath = ModelPath.Trim(),
+            QualityModelPath = QualityModelPath.Trim(),
             WhisperThreads = Math.Clamp(WhisperThreads, 1, Environment.ProcessorCount),
+            TranscriptionProfile = TranscriptionProfile,
+            WhisperBackend = WhisperBackend,
+            EnableVad = EnableVad,
+            VadModelPath = VadModelPath.Trim(),
             RestoreClipboardAfterPaste = RestoreClipboardAfterPaste,
             ClipboardRestoreDelayMs = ClipboardRestoreDelayMs <= 250
                 ? AppSettings.DefaultClipboardRestoreDelayMs
@@ -213,6 +273,24 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         if (!File.Exists(ModelPath.Trim()))
         {
             errors.Add("Model path does not exist.");
+        }
+
+        if (TranscriptionProfile == TranscriptionProfile.Quality
+            && !File.Exists(QualityModelPath.Trim()))
+        {
+            errors.Add("Quality model path does not exist.");
+        }
+
+        if (TranscriptionProfile == TranscriptionProfile.Quality
+            && WhisperBackend == WhisperBackend.Cuda
+            && !File.Exists(CudaWhisperCliPath.Trim()))
+        {
+            errors.Add("CUDA Whisper CLI path does not exist.");
+        }
+
+        if (EnableVad && !File.Exists(VadModelPath.Trim()))
+        {
+            errors.Add("VAD model path does not exist.");
         }
 
         return errors;

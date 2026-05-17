@@ -81,7 +81,11 @@ public sealed class RecorderController
     public void StartRecording()
     {
         var settings = _settingsStore.Load();
-        var validationError = WhisperCliTranscriptionService.ValidatePaths(settings.WhisperCliPath, settings.ModelPath);
+        var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
+        var validationError = WhisperCliTranscriptionService.ValidatePaths(
+            runtime.CliPath,
+            runtime.ModelPath,
+            runtime.DecodeOptions);
         if (validationError is not null)
         {
             _viewModel.SetError(validationError);
@@ -93,7 +97,7 @@ public sealed class RecorderController
         _targetWindow = _getForegroundWindow();
         _currentLatencyTrace = new LatencyTrace
         {
-            ModelPath = settings.ModelPath,
+            ModelPath = runtime.ModelPath,
             Threads = settings.WhisperThreads,
             TargetProcessName = GetProcessName(_targetWindow)
         };
@@ -233,12 +237,14 @@ public sealed class RecorderController
         try
         {
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
+            var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
             var transcript = await _transcription.TranscribeAsync(
-                job.Settings.WhisperCliPath,
-                job.Settings.ModelPath,
+                runtime.CliPath,
+                runtime.ModelPath,
                 job.AudioPath,
                 job.Settings.WhisperInitialPrompt,
                 job.Settings.WhisperThreads,
+                runtime.DecodeOptions,
                 cancellationToken);
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperFinished);
 

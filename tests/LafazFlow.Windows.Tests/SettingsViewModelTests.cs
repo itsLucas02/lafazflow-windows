@@ -21,7 +21,13 @@ public sealed class SettingsViewModelTests
             AppendTrailingSpace = false,
             RestoreClipboardAfterPaste = false,
             ClipboardRestoreDelayMs = 2500,
-            KeepRecordingsForDiagnostics = true
+            KeepRecordingsForDiagnostics = true,
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda,
+            CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
+            QualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+            EnableVad = true,
+            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin"
         });
 
         var viewModel = SettingsViewModel.Load(store);
@@ -35,6 +41,12 @@ public sealed class SettingsViewModelTests
         Assert.False(viewModel.RestoreClipboardAfterPaste);
         Assert.Equal(2500, viewModel.ClipboardRestoreDelayMs);
         Assert.True(viewModel.KeepRecordingsForDiagnostics);
+        Assert.Equal(TranscriptionProfile.Quality, viewModel.TranscriptionProfile);
+        Assert.Equal(WhisperBackend.Cuda, viewModel.WhisperBackend);
+        Assert.Equal(@"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe", viewModel.CudaWhisperCliPath);
+        Assert.Equal(@"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin", viewModel.QualityModelPath);
+        Assert.True(viewModel.EnableVad);
+        Assert.Equal(@"C:\Models\whisper\ggml-silero-v5.1.2.bin", viewModel.VadModelPath);
     }
 
     [Fact]
@@ -52,6 +64,12 @@ public sealed class SettingsViewModelTests
         viewModel.RestoreClipboardAfterPaste = false;
         viewModel.ClipboardRestoreDelayMs = 2200;
         viewModel.KeepRecordingsForDiagnostics = true;
+        viewModel.TranscriptionProfile = TranscriptionProfile.Quality;
+        viewModel.WhisperBackend = WhisperBackend.Cuda;
+        viewModel.CudaWhisperCliPath = cliPath;
+        viewModel.QualityModelPath = modelPath;
+        viewModel.EnableVad = true;
+        viewModel.VadModelPath = modelPath;
 
         var result = viewModel.Save();
 
@@ -64,6 +82,29 @@ public sealed class SettingsViewModelTests
         Assert.False(saved.RestoreClipboardAfterPaste);
         Assert.Equal(2200, saved.ClipboardRestoreDelayMs);
         Assert.True(saved.KeepRecordingsForDiagnostics);
+        Assert.Equal(TranscriptionProfile.Quality, saved.TranscriptionProfile);
+        Assert.Equal(WhisperBackend.Cuda, saved.WhisperBackend);
+        Assert.Equal(cliPath, saved.CudaWhisperCliPath);
+        Assert.Equal(modelPath, saved.QualityModelPath);
+        Assert.True(saved.EnableVad);
+        Assert.Equal(modelPath, saved.VadModelPath);
+    }
+
+    [Fact]
+    public void SaveRejectsQualityProfileWhenQualityModelIsMissing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(store);
+        viewModel.TranscriptionProfile = TranscriptionProfile.Quality;
+        viewModel.QualityModelPath = @"C:\missing\ggml-large-v3-turbo-q5_0.bin";
+
+        var result = viewModel.Save();
+
+        Assert.False(result.Success);
+        Assert.Contains("Quality model path does not exist.", result.Errors);
     }
 
     [Fact]

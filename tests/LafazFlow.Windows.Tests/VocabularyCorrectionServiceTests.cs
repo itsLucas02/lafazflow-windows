@@ -116,6 +116,18 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal("We can take the placeholder name for a temporary branding name for now, since we haven't yet finalized on the branding name, and therefore I'm choosing Care Visit. We also need to make sure that our UI UX that are using shadcn is standardized and doesn't have variations, meaning that, you know, instead of importing multiple things, multiple methods or multiple variations for just one simple UI components, perhaps we can reuse, you know, reuse whatever we have. Install once, reuse forever. you can see this from shadcn skills $shadcn-ui and $build-web-apps:shadcn. Go to those skills I mentioned and then tell me what do you think. Everything is documented in those skills documentation.", corrected);
     }
 
+    [Theory]
+    [InlineData("Please write s-t-a-f-f.", "Please write staff.")]
+    [InlineData("Please write S T A F F.", "Please write staff.")]
+    [InlineData("Use capital T.", "Use T.")]
+    [InlineData("Press letter T.", "Press T.")]
+    public void ApplyDefaultsFixesSpelledLetterDictation(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {

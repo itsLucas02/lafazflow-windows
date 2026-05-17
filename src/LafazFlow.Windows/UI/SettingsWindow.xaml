@@ -71,6 +71,26 @@
                     <Button Grid.Column="1" Content="Browse" Click="BrowseWhisperCli_OnClick" />
                 </Grid>
 
+                <TextBlock Text="Transcription Profile" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding TranscriptionProfiles}"
+                          SelectedItem="{Binding TranscriptionProfile}"
+                          Margin="0,4,8,10" />
+
+                <TextBlock Text="Backend" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding WhisperBackends}"
+                          SelectedItem="{Binding WhisperBackend}"
+                          Margin="0,4,8,10" />
+
+                <TextBlock Text="CUDA Whisper CLI" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding CudaWhisperCliPath, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse" Click="BrowseCudaWhisperCli_OnClick" />
+                </Grid>
+
                 <TextBlock Text="Model" FontWeight="SemiBold" />
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -81,6 +101,16 @@
                     <Button Grid.Column="1" Content="Browse" Click="BrowseModel_OnClick" />
                 </Grid>
 
+                <TextBlock Text="Quality Model" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding QualityModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse" Click="BrowseQualityModel_OnClick" />
+                </Grid>
+
                 <TextBlock Text="Whisper Threads" FontWeight="SemiBold" />
                 <TextBox Text="{Binding WhisperThreads, UpdateSourceTrigger=PropertyChanged}" />
 
@@ -89,6 +119,17 @@
                           IsChecked="{Binding ShowLiveTranscriptPreview}" />
                 <CheckBox Content="Apply vocabulary corrections"
                           IsChecked="{Binding EnableVocabularyCorrections}" />
+                <CheckBox Content="Use local VAD in quality mode"
+                          IsChecked="{Binding EnableVad}" />
+                <TextBlock Text="VAD Model" FontWeight="SemiBold" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding VadModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                    <Button Grid.Column="1" Content="Browse" Click="BrowseVadModel_OnClick" />
+                </Grid>
                 <CheckBox Content="Append trailing space after paste"
                           IsChecked="{Binding AppendTrailingSpace}" />
                 <CheckBox Content="Restore clipboard after paste"

@@ -451,3 +451,26 @@
 - Published and launch-smoked the stable build from `artifacts\stable-context-casing-markers\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+
+## Plan: Offline Quality Profile And CUDA Readiness
+- [x] Add red tests for Fast/Quality profile settings and public-default model behavior.
+- [x] Add red tests for CUDA backend path selection, VAD validation, and Whisper argument construction.
+- [x] Add red tests for spelled-letter and isolated `T` dictation cleanup.
+- [x] Implement settings, CLI argument, validation, and UI support for local quality mode.
+- [x] Add safe setup/benchmark scripts for CUDA whisper.cpp and VAD assets without committing binaries/models.
+- [x] Update lessons from the owner correction about matching the reference model before blaming the model.
+- [x] Verify with focused tests, full build/test, public-readiness scan, stable launch smoke, then commit and push.
+
+## Review: Offline Quality Profile And CUDA Readiness
+- Added Fast and Quality transcription profiles while keeping Fast/base.en as the public default.
+- Added CPU/CUDA backend settings, quality model path, CUDA CLI path, VAD toggle, and VAD model path to Settings.
+- Quality runtime now targets `ggml-large-v3-turbo-q5_0.bin`; when VAD is enabled, Whisper CLI args include local Silero VAD and reference-style decode settings.
+- Added deterministic cleanup for spelled `staff` and isolated `T` phrases.
+- Added scripts for prerequisite checks, VAD model install, CUDA whisper.cpp build, and model/backend benchmarking.
+- Installed `C:\Models\whisper\ggml-silero-v5.1.2.bin` locally for VAD.
+- Current CUDA readiness check: RTX 4070 present; Git and Visual Studio present; CMake, CUDA Toolkit `nvcc`, and CUDA-built `whisper-cli.exe` are still missing.
+- Focused quality/settings/vocabulary tests pass, 61 tests; full `dotnet test` passes, 190 tests.
+- Full `dotnet build` passes with 0 warnings.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+- Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
+- Published and launch-smoked the stable build from `artifacts\stable-quality-profile\LafazFlow.Windows\LafazFlow.Windows.exe`.

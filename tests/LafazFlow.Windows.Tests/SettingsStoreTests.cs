@@ -21,6 +21,9 @@ public sealed class SettingsStoreTests
         Assert.True(settings.AppendTrailingSpace);
         Assert.True(settings.ShowLiveTranscriptPreview);
         Assert.True(settings.EnableVocabularyCorrections);
+        Assert.Equal(TranscriptionProfile.Fast, settings.TranscriptionProfile);
+        Assert.Equal(WhisperBackend.Cpu, settings.WhisperBackend);
+        Assert.False(settings.EnableVad);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
         Assert.Contains("Luqman", settings.WhisperInitialPrompt);
         Assert.Contains("shadcn/ui", settings.WhisperInitialPrompt);
@@ -44,7 +47,13 @@ public sealed class SettingsStoreTests
             AppendTrailingSpace = true,
             ClipboardRestoreDelayMs = 2000,
             WhisperThreads = 12,
-            WhisperInitialPrompt = "Supabase Vercel Tailscale"
+            WhisperInitialPrompt = "Supabase Vercel Tailscale",
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda,
+            CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
+            QualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+            EnableVad = true,
+            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin"
         };
 
         store.Save(expected);
@@ -87,6 +96,8 @@ public sealed class SettingsStoreTests
         var settings = store.Load();
 
         Assert.Equal(baseModelPath, settings.ModelPath);
+        Assert.Equal(quantizedLargeTurboPath, settings.QualityModelPath);
+        Assert.Equal(TranscriptionProfile.Fast, settings.TranscriptionProfile);
         File.Delete(whisperCliPath);
     }
 

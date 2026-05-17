@@ -8,5 +8,6 @@ public interface ITranscriptionService
         string audioPath,
         string initialPrompt,
         int threads,
+        WhisperDecodeOptions decodeOptions,
         CancellationToken cancellationToken);
 }

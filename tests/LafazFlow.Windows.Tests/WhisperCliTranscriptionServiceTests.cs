@@ -1,3 +1,4 @@
+using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
 
 namespace LafazFlow.Windows.Tests;
@@ -38,6 +39,52 @@ public sealed class WhisperCliTranscriptionServiceTests
     }
 
     [Fact]
+    public void BuildArgumentsUsesReferenceQualityDecodeSettingsForQualityProfile()
+    {
+        var args = WhisperCliTranscriptionService.BuildArguments(
+            @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+            @"C:\Audio\sample.wav",
+            @"C:\Audio\sample",
+            "Supabase",
+            16,
+            WhisperDecodeOptions.QualityWithVad(@"C:\Models\whisper\ggml-silero-v5.1.2.bin"));
+
+        Assert.Contains("-l en", args);
+        Assert.Contains("-tp 0.2", args);
+        Assert.Contains("-sns", args);
+        Assert.Contains("--vad", args);
+        Assert.Contains("-vm \"C:\\Models\\whisper\\ggml-silero-v5.1.2.bin\"", args);
+        Assert.Contains("-vt 0.50", args);
+        Assert.Contains("-vspd 250", args);
+        Assert.Contains("-vsd 100", args);
+        Assert.Contains("-vp 30", args);
+        Assert.Contains("-vo 0.10", args);
+    }
+
+    [Fact]
+    public void ResolveRuntimeUsesCudaQualityProfileWhenConfigured()
+    {
+        var settings = AppSettings.Default with
+        {
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda,
+            WhisperCliPath = @"C:\Tools\whisper.cpp\Release\whisper-cli.exe",
+            CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
+            ModelPath = @"C:\Models\whisper\ggml-base.en.bin",
+            QualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+            EnableVad = true,
+            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin"
+        };
+
+        var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
+
+        Assert.Equal(@"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe", runtime.CliPath);
+        Assert.Equal(@"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin", runtime.ModelPath);
+        Assert.Equal(0.2, runtime.DecodeOptions.Temperature);
+        Assert.True(runtime.DecodeOptions.EnableVad);
+    }
+
+    [Fact]
     public void ValidatePathsRejectsMissingCli()
     {
         var modelPath = Path.GetTempFileName();
@@ -45,7 +92,8 @@ public sealed class WhisperCliTranscriptionServiceTests
         {
             var error = WhisperCliTranscriptionService.ValidatePaths(
                 @"C:\missing\whisper-cli.exe",
-                modelPath);
+                modelPath,
+                WhisperDecodeOptions.Fast);
 
             Assert.Equal("Whisper CLI was not found.", error);
         }
@@ -63,7 +111,8 @@ public sealed class WhisperCliTranscriptionServiceTests
         {
             var error = WhisperCliTranscriptionService.ValidatePaths(
                 cliPath,
-                @"C:\missing\ggml-base.en.bin");
+                @"C:\missing\ggml-base.en.bin",
+                WhisperDecodeOptions.Fast);
 
             Assert.Equal("Whisper model was not found.", error);
         }

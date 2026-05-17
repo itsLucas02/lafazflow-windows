@@ -1,11 +1,17 @@
 using System.Diagnostics;
 using System.IO;
+using LafazFlow.Windows.Core;
 
 namespace LafazFlow.Windows.Services;
 
 public sealed class WhisperCliTranscriptionService : ITranscriptionService
 {
     public static string? ValidatePaths(string whisperCliPath, string modelPath)
+    {
+        return ValidatePaths(whisperCliPath, modelPath, WhisperDecodeOptions.Fast);
+    }
+
+    public static string? ValidatePaths(string whisperCliPath, string modelPath, WhisperDecodeOptions decodeOptions)
     {
         if (!File.Exists(whisperCliPath))
         {
@@ -15,6 +21,11 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         if (!File.Exists(modelPath))
         {
             return "Whisper model was not found.";
+        }
+
+        if (decodeOptions.EnableVad && !File.Exists(decodeOptions.VadModelPath))
+        {
+            return "VAD model was not found.";
         }
 
         return null;
@@ -27,12 +38,50 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         string initialPrompt,
         int threads)
     {
+        return BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt, threads, WhisperDecodeOptions.Fast);
+    }
+
+    public static string BuildArguments(
+        string modelPath,
+        string audioPath,
+        string outputBasePath,
+        string initialPrompt,
+        int threads,
+        WhisperDecodeOptions decodeOptions)
+    {
         var promptArgs = string.IsNullOrWhiteSpace(initialPrompt)
             ? ""
             : $" --prompt {Quote(initialPrompt)} --carry-initial-prompt";
         var safeThreads = Math.Clamp(threads, 1, Environment.ProcessorCount);
+        var nonSpeechArgs = decodeOptions.SuppressNonSpeechTokens ? " -sns" : "";
+        var vadArgs = decodeOptions.EnableVad
+            ? $" --vad -vm {Quote(decodeOptions.VadModelPath)} -vt 0.50 -vspd 250 -vsd 100 -vp 30 -vo 0.10"
+            : "";
 
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -tp 0{promptArgs} -of {Quote(outputBasePath)}";
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -l en -tp {FormatTemperature(decodeOptions.Temperature)}{nonSpeechArgs}{vadArgs}{promptArgs} -of {Quote(outputBasePath)}";
+    }
+
+    public static WhisperRuntimeOptions ResolveRuntime(AppSettings settings)
+    {
+        var useQuality = settings.TranscriptionProfile == TranscriptionProfile.Quality;
+        var cliPath = useQuality && settings.WhisperBackend == WhisperBackend.Cuda
+            ? settings.CudaWhisperCliPath
+            : settings.WhisperCliPath;
+        var modelPath = useQuality ? settings.QualityModelPath : settings.ModelPath;
+        var decodeOptions = useQuality && settings.EnableVad
+            ? WhisperDecodeOptions.QualityWithVad(settings.VadModelPath)
+            : WhisperDecodeOptions.Fast;
+
+        if (useQuality && !settings.EnableVad)
+        {
+            decodeOptions = decodeOptions with
+            {
+                Temperature = 0.2,
+                SuppressNonSpeechTokens = true
+            };
+        }
+
+        return new WhisperRuntimeOptions(cliPath, modelPath, decodeOptions);
     }
 
     public async Task<string> TranscribeAsync(
@@ -41,9 +90,10 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         string audioPath,
         string initialPrompt,
         int threads,
+        WhisperDecodeOptions decodeOptions,
         CancellationToken cancellationToken)
     {
-        var pathError = ValidatePaths(whisperCliPath, modelPath);
+        var pathError = ValidatePaths(whisperCliPath, modelPath, decodeOptions);
         if (pathError is not null)
         {
             throw new InvalidOperationException(pathError);
@@ -61,7 +111,7 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         var startInfo = new ProcessStartInfo
         {
             FileName = whisperCliPath,
-            Arguments = BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt, threads),
+            Arguments = BuildArguments(modelPath, audioPath, outputBasePath, initialPrompt, threads, decodeOptions),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -100,5 +150,10 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
     private static string Quote(string value)
     {
         return $"\"{value.Replace("\"", "\\\"")}\"";
+    }
+
+    private static string FormatTemperature(double temperature)
+    {
+        return temperature.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

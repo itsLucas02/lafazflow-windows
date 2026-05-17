@@ -18,31 +18,56 @@ public partial class SettingsWindow : Window
 
     private void BrowseWhisperCli_OnClick(object sender, RoutedEventArgs e)
     {
+        BrowseExecutable("Select whisper-cli.exe", path => _viewModel.WhisperCliPath = path);
+    }
+
+    private void BrowseCudaWhisperCli_OnClick(object sender, RoutedEventArgs e)
+    {
+        BrowseExecutable("Select CUDA whisper-cli.exe", path => _viewModel.CudaWhisperCliPath = path);
+    }
+
+    private void BrowseModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        BrowseModel("Select Whisper model", path => _viewModel.ModelPath = path);
+    }
+
+    private void BrowseQualityModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        BrowseModel("Select quality Whisper model", path => _viewModel.QualityModelPath = path);
+    }
+
+    private void BrowseVadModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        BrowseModel("Select VAD model", path => _viewModel.VadModelPath = path);
+    }
+
+    private void BrowseExecutable(string title, Action<string> applyPath)
+    {
         var dialog = new WpfOpenFileDialog
         {
-            Title = "Select whisper-cli.exe",
+            Title = title,
             Filter = "whisper-cli.exe|whisper-cli.exe|Executable files (*.exe)|*.exe|All files (*.*)|*.*",
             CheckFileExists = true
         };
 
         if (dialog.ShowDialog(this) == true)
         {
-            _viewModel.WhisperCliPath = dialog.FileName;
+            applyPath(dialog.FileName);
         }
     }
 
-    private void BrowseModel_OnClick(object sender, RoutedEventArgs e)
+    private void BrowseModel(string title, Action<string> applyPath)
     {
         var dialog = new WpfOpenFileDialog
         {
-            Title = "Select Whisper model",
+            Title = title,
             Filter = "Whisper models (*.bin)|*.bin|All files (*.*)|*.*",
             CheckFileExists = true
         };
 
         if (dialog.ShowDialog(this) == true)
         {
-            _viewModel.ModelPath = dialog.FileName;
+            applyPath(dialog.FileName);
         }
     }
 

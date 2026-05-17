@@ -180,7 +180,8 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         int threads,
         CancellationToken cancellationToken)
     {
-        if (WhisperCliTranscriptionService.ValidatePaths(settings.WhisperCliPath, settings.ModelPath) is not null)
+        var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
+        if (WhisperCliTranscriptionService.ValidatePaths(runtime.CliPath, runtime.ModelPath, runtime.DecodeOptions) is not null)
         {
             return "";
         }
@@ -234,20 +235,22 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         var outputBasePath = Path.Combine(
             Path.GetDirectoryName(audioPath)!,
             Path.GetFileNameWithoutExtension(audioPath));
+        var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
         var startInfo = new ProcessStartInfo
         {
-            FileName = settings.WhisperCliPath,
+            FileName = runtime.CliPath,
             Arguments = WhisperCliTranscriptionService.BuildArguments(
-                settings.ModelPath,
+                runtime.ModelPath,
                 audioPath,
                 outputBasePath,
                 settings.WhisperInitialPrompt,
-                threads),
+                threads,
+                runtime.DecodeOptions),
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(settings.WhisperCliPath) ?? Environment.CurrentDirectory
+            WorkingDirectory = Path.GetDirectoryName(runtime.CliPath) ?? Environment.CurrentDirectory
         };
 
         using var process = Process.Start(startInfo);

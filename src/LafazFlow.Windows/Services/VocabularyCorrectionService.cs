@@ -63,6 +63,7 @@ public static partial class VocabularyCorrectionService
 
         corrected = FixTestingDictationThats(corrected);
         corrected = FixDeveloperDictationPhrases(corrected);
+        corrected = FixSpelledLetterDictation(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -114,6 +115,16 @@ public static partial class VocabularyCorrectionService
         return corrected;
     }
 
+    private static string FixSpelledLetterDictation(string text)
+    {
+        var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
+        corrected = StaffSpelledWithSpacesRegex().Replace(corrected, "staff");
+        corrected = CapitalTRegex().Replace(corrected, "T");
+        corrected = LetterTRegex().Replace(corrected, "T");
+
+        return corrected;
+    }
+
     [GeneratedRegex(@"(?<![\p{L}\p{N}])reuse\s+whatever\s+we\s+use\s+have(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex ReuseWhateverWeUseHaveRegex();
 
@@ -131,4 +142,16 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"\s+([.:])(?=\s|$)")]
     private static partial Regex SpaceBeforeProtectedPunctuationRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])s\s*-\s*t\s*-\s*a\s*-\s*f\s*-\s*f(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex StaffSpelledWithHyphensRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])s\s+t\s+a\s+f\s+f(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex StaffSpelledWithSpacesRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])capital\s+t(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex CapitalTRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])letter\s+t(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex LetterTRegex();
 }
