@@ -128,6 +128,32 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(expected, corrected);
     }
 
+    [Theory]
+    [InlineData("Weight why is it doing that?", "Wait, why is it doing that?")]
+    [InlineData("Weight why is it doing that.", "Wait, why is it doing that?")]
+    [InlineData("Weight what happened?", "Wait, what happened?")]
+    [InlineData("Weight what happened.", "Wait, what happened?")]
+    [InlineData("Weight how does this work?", "Wait, how does this work?")]
+    [InlineData("Weight how does this work.", "Wait, how does this work?")]
+    [InlineData("Weight a minute.", "Wait a minute.")]
+    public void ApplyDefaultsFixesConversationalWeightAsWait(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("The body weight is 70 kg.")]
+    [InlineData("Check the weight on the scale.")]
+    [InlineData("The weight is heavy.")]
+    public void ApplyDefaultsPreservesMeasurementWeight(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {

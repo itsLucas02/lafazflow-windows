@@ -64,6 +64,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixTestingDictationThats(corrected);
         corrected = FixDeveloperDictationPhrases(corrected);
         corrected = FixSpelledLetterDictation(corrected);
+        corrected = FixConversationalWeightAsWait(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -125,6 +126,20 @@ public static partial class VocabularyCorrectionService
         return corrected;
     }
 
+    private static string FixConversationalWeightAsWait(string text)
+    {
+        var corrected = WeightQuestionLeadInRegex().Replace(text, match =>
+        {
+            var questionWord = match.Groups[1].Value.ToLowerInvariant();
+            var wait = char.IsUpper(match.Value[0]) ? "Wait" : "wait";
+            return $"{wait}, {questionWord}";
+        });
+        corrected = WaitQuestionPeriodRegex().Replace(corrected, "$1?");
+
+        return WeightAMinuteRegex().Replace(corrected, match =>
+            char.IsUpper(match.Value[0]) ? "Wait a minute" : "wait a minute");
+    }
+
     [GeneratedRegex(@"(?<![\p{L}\p{N}])reuse\s+whatever\s+we\s+use\s+have(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex ReuseWhateverWeUseHaveRegex();
 
@@ -154,4 +169,13 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])letter\s+t(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex LetterTRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex WeightQuestionLeadInRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+a\s+minute(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex WeightAMinuteRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(wait,\s+(?:why|what|how)\b[^.!?]*)\.", RegexOptions.IgnoreCase)]
+    private static partial Regex WaitQuestionPeriodRegex();
 }

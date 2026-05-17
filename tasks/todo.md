@@ -517,3 +517,18 @@
 - Focused Whisper tests pass, 8 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 191 tests.
 - Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Conservative Dictation Formatting Polish
+- [x] Add regression tests for clear question starters, `Wait, why/what/how` punctuation, and non-question wait sentences.
+- [x] Add regression tests for conversational `weight` as `wait` while preserving measurement uses.
+- [x] Implement conservative formatter and vocabulary corrections.
+- [x] Verify focused tests, full build/test, publish/relaunch, public scan, then commit and push.
+
+## Review: Conservative Dictation Formatting Polish
+- Added conservative question inference for clear question starters such as `why`, `what`, `how`, and `can`.
+- Added `Wait, why/what/how` normalization so short lead-ins do not become `Wait. Why`.
+- Added contextual `weight` to `wait` correction for conversational lead-ins while preserving measurement/body/scale uses.
+- Accounted for formatter-before-vocabulary pipeline order by repairing `Wait, why...` punctuation inside vocabulary correction when needed.
+- Focused formatter/vocabulary tests pass, 68 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 208 tests.
+- Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.

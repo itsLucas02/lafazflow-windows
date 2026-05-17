@@ -115,3 +115,7 @@
 ## Enforce English-only dictation in decode settings
 - Pattern: A multilingual Whisper model can output Malay/Indonesian text from English audio even when `-l en` is present, especially with fallback sampling and a vocabulary-only prompt.
 - Rule: For English dictation mode, use deterministic decoding, disable fallback, and prepend an explicit English-only instruction before the vocabulary prompt.
+
+## Respect formatter and vocabulary pipeline order
+- Pattern: Formatter punctuation runs before vocabulary correction, so homophone fixes can create question phrases after a period has already been appended.
+- Rule: When vocabulary correction creates a conversational question lead-in, also repair the ending punctuation in that same correction pass.
