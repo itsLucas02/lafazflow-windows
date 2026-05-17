@@ -107,3 +107,7 @@
 ## Activate acceleration end to end, not just in code
 - Pattern: Installing CUDA and building a CUDA whisper-cli is not enough if the running app still defaults to CPU or cannot see CUDA runtime DLLs.
 - Rule: Verify the actual executable with the exact runtime PATH, then configure the app to use the CUDA backend and quality model before claiming CUDA is active.
+
+## Patch every transcription launcher
+- Pattern: LafazFlow can launch Whisper from both final transcription and live preview; fixing only one path still leaves user-facing CUDA DLL errors.
+- Rule: When changing Whisper process environment or arguments, search every `ProcessStartInfo` path and keep preview and final transcription launch behavior aligned.

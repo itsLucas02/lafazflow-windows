@@ -491,3 +491,15 @@
 - CUDA CLI smoke passes and reports `NVIDIA GeForce RTX 4070 Laptop GPU`; prerequisite check reports all required local assets present.
 - Published and launch-smoked the stable build from `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Fix CUDA Live Preview Runtime Path
+- [x] Trace all Whisper launch paths after the CUDA runtime DLL error.
+- [x] Patch live preview Whisper launches to use the same CUDA runtime PATH injection as final transcription.
+- [x] Verify build/test, publish a fresh stable build, relaunch, then commit and push.
+
+## Review: Fix CUDA Live Preview Runtime Path
+- Root cause: live preview had a separate Whisper `ProcessStartInfo` path and was still launching CUDA whisper-cli without the CUDA 13 `bin\x64` runtime DLL directory.
+- Live preview now uses the same `WhisperCliTranscriptionService.BuildProcessPath` environment as final transcription.
+- Focused Whisper/live-preview tests pass, 13 tests; full `dotnet test` passes, 191 tests; `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.

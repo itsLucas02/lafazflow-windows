@@ -252,6 +252,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             CreateNoWindow = true,
             WorkingDirectory = Path.GetDirectoryName(runtime.CliPath) ?? Environment.CurrentDirectory
         };
+        startInfo.Environment["PATH"] = WhisperCliTranscriptionService.BuildProcessPath(
+            runtime.CliPath,
+            Environment.GetEnvironmentVariable("PATH") ?? "");
 
         using var process = Process.Start(startInfo);
         if (process is null)
