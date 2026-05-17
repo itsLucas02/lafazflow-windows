@@ -15,14 +15,42 @@ function Test-Command($Name) {
     }
 }
 
+function Test-CommandOrPath($Name, [string[]]$Paths) {
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($command) {
+        "OK      $Name -> $($command.Source)"
+        return
+    }
+
+    foreach ($path in $Paths) {
+        if (Test-Path -LiteralPath $path) {
+            "OK      $Name -> $path"
+            return
+        }
+    }
+
+    "MISSING $Name"
+}
+
 "=== LafazFlow Quality Mode Prerequisites ==="
 Test-Command "git"
-Test-Command "cmake"
-Test-Command "nvcc"
+Test-CommandOrPath "cmake" @(
+    "C:\Program Files\CMake\bin\cmake.exe"
+)
+Test-CommandOrPath "nvcc" @(
+    "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.2\bin\nvcc.exe",
+    "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.1\bin\nvcc.exe",
+    "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin\nvcc.exe"
+)
 Test-Command "nvidia-smi"
 
-$vsRoot = "C:\Program Files\Microsoft Visual Studio\2022"
-if (Test-Path -LiteralPath $vsRoot) {
+$vsRoots = @(
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools",
+    "C:\Program Files\Microsoft Visual Studio\2022\Community",
+    "C:\Program Files\Microsoft Visual Studio\2022"
+)
+$vsRoot = $vsRoots | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if ($vsRoot) {
     "OK      Visual Studio 2022 -> $vsRoot"
 } else {
     "MISSING Visual Studio 2022 Build Tools or Community"
@@ -49,4 +77,12 @@ if (Test-Path -LiteralPath $VadModelPath) {
 if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
     "=== NVIDIA GPU ==="
     nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv,noheader
+}
+
+$cudaDll = Get-ChildItem "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA" -Recurse -Filter "cublas64_*.dll" -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+if ($cudaDll) {
+    "OK      CUDA runtime DLLs -> $($cudaDll.DirectoryName)"
+} else {
+    "MISSING CUDA runtime DLLs"
 }

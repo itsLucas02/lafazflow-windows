@@ -118,6 +118,9 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
             CreateNoWindow = true,
             WorkingDirectory = Path.GetDirectoryName(whisperCliPath) ?? Environment.CurrentDirectory
         };
+        startInfo.Environment["PATH"] = BuildProcessPath(
+            whisperCliPath,
+            Environment.GetEnvironmentVariable("PATH") ?? "");
 
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Unable to start Whisper CLI.");
@@ -145,6 +148,62 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
     public static string CleanTranscript(string text)
     {
         return TranscriptionTextFormatter.Format(text);
+    }
+
+    public static string BuildProcessPath(string whisperCliPath, string existingPath)
+    {
+        return BuildProcessPath(whisperCliPath, existingPath, GetCudaRuntimeDirectories());
+    }
+
+    public static string BuildProcessPath(
+        string whisperCliPath,
+        string existingPath,
+        IEnumerable<string> cudaRuntimeDirectories)
+    {
+        var entries = new List<string>();
+        var cliDirectory = Path.GetDirectoryName(whisperCliPath);
+        if (!string.IsNullOrWhiteSpace(cliDirectory))
+        {
+            entries.Add(cliDirectory);
+        }
+
+        entries.AddRange(cudaRuntimeDirectories.Where(Directory.Exists));
+
+        if (!string.IsNullOrWhiteSpace(existingPath))
+        {
+            entries.AddRange(existingPath.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        return string.Join(
+            Path.PathSeparator,
+            entries
+                .Select(entry => entry.Trim())
+                .Where(entry => entry.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<string> GetCudaRuntimeDirectories()
+    {
+        var cudaPath = Environment.GetEnvironmentVariable("CUDA_PATH");
+        if (!string.IsNullOrWhiteSpace(cudaPath))
+        {
+            yield return Path.Combine(cudaPath, "bin", "x64");
+            yield return Path.Combine(cudaPath, "bin");
+        }
+
+        const string cudaRoot = @"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA";
+        if (!Directory.Exists(cudaRoot))
+        {
+            yield break;
+        }
+
+        foreach (var versionDirectory in Directory
+            .GetDirectories(cudaRoot, "v*")
+            .OrderByDescending(directory => directory, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return Path.Combine(versionDirectory, "bin", "x64");
+            yield return Path.Combine(versionDirectory, "bin");
+        }
     }
 
     private static string Quote(string value)

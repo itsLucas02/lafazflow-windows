@@ -103,3 +103,7 @@
 ## Match the reference model before blaming model quality
 - Pattern: If the Windows port feels less accurate than the macOS reference workflow, first check whether it is using the same local model and comparable acceleration/VAD settings.
 - Rule: Keep the public default lightweight, but provide a local quality profile that uses the reference `ggml-large-v3-turbo-q5_0` model and focuses optimization work on CUDA/VAD/runtime parity.
+
+## Activate acceleration end to end, not just in code
+- Pattern: Installing CUDA and building a CUDA whisper-cli is not enough if the running app still defaults to CPU or cannot see CUDA runtime DLLs.
+- Rule: Verify the actual executable with the exact runtime PATH, then configure the app to use the CUDA backend and quality model before claiming CUDA is active.

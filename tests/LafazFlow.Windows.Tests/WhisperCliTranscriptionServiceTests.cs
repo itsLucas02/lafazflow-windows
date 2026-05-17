@@ -85,6 +85,27 @@ public sealed class WhisperCliTranscriptionServiceTests
     }
 
     [Fact]
+    public void BuildProcessPathPrependsWhisperAndCudaRuntimeDirectories()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliDirectory = Directory.CreateDirectory(Path.Combine(root, "whisper", "bin")).FullName;
+        var cudaDirectory = Directory.CreateDirectory(Path.Combine(root, "cuda", "bin", "x64")).FullName;
+        var existingDirectory = Directory.CreateDirectory(Path.Combine(root, "existing")).FullName;
+        var cliPath = Path.Combine(cliDirectory, "whisper-cli.exe");
+
+        var path = WhisperCliTranscriptionService.BuildProcessPath(
+            cliPath,
+            existingDirectory,
+            [cudaDirectory]);
+
+        var entries = path.Split(Path.PathSeparator);
+        Assert.Equal(cliDirectory, entries[0]);
+        Assert.Equal(cudaDirectory, entries[1]);
+        Assert.Equal(existingDirectory, entries[2]);
+        Assert.Equal(3, entries.Length);
+    }
+
+    [Fact]
     public void ValidatePathsRejectsMissingCli()
     {
         var modelPath = Path.GetTempFileName();

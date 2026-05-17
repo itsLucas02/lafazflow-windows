@@ -474,3 +474,20 @@
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
 - Attribution scan intentionally contains source-name matches only in `THIRD_PARTY_NOTICES.md`.
 - Published and launch-smoked the stable build from `artifacts\stable-quality-profile\LafazFlow.Windows\LafazFlow.Windows.exe`.
+
+## Plan: Activate CUDA Quality Runtime
+- [x] Prove whether the installed CUDA whisper-cli actually loads on this machine.
+- [x] Find the missing runtime path instead of assuming CUDA is unavailable.
+- [x] Patch the app launch environment so CUDA runtime DLLs are visible to whisper-cli.
+- [x] Verify focused tests, full build/test, prerequisite script, CUDA CLI, and local settings.
+- [x] Commit and push the CUDA activation fixes.
+
+## Review: Activate CUDA Quality Runtime
+- Root cause: CUDA whisper-cli existed, but Windows could not load `cublas64_13.dll` unless CUDA 13's `bin\x64` runtime directory was on `PATH`.
+- Added process-level PATH injection for Whisper launches so the app can find the CUDA runtime DLLs without requiring a reboot or global PATH edit.
+- Updated setup scripts to handle CMake/CUDA/Ninja/MSVC discovery and CUDA 13 runtime DLL checks.
+- Local settings now use Quality profile, CUDA backend, VAD enabled, `ggml-large-v3-turbo-q5_0.bin`, and the CUDA whisper-cli path.
+- Focused transcription-service tests pass, 8 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 191 tests.
+- CUDA CLI smoke passes and reports `NVIDIA GeForce RTX 4070 Laptop GPU`; prerequisite check reports all required local assets present.
+- Published and launch-smoked the stable build from `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
