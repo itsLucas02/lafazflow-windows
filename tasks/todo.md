@@ -583,3 +583,17 @@
 - Focused mini recorder tests pass, 33 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Fix Compact Width Animation Crash
+- [x] Inspect application and Windows event logs for the real crash stack trace.
+- [x] Identify the width animation `NaN` root cause from the latest shell layout change.
+- [x] Restore a concrete compact shell width while keeping balanced side-label spacing.
+- [x] Verify focused UI tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Fix Compact Width Animation Crash
+- Root cause: the previous dynamic shell change removed the concrete `Width`, leaving WPF's `Width` value as `NaN`; the existing live transcript expansion animation then crashed when animating `RecorderShell.Width`.
+- Restored a concrete balanced compact width (`208`) while preserving the 184px reference minimum and the auto-sized side-label layout.
+- Kept expanded transcript width at `300` by allowing the shell max width to reach the expanded width.
+- Focused mini recorder tests pass, 33 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

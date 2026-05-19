@@ -220,7 +220,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         _lastHasLiveTranscript = _viewModel.HasLiveTranscript;
         var targetWidth = _viewModel.HasLiveTranscript
             ? MiniRecorderVisualSpec.ExpandedWidth
-            : MiniRecorderVisualSpec.CompactWidth;
+            : MiniRecorderVisualSpec.BalancedCompactWidth;
         var targetHeight = _viewModel.HasLiveTranscript
             ? MiniRecorderVisualSpec.ControlBarHeight + MiniRecorderVisualSpec.LiveTranscriptPanelHeight
             : MiniRecorderVisualSpec.ControlBarHeight;

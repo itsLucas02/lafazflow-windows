@@ -8,7 +8,10 @@ public sealed class MiniRecorderVisualSpecTests
     public void LayoutConstantsMatchBottomMiniReference()
     {
         Assert.Equal(184, MiniRecorderVisualSpec.CompactWidth);
+        Assert.Equal(208, MiniRecorderVisualSpec.BalancedCompactWidth);
         Assert.Equal(300, MiniRecorderVisualSpec.ExpandedWidth);
+        Assert.True(MiniRecorderVisualSpec.BalancedCompactWidth > MiniRecorderVisualSpec.CompactWidth);
+        Assert.True(MiniRecorderVisualSpec.CompactMaxWidth >= MiniRecorderVisualSpec.ExpandedWidth);
         Assert.Equal(40, MiniRecorderVisualSpec.ControlBarHeight);
         Assert.Equal(20, MiniRecorderVisualSpec.CompactCornerRadius);
         Assert.Equal(14, MiniRecorderVisualSpec.ExpandedCornerRadius);

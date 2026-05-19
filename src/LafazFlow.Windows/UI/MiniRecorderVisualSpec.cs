@@ -12,7 +12,8 @@ public static class MiniRecorderVisualSpec
     ];
 
     public const double CompactWidth = 184;
-    public const double CompactMaxWidth = 232;
+    public const double BalancedCompactWidth = 208;
+    public const double CompactMaxWidth = ExpandedWidth;
     public const double CompactHorizontalPadding = 16;
     public const double CompactSideLabelGap = 12;
     public const double CompactCenterMinWidth = 92;

@@ -21,6 +21,7 @@
     </Window.Resources>
     <Grid>
         <Border x:Name="RecorderShell"
+                Width="{x:Static ui:MiniRecorderVisualSpec.BalancedCompactWidth}"
                 MinWidth="{x:Static ui:MiniRecorderVisualSpec.CompactWidth}"
                 MaxWidth="{x:Static ui:MiniRecorderVisualSpec.CompactMaxWidth}"
                 Height="40"

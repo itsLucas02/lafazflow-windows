@@ -135,3 +135,7 @@
 ## Prefer content-aware compact shell layout
 - Pattern: Fixed side columns sized for one label can make new metadata such as a version badge crowd the shell edge.
 - Rule: Compact shell metadata should use auto-sized side labels, a stable center minimum, symmetric spacing, and bounded shell growth instead of label-specific column widths.
+
+## Never animate WPF width from Auto
+- Pattern: Setting a WPF element's `Width` to Auto leaves the property as `NaN`, and `DoubleAnimation` crashes if it tries to animate that property from the default origin.
+- Rule: Any element animated with `WidthProperty` must have a concrete numeric `Width` before the animation starts, or the animation must explicitly provide a valid `From` value.
