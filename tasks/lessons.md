@@ -147,3 +147,7 @@
 ## Log UI crashes before deciding recovery
 - Pattern: WPF dispatcher animation failures can terminate the app without reaching LafazFlow's normal service logs.
 - Rule: Register app-level exception handlers during startup, write privacy-safe crash metadata to the local log, and only mark narrowly understood UI animation exceptions as recoverable.
+
+## Repair accidental ASR compounds narrowly
+- Pattern: Whisper can collapse ordinary phrases into camel-like compounds, such as `consent form` becoming `consenForm`.
+- Rule: Fix observed phrase compounds with targeted vocabulary corrections that preserve sentence-start casing; do not add broad camel-case splitting that could corrupt code identifiers.

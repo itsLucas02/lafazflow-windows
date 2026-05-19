@@ -26,7 +26,10 @@ public sealed class SettingsStoreTests
         Assert.False(settings.EnableVad);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
         Assert.Contains("Context7", settings.WhisperInitialPrompt);
+        Assert.Contains("MCP", settings.WhisperInitialPrompt);
+        Assert.Contains("Vite", settings.WhisperInitialPrompt);
         Assert.Contains("Luqman", settings.WhisperInitialPrompt);
+        Assert.Contains("MediBrave", settings.WhisperInitialPrompt);
         Assert.Contains("shadcn/ui", settings.WhisperInitialPrompt);
         Assert.Contains("components.json", settings.WhisperInitialPrompt);
         Assert.Contains("npx shadcn@latest", settings.WhisperInitialPrompt);
@@ -176,6 +179,31 @@ public sealed class SettingsStoreTests
 
         Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
         Assert.Contains("Context7", migrated.WhisperInitialPrompt);
+        Assert.Contains("MCP", migrated.WhisperInitialPrompt);
+        Assert.Contains("Vite", migrated.WhisperInitialPrompt);
+        Assert.Contains("MediBrave", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadMigratesContext7DefaultPromptToCurrentDeveloperPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 4,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, GitHub, PowerShell, Cursor, LafazFlow, Luqman, "
+                + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+                + "npx shadcn@latest, build-web-apps:shadcn."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("Context7", migrated.WhisperInitialPrompt);
+        Assert.Contains("MCP", migrated.WhisperInitialPrompt);
+        Assert.Contains("Vite", migrated.WhisperInitialPrompt);
+        Assert.Contains("MediBrave", migrated.WhisperInitialPrompt);
     }
 
     [Fact]

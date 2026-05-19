@@ -18,6 +18,10 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("contacts 7"), "Context7"),
         (PhraseRegex("contact seven"), "Context7"),
         (PhraseRegex("contacts seven"), "Context7"),
+        (PhraseRegex("m c p"), "MCP"),
+        (PhraseRegex("em c p"), "MCP"),
+        (PhraseRegex("vite"), "Vite"),
+        (PhraseRegex("vite js"), "Vite"),
         (PhraseRegex("maddy breath"), "MediBrave"),
         (PhraseRegex("medibrief"), "MediBrave"),
         (PhraseRegex("mad brave"), "MediBrave"),
@@ -70,6 +74,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixDeveloperDictationPhrases(corrected);
         corrected = FixSpelledLetterDictation(corrected);
         corrected = FixConversationalWeightAsWait(corrected);
+        corrected = FixConsentFormCompound(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -119,6 +124,14 @@ public static partial class VocabularyCorrectionService
         corrected = SpaceBeforeProtectedPunctuationRegex().Replace(corrected, "$1");
 
         return corrected;
+    }
+
+    private static string FixConsentFormCompound(string text)
+    {
+        return ConsentFormCompoundRegex().Replace(text, match =>
+        {
+            return char.IsUpper(match.Value[0]) ? "Consent form" : "consent form";
+        });
     }
 
     private static string FixSpelledLetterDictation(string text)
@@ -174,6 +187,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])letter\s+t(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex LetterTRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])consen(?:t)?\s*form(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex ConsentFormCompoundRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

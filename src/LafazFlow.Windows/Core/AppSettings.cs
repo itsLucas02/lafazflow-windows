@@ -2,10 +2,10 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
-        "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, GitHub, PowerShell, Cursor, LafazFlow, Luqman, "
+        "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
         + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
         + "npx shadcn@latest, build-web-apps:shadcn.";
 

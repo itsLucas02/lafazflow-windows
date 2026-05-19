@@ -39,6 +39,18 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("Open the M C P docs.", "Open the MCP docs.")]
+    [InlineData("Use em c p tools.", "Use MCP tools.")]
+    [InlineData("Start the vite app.", "Start the Vite app.")]
+    [InlineData("Open Vite JS docs.", "Open Vite docs.")]
+    public void ApplyDefaultsFixesAgentAndFrontendToolingVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
     [InlineData("My name is Lukamine.", "My name is Luqman.")]
     [InlineData("My name is Lukman.", "My name is Luqman.")]
     [InlineData("My name is Luqmen.", "My name is Luqman.")]
@@ -134,6 +146,18 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Use capital T.", "Use T.")]
     [InlineData("Press letter T.", "Press T.")]
     public void ApplyDefaultsFixesSpelledLetterDictation(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("Open the consenForm.", "Open the consent form.")]
+    [InlineData("Open the consentForm.", "Open the consent form.")]
+    [InlineData("ConsenForm is ready.", "Consent form is ready.")]
+    [InlineData("The consent form is ready.", "The consent form is ready.")]
+    public void ApplyDefaultsFixesConsentFormCompoundVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);
 

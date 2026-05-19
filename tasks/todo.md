@@ -661,3 +661,21 @@
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Dictation Quality And Developer Vocabulary
+- [x] Add focused offline corrections for newly observed developer/tooling phrases and the `consent form` compound issue.
+- [x] Add `MCP`, `Vite`, and `MediBrave` to the default local Whisper prompt.
+- [x] Migrate existing default prompts to the updated prompt while preserving custom prompts.
+- [x] Bump LafazFlow to `0.4.0` so the compact badge shows `v0.4`.
+- [x] Verify focused tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Dictation Quality And Developer Vocabulary
+- Added focused offline corrections for `MCP`, `Vite`, and the observed `consenForm` / `consentForm` compound issue.
+- Added `MCP`, `Vite`, and `MediBrave` to the default local Whisper prompt.
+- Bumped settings schema to migrate previous default prompts, including the Context7 prompt, while preserving custom prompts.
+- Bumped LafazFlow to `0.4.0`, so the compact recorder badge now shows `v0.4`.
+- Added a lesson for repairing accidental ASR compounds narrowly instead of applying broad camel-case splitting.
+- Focused vocabulary/settings/version tests pass, 91 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 233 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

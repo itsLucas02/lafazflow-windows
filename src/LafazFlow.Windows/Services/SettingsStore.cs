@@ -12,6 +12,10 @@ public sealed class SettingsStore
         "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow, Luqman, "
         + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
         + "npx shadcn@latest, build-web-apps:shadcn.";
+    private const string Context7DefaultWhisperInitialPrompt =
+        "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, GitHub, PowerShell, Cursor, LafazFlow, Luqman, "
+        + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+        + "npx shadcn@latest, build-web-apps:shadcn.";
 
     private static readonly string[] ModelPriority =
     [
@@ -120,7 +124,8 @@ public sealed class SettingsStore
 
         if (string.IsNullOrWhiteSpace(migrated.WhisperInitialPrompt)
             || string.Equals(migrated.WhisperInitialPrompt, PreviousDefaultWhisperInitialPrompt, StringComparison.Ordinal)
-            || string.Equals(migrated.WhisperInitialPrompt, DeveloperDefaultWhisperInitialPrompt, StringComparison.Ordinal))
+            || string.Equals(migrated.WhisperInitialPrompt, DeveloperDefaultWhisperInitialPrompt, StringComparison.Ordinal)
+            || string.Equals(migrated.WhisperInitialPrompt, Context7DefaultWhisperInitialPrompt, StringComparison.Ordinal))
         {
             migrated = migrated with { WhisperInitialPrompt = AppSettings.DefaultWhisperInitialPrompt };
         }
