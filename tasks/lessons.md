@@ -127,3 +127,7 @@
 ## Update the executable the user actually launches
 - Pattern: Publishing a new stable build elsewhere does not help if the Windows taskbar pin points at an older artifact directory.
 - Rule: When validating a Windows desktop fix, inspect the running process path and republish/relaunch that exact path or clearly migrate the shortcut.
+
+## Keep mini recorder metadata inside the shell
+- Pattern: Floating labels near the mini recorder shell look accidental and make the compact UI feel less polished.
+- Rule: Version/status metadata must live inside the mini recorder shell or a deliberate attached panel, never as a loose manually-positioned label.

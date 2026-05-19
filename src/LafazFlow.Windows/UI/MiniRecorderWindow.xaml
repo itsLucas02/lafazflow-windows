@@ -19,14 +19,6 @@
                           Color="#000000" />
     </Window.Resources>
     <Grid>
-        <TextBlock Text="{Binding AppVersion}"
-                   Foreground="#99FFFFFF"
-                   FontSize="9"
-                   FontWeight="SemiBold"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Bottom"
-                   Margin="224,0,0,43" />
-
         <Border x:Name="RecorderShell"
                 Width="184"
                 Height="40"
@@ -112,7 +104,7 @@
                                Opacity="0" />
 
                     <TextBlock Grid.Column="2"
-                               Text="AI"
+                               Text="{Binding AppVersion}"
                                Foreground="#7FFFFFFF"
                                FontSize="10"
                                FontWeight="SemiBold"

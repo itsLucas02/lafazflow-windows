@@ -557,3 +557,15 @@
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Focused mini recorder/clipboard tests pass, 24 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Move Version Into Mini Recorder Shell
+- [x] Confirm the version badge is currently a floating label outside the mini recorder shell.
+- [x] Move the compact `v0.1` label into the shell's right-side slot.
+- [x] Verify focused UI tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Move Version Into Mini Recorder Shell
+- Removed the loose floating version label outside the mini recorder shell.
+- Bound the shell's right-side slot to the compact app version, so `v0.1` now appears inside the black pill.
+- Focused mini recorder tests pass, 21 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
