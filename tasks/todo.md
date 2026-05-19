@@ -569,3 +569,17 @@
 - Focused mini recorder tests pass, 21 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Dynamic Mini Recorder Shell Layout
+- [x] Replace fixed side columns with auto-sized side labels and a stable center area.
+- [x] Keep `v0.1` inside the mini recorder shell while restoring balanced right padding.
+- [x] Use bounded compact shell growth instead of hard-coding around the current version string.
+- [x] Verify focused UI tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Dynamic Mini Recorder Shell Layout
+- Replaced fixed 36px side columns with auto-sized `OK` and `v0.1` labels around a stable center area.
+- The compact shell now keeps a 184px minimum but can grow modestly up to 232px for future compact metadata without crowding the right edge.
+- Added a lesson to keep compact shell metadata content-aware instead of tuned to one version string.
+- Focused mini recorder tests pass, 33 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.

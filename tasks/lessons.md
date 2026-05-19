@@ -131,3 +131,7 @@
 ## Keep mini recorder metadata inside the shell
 - Pattern: Floating labels near the mini recorder shell look accidental and make the compact UI feel less polished.
 - Rule: Version/status metadata must live inside the mini recorder shell or a deliberate attached panel, never as a loose manually-positioned label.
+
+## Prefer content-aware compact shell layout
+- Pattern: Fixed side columns sized for one label can make new metadata such as a version badge crowd the shell edge.
+- Rule: Compact shell metadata should use auto-sized side labels, a stable center minimum, symmetric spacing, and bounded shell growth instead of label-specific column widths.
