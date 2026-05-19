@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Collections.ObjectModel;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using LafazFlow.Windows.Core;
 
@@ -12,6 +13,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     private bool _hasAudioSample;
     private string _partialTranscript = "";
     private string _statusText = "";
+    private string _statusDetail = "";
     private int _processingPulseStep;
     private int _pendingTranscriptionCount;
 
@@ -101,6 +103,23 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         }
     }
 
+    public string StatusDetail
+    {
+        get => _statusDetail;
+        private set
+        {
+            if (_statusDetail == value)
+            {
+                return;
+            }
+
+            _statusDetail = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string AppVersion { get; } = BuildAppVersion();
+
     public bool IsRecording => State == RecordingState.Recording;
 
     public bool IsProcessing => State is RecordingState.Transcribing or RecordingState.Enhancing;
@@ -172,7 +191,8 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     {
         _state = RecordingState.Error;
         _processingPulseStep = 0;
-        StatusText = message;
+        StatusDetail = message;
+        StatusText = SummarizeError(message);
         OnPropertyChanged(nameof(State));
         OnPropertyChanged(nameof(IsRecording));
         OnPropertyChanged(nameof(IsProcessing));
@@ -184,6 +204,22 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
     public void RequestSettings()
     {
         SettingsRequested?.Invoke();
+    }
+
+    private static string SummarizeError(string message)
+    {
+        if (message.Contains("clipboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Clipboard error";
+        }
+
+        return string.IsNullOrWhiteSpace(message) ? "Error" : message;
+    }
+
+    private static string BuildAppVersion()
+    {
+        var version = typeof(MiniRecorderViewModel).Assembly.GetName().Version;
+        return version is null ? "v0.0" : $"v{version.Major}.{version.Minor}";
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

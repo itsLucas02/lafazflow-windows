@@ -543,3 +543,17 @@
 - Focused vocabulary tests pass, 49 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 208 tests.
 - Republished and relaunched `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
 - Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Visible Version And Pinned Build Refresh
+- [x] Confirm the running taskbar-pinned app path and compare it with latest stable output.
+- [x] Add compact `v0.1` assembly version display beside the mini recorder board.
+- [x] Shorten clipboard failures to `Clipboard error` on the board while preserving full detail in the tooltip/logs.
+- [x] Verify focused tests, full build/test, publish to the pinned `stable-single` path, public scan, then commit and push.
+
+## Review: Visible Version And Pinned Build Refresh
+- Root cause: the taskbar-pinned running process was `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, an older build from May 16, while recent fixes were being launched from `stable-cuda-quality`.
+- Added assembly version `0.1.0` and a compact `v0.1` badge beside the mini recorder board.
+- Clipboard failures now show `Clipboard error` on the small board while preserving the full message in `StatusDetail` and logs.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Focused mini recorder/clipboard tests pass, 24 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.

@@ -19,6 +19,14 @@
                           Color="#000000" />
     </Window.Resources>
     <Grid>
+        <TextBlock Text="{Binding AppVersion}"
+                   Foreground="#99FFFFFF"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Bottom"
+                   Margin="224,0,0,43" />
+
         <Border x:Name="RecorderShell"
                 Width="184"
                 Height="40"
@@ -92,6 +100,7 @@
                     <TextBlock Grid.Column="1"
                                x:Name="StatusTextBlock"
                                Text="{Binding StatusText}"
+                               ToolTip="{Binding StatusDetail}"
                                Foreground="White"
                                FontSize="11"
                                FontWeight="Medium"

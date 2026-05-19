@@ -123,3 +123,7 @@
 ## Capture observed product-name phonetics immediately
 - Pattern: The local model can produce new stable phonetic variants for known product names, such as `superbiz` for `Supabase`.
 - Rule: Add exact observed product-name variants to the offline vocabulary table with focused regression tests instead of waiting for model changes.
+
+## Update the executable the user actually launches
+- Pattern: Publishing a new stable build elsewhere does not help if the Windows taskbar pin points at an older artifact directory.
+- Rule: When validating a Windows desktop fix, inspect the running process path and republish/relaunch that exact path or clearly migrate the shortcut.

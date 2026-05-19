@@ -126,6 +126,26 @@ public sealed class MiniRecorderViewModelTests
         Assert.False(viewModel.ShowProcessingIndicator);
         Assert.True(viewModel.HasStatusText);
         Assert.Equal("Whisper model was not found.", viewModel.StatusText);
+        Assert.Equal("Whisper model was not found.", viewModel.StatusDetail);
+    }
+
+    [Fact]
+    public void SetErrorSummarizesClipboardErrorsForCompactBoard()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.SetError("Clipboard data could not be read.");
+
+        Assert.Equal("Clipboard error", viewModel.StatusText);
+        Assert.Equal("Clipboard data could not be read.", viewModel.StatusDetail);
+    }
+
+    [Fact]
+    public void AppVersionUsesCompactMajorMinorFormat()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        Assert.Matches(@"^v\d+\.\d+$", viewModel.AppVersion);
     }
 
     [Theory]
