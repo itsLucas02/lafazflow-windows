@@ -627,3 +627,20 @@
 - Focused crash/animation tests pass, 19 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 219 tests.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Reference Parity Audit Checklist
+- [x] Create a public-safe checklist comparing LafazFlow Windows with the neutral macOS reference workflow.
+- [x] Cover hotkeys, startup, tray, recorder shell, visual motion, audio cues, live preview, local transcription, paste, formatting, settings, diagnostics, crash resilience, and packaging.
+- [x] Add `Done`, `Partial`, and `Missing` status values with evidence and next fix slice.
+- [x] Bump app version to `0.3.0`.
+- [x] Strengthen compact version display test against the assembly major/minor version.
+- [x] Verify focused tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Reference Parity Audit Checklist
+- Added `docs/reference-parity-checklist.md` with public-safe parity status across hotkeys, startup, tray, recorder shell, motion, audio cues, live preview, local transcription, paste, formatting, vocabulary, settings, diagnostics, crash resilience, repository hygiene, runtime docs, and packaging.
+- Bumped LafazFlow to `0.3.0`, so the compact recorder badge now shows `v0.3`.
+- Strengthened the compact version test so `AppVersion` must match the assembly major/minor version.
+- Focused mini recorder view-model tests pass, 21 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 219 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

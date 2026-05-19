@@ -144,8 +144,11 @@ public sealed class MiniRecorderViewModelTests
     public void AppVersionUsesCompactMajorMinorFormat()
     {
         var viewModel = new MiniRecorderViewModel();
+        var assemblyVersion = typeof(MiniRecorderViewModel).Assembly.GetName().Version;
 
         Assert.Matches(@"^v\d+\.\d+$", viewModel.AppVersion);
+        Assert.NotNull(assemblyVersion);
+        Assert.Equal($"v{assemblyVersion.Major}.{assemblyVersion.Minor}", viewModel.AppVersion);
     }
 
     [Theory]
