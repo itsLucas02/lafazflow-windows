@@ -124,6 +124,10 @@
 - Pattern: The local model can produce new stable phonetic variants for known product names, such as `superbiz` for `Supabase`.
 - Rule: Add exact observed product-name variants to the offline vocabulary table with focused regression tests instead of waiting for model changes.
 
+## Include new agent tooling names in both vocabulary and prompt
+- Pattern: Agent tooling names such as `Context7` can be misheard as ordinary phrases like `contact seven`, and correction-only fixes do not help existing prompt context.
+- Rule: Add observed variants to offline vocabulary, add the canonical term to the default prompt, and migrate existing default prompts while preserving custom prompts.
+
 ## Update the executable the user actually launches
 - Pattern: Publishing a new stable build elsewhere does not help if the Windows taskbar pin points at an older artifact directory.
 - Rule: When validating a Windows desktop fix, inspect the running process path and republish/relaunch that exact path or clearly migrate the shortcut.

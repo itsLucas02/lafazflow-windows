@@ -25,6 +25,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(WhisperBackend.Cpu, settings.WhisperBackend);
         Assert.False(settings.EnableVad);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
+        Assert.Contains("Context7", settings.WhisperInitialPrompt);
         Assert.Contains("Luqman", settings.WhisperInitialPrompt);
         Assert.Contains("shadcn/ui", settings.WhisperInitialPrompt);
         Assert.Contains("components.json", settings.WhisperInitialPrompt);
@@ -155,6 +156,26 @@ public sealed class SettingsStoreTests
         Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
         Assert.Contains("shadcn/ui", migrated.WhisperInitialPrompt);
         Assert.Contains("build-web-apps:shadcn", migrated.WhisperInitialPrompt);
+        Assert.Contains("Context7", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadMigratesDeveloperDefaultPromptToContext7Prompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 3,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, GitHub, PowerShell, Cursor, LafazFlow, Luqman, "
+                + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+                + "npx shadcn@latest, build-web-apps:shadcn."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("Context7", migrated.WhisperInitialPrompt);
     }
 
     [Fact]

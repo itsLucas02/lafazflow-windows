@@ -644,3 +644,20 @@
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Add Context7 Vocabulary Hotfix
+- [x] Add offline corrections for observed `Context7` variants: `contact 7`, `contacts 7`, `contact seven`, and `contacts seven`.
+- [x] Add `Context7` to the default Whisper prompt.
+- [x] Migrate existing default prompts to include `Context7` while preserving custom prompts.
+- [x] Bump patch version to `0.3.1` while keeping compact badge behavior as `v0.3`.
+- [x] Verify focused vocabulary/settings tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Add Context7 Vocabulary Hotfix
+- Added offline `Context7` corrections for `contact 7`, `contacts 7`, `contact seven`, and `contacts seven`.
+- Added `Context7` to the default local Whisper prompt so new settings include it as recognition context.
+- Bumped settings schema to migrate existing default prompts to include `Context7`; custom prompts remain preserved.
+- Bumped LafazFlow to `0.3.1`; compact badge remains `v0.3`.
+- Focused vocabulary/settings/version tests pass, 82 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 224 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

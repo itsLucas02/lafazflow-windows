@@ -27,6 +27,18 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("Use contact 7 for current docs.", "Use Context7 for current docs.")]
+    [InlineData("Ask contacts 7 for library docs.", "Ask Context7 for library docs.")]
+    [InlineData("Open contact seven MCP.", "Open Context7 MCP.")]
+    [InlineData("Use contacts seven with AI agents.", "Use Context7 with AI agents.")]
+    public void ApplyDefaultsFixesContext7Variants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
     [InlineData("My name is Lukamine.", "My name is Luqman.")]
     [InlineData("My name is Lukman.", "My name is Luqman.")]
     [InlineData("My name is Luqmen.", "My name is Luqman.")]
