@@ -139,3 +139,7 @@
 ## Never animate WPF width from Auto
 - Pattern: Setting a WPF element's `Width` to Auto leaves the property as `NaN`, and `DoubleAnimation` crashes if it tries to animate that property from the default origin.
 - Rule: Any element animated with `WidthProperty` must have a concrete numeric `Width` before the animation starts, or the animation must explicitly provide a valid `From` value.
+
+## Log UI crashes before deciding recovery
+- Pattern: WPF dispatcher animation failures can terminate the app without reaching LafazFlow's normal service logs.
+- Rule: Register app-level exception handlers during startup, write privacy-safe crash metadata to the local log, and only mark narrowly understood UI animation exceptions as recoverable.

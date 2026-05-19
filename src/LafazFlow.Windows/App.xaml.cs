@@ -1,4 +1,5 @@
 using LafazFlow.Windows.Services;
+using System.Windows.Media.Animation;
 
 namespace LafazFlow.Windows;
 
@@ -11,6 +12,7 @@ public partial class App : System.Windows.Application
     private const string SecondLaunchSignalName = @"Local\LafazFlow.Windows.ShowSettingsRequest";
     private Mutex? _singleInstanceMutex;
     private SecondLaunchSignal? _secondLaunchSignal;
+    private readonly IAppCrashLogService _crashLogService = new AppCrashLogService();
 
     public static bool TryAcquireSingleInstance(string mutexName, out Mutex mutex)
     {
@@ -26,6 +28,8 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
+        RegisterExceptionHandlers();
+
         if (!TryAcquireSingleInstance(SingleInstanceMutexName, out _singleInstanceMutex))
         {
             SecondLaunchSignal.Signal(SecondLaunchSignalName);
@@ -44,11 +48,55 @@ public partial class App : System.Windows.Application
                 {
                     mainWindow.ShowSettingsFromShell();
                 }
-            }));
+        }));
+    }
+
+    public static bool IsRecoverableDispatcherException(Exception exception)
+    {
+        return IsRecoverableDispatcherExceptionType(exception.GetType())
+            || (exception.InnerException is not null && IsRecoverableDispatcherExceptionType(exception.InnerException.GetType()));
+    }
+
+    public static bool IsRecoverableDispatcherExceptionType(Type exceptionType)
+    {
+        return exceptionType == typeof(AnimationException);
+    }
+
+    private void RegisterExceptionHandlers()
+    {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+    }
+
+    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        _crashLogService.LogUnhandledException("DispatcherUnhandledException", e.Exception);
+        e.Handled = IsRecoverableDispatcherException(e.Exception);
+    }
+
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            _crashLogService.LogUnhandledException("AppDomain.UnhandledException", exception);
+        }
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _crashLogService.LogUnhandledException("TaskScheduler.UnobservedTaskException", e.Exception);
+        e.SetObserved();
     }
 
     protected override void OnExit(System.Windows.ExitEventArgs e)
     {
+        DispatcherUnhandledException -= OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
+        TaskScheduler.UnobservedTaskException -= OnUnobservedTaskException;
         _secondLaunchSignal?.Dispose();
         _secondLaunchSignal = null;
         _singleInstanceMutex?.ReleaseMutex();

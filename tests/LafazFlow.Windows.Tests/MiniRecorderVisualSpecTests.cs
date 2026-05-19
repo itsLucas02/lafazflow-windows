@@ -131,4 +131,12 @@ public sealed class MiniRecorderVisualSpecTests
         Assert.Equal(160, MiniRecorderVisualSpec.WindowExitMilliseconds);
         Assert.Equal(0.96, MiniRecorderVisualSpec.WindowEntranceStartScale, precision: 6);
     }
+
+    [Fact]
+    public void AnimationOriginFallsBackWhenCurrentValueIsNotConcrete()
+    {
+        Assert.Equal(208, MiniRecorderVisualSpec.ResolveAnimationOrigin(double.NaN, 208));
+        Assert.Equal(208, MiniRecorderVisualSpec.ResolveAnimationOrigin(double.PositiveInfinity, 208));
+        Assert.Equal(184, MiniRecorderVisualSpec.ResolveAnimationOrigin(184, 208));
+    }
 }

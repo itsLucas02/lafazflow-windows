@@ -27,8 +27,12 @@ public sealed class CornerRadiusAnimation : AnimationTimeline
 
     public override object GetCurrentValue(object defaultOriginValue, object defaultDestinationValue, AnimationClock animationClock)
     {
-        var from = (CornerRadius)defaultOriginValue;
-        var progress = animationClock.CurrentProgress ?? 0;
+        if (defaultOriginValue is not CornerRadius from || !IsValid(from) || !IsValid(To))
+        {
+            return To;
+        }
+
+        var progress = animationClock?.CurrentProgress ?? 0;
         if (EasingFunction is not null)
         {
             progress = EasingFunction.Ease(progress);
@@ -39,5 +43,18 @@ public sealed class CornerRadiusAnimation : AnimationTimeline
             from.TopRight + (To.TopRight - from.TopRight) * progress,
             from.BottomRight + (To.BottomRight - from.BottomRight) * progress,
             from.BottomLeft + (To.BottomLeft - from.BottomLeft) * progress);
+    }
+
+    private static bool IsValid(CornerRadius radius)
+    {
+        return IsFinite(radius.TopLeft)
+            && IsFinite(radius.TopRight)
+            && IsFinite(radius.BottomRight)
+            && IsFinite(radius.BottomLeft);
+    }
+
+    private static bool IsFinite(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value);
     }
 }

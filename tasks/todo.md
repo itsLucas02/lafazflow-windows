@@ -597,3 +597,33 @@
 - Focused mini recorder tests pass, 33 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 210 tests.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: LafazFlow Polish Roadmap
+- [x] Review current versioning source and compact badge behavior.
+- [x] Write a full polish roadmap covering crash resilience, parity audit, dictation quality, latency, motion, audio cues, settings UX, and packaging.
+- [x] Define version bump rules for pre-1.0 visible releases and emergency patch releases.
+- [ ] Seek owner approval before implementing Task 1.
+
+## Review: LafazFlow Polish Roadmap
+- Implementation plan saved at `docs/superpowers/plans/2026-05-19-lafazflow-polish-roadmap.md`.
+- Proposed version policy: each user-visible polish slice bumps minor version while pre-1.0 (`v0.2`, `v0.3`, etc.); emergency hotfixes may bump patch internally (`0.2.1`) while keeping the compact badge as `v0.2`.
+- Recommended next implementation slice is Task 1: Crash Resilience And Animation Safety, targeting `0.2.0`.
+
+## Plan: Crash Resilience And Animation Safety
+- [x] Add privacy-safe crash logging for app-level unhandled exception surfaces.
+- [x] Wire dispatcher, app-domain, and unobserved-task exception handlers during startup.
+- [x] Treat WPF animation dispatcher exceptions as recoverable after logging.
+- [x] Guard mini recorder numeric width/height animation origins against `NaN` and infinity.
+- [x] Guard custom corner-radius and grid-length animations against unexpected origin values.
+- [x] Bump app version to `0.2.0`.
+- [x] Verify focused tests, full build/test, publish/relaunch pinned path, public scan, then commit and push.
+
+## Review: Crash Resilience And Animation Safety
+- Added privacy-safe `CRASH` logging for dispatcher, app-domain, and unobserved-task exception surfaces.
+- WPF animation dispatcher exceptions are now logged and treated as recoverable instead of immediately terminating LafazFlow.
+- Hardened numeric width/height animation origins against `NaN` and infinity.
+- Hardened custom corner-radius and grid-length animations against unexpected or invalid origin values.
+- Bumped LafazFlow to `0.2.0`, so the compact recorder badge now shows `v0.2`.
+- Focused crash/animation tests pass, 19 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 219 tests.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

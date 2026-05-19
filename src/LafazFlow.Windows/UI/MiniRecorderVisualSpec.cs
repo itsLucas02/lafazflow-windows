@@ -39,6 +39,13 @@ public static class MiniRecorderVisualSpec
     public const int WindowExitMilliseconds = 160;
     public const double WindowEntranceStartScale = 0.96;
 
+    public static double ResolveAnimationOrigin(double currentValue, double fallbackValue)
+    {
+        return double.IsNaN(currentValue) || double.IsInfinity(currentValue)
+            ? fallbackValue
+            : currentValue;
+    }
+
     public static double CalculateBarHeight(
         int index,
         int barCount,

@@ -277,8 +277,15 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 
     private static void AnimateDouble(FrameworkElement target, DependencyProperty property, double value, int milliseconds)
     {
+        var currentValue = target.GetValue(property);
+        var from = currentValue is double currentDouble
+            ? MiniRecorderVisualSpec.ResolveAnimationOrigin(currentDouble, value)
+            : value;
+
+        target.SetValue(property, from);
         target.BeginAnimation(property, new DoubleAnimation
         {
+            From = from,
             To = value,
             Duration = TimeSpan.FromMilliseconds(milliseconds),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }

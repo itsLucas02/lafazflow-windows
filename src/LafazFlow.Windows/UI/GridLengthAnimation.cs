@@ -27,8 +27,12 @@ public sealed class GridLengthAnimation : AnimationTimeline
 
     public override object GetCurrentValue(object defaultOriginValue, object defaultDestinationValue, AnimationClock animationClock)
     {
-        var from = (GridLength)defaultOriginValue;
-        var progress = animationClock.CurrentProgress ?? 0;
+        if (defaultOriginValue is not GridLength from || !IsValidPixelLength(from) || !IsValidPixelLength(To))
+        {
+            return To;
+        }
+
+        var progress = animationClock?.CurrentProgress ?? 0;
         if (EasingFunction is not null)
         {
             progress = EasingFunction.Ease(progress);
@@ -36,5 +40,13 @@ public sealed class GridLengthAnimation : AnimationTimeline
 
         var value = from.Value + (To.Value - from.Value) * progress;
         return new GridLength(value);
+    }
+
+    private static bool IsValidPixelLength(GridLength length)
+    {
+        return length.IsAbsolute
+            && length.Value >= 0
+            && !double.IsNaN(length.Value)
+            && !double.IsInfinity(length.Value);
     }
 }
