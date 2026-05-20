@@ -97,4 +97,43 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal(expected, formatted);
     }
+
+    [Theory]
+    [InlineData(
+        "It's broken. It's fucking broken. Over and over again. And there is nothing that you can do to fix it.",
+        "It's broken. It's fucking broken. Over and over again, and there is nothing that you can do to fix it.")]
+    [InlineData(
+        "Document everything and then make a checklist. And then we go one by one until everything completes.",
+        "Document everything and then make a checklist, and then we go one by one until everything completes.")]
+    public void FormatRepairsHighConfidenceAndContinuationBreaks(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData("So what do you suggest us to do then.", "So what do you suggest us to do then?")]
+    [InlineData("But how do we manage them.", "But how do we manage them?")]
+    [InlineData("Should we do some sort of a roadmap for this.", "Should we do some sort of a roadmap for this?")]
+    public void FormatMarksConversationalQuestionLeadIns(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData(
+        "This is complete. And the next section starts here.",
+        "This is complete. And the next section starts here.")]
+    [InlineData(
+        "This is complete. Andrew will review it.",
+        "This is complete. Andrew will review it.")]
+    public void FormatDoesNotAggressivelyMergeNormalSentences(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
 }

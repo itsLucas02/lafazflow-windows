@@ -24,6 +24,12 @@ public static partial class TranscriptionTextFormatter
         "am"
     ];
 
+    private static readonly string[] QuestionLeadIns =
+    [
+        "so",
+        "but"
+    ];
+
     public static string Format(string text)
     {
         var withoutTimestamps = TimestampLineRegex().Replace(text, " ");
@@ -32,6 +38,7 @@ public static partial class TranscriptionTextFormatter
         normalized = SpaceBeforePunctuationRegex().Replace(normalized, "$1");
         normalized = OrphanPunctuationRegex().Replace(normalized, "").Trim();
         normalized = WaitQuestionLeadInRegex().Replace(normalized, "wait, $1");
+        normalized = AndContinuationBreakRegex().Replace(normalized, ", and ");
 
         if (normalized.Length == 0)
         {
@@ -72,6 +79,15 @@ public static partial class TranscriptionTextFormatter
             candidate = candidate["Wait, ".Length..].TrimStart();
         }
 
+        foreach (var leadIn in QuestionLeadIns)
+        {
+            if (candidate.StartsWith(leadIn + " ", StringComparison.OrdinalIgnoreCase))
+            {
+                candidate = candidate[(leadIn.Length + 1)..].TrimStart();
+                break;
+            }
+        }
+
         foreach (var starter in QuestionStarters)
         {
             if (candidate.StartsWith(starter + " ", StringComparison.OrdinalIgnoreCase))
@@ -100,4 +116,7 @@ public static partial class TranscriptionTextFormatter
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])wait\s*\.\s*(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WaitQuestionLeadInRegex();
+
+    [GeneratedRegex(@"\.\s+And\s+(?=(?:then|there|once|maybe|therefore|it|they|we)\b)")]
+    private static partial Regex AndContinuationBreakRegex();
 }

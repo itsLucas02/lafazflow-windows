@@ -760,3 +760,22 @@
 - Focused runtime/settings tests pass, 36 tests; full `dotnet test` passes, 261 tests.
 - Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, relaunched it, and verified the stable build reports file version `0.8.0.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+## Plan: Dictation Post-Processing Quality
+- [x] Bump LafazFlow to `0.8.1`.
+- [x] Add formatter regression tests for bad `. And...` continuation breaks and conversational question punctuation.
+- [x] Add vocabulary regression tests for narrow `Dokumen` English dictation drift.
+- [x] Implement conservative continuation-boundary repair in `TranscriptionTextFormatter`.
+- [x] Implement lead-in question punctuation repair in `TranscriptionTextFormatter`.
+- [x] Implement narrow `Dokumen` to `document` correction in `VocabularyCorrectionService`.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Dictation Post-Processing Quality
+- Added regression tests for the reported `. And...` continuation breaks, conversational question endings, and `Dokumen` English dictation drift.
+- Added conservative formatter repair for high-confidence continuation phrases such as `. And then`, `. And there`, `. And we`, `. And it`, and related variants.
+- Added question lead-in handling for `So what...` and `But how...` while preserving existing direct question behavior.
+- Added narrow vocabulary correction for English-context `dokumen everything/this/that/it` without broad non-English rewriting.
+- Bumped LafazFlow to `0.8.1`.
+- Focused formatter/vocabulary/Whisper tests pass, 99 tests; full `dotnet test` passes, 272 tests; full `dotnet build` passes with 0 warnings.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, relaunched it, and verified the stable build reports file version `0.8.1.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

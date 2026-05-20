@@ -165,6 +165,18 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("Dokumen everything and then make a checklist.", "Document everything and then make a checklist.")]
+    [InlineData("Please dokumen this and continue.", "Please document this and continue.")]
+    [InlineData("Can you dokumen that for me?", "Can you document that for me?")]
+    [InlineData("We should dokumen it before moving on.", "We should document it before moving on.")]
+    public void ApplyDefaultsFixesNarrowEnglishDokumenDrift(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
     [InlineData("Weight why is it doing that?", "Wait, why is it doing that?")]
     [InlineData("Weight why is it doing that.", "Wait, why is it doing that?")]
     [InlineData("Weight what happened?", "Wait, what happened?")]

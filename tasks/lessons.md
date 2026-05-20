@@ -151,3 +151,7 @@
 ## Repair accidental ASR compounds narrowly
 - Pattern: Whisper can collapse ordinary phrases into camel-like compounds, such as `consent form` becoming `consenForm`.
 - Rule: Fix observed phrase compounds with targeted vocabulary corrections that preserve sentence-start casing; do not add broad camel-case splitting that could corrupt code identifiers.
+
+## Repair Whisper punctuation conservatively
+- Pattern: Whisper can insert bad internal sentence breaks before continuation phrases, such as `checklist. And then` or `over again. And there`.
+- Rule: Repair only high-confidence continuation boundaries and observed English lexical drift; avoid broad grammar rewriting that would erase intentional sentence starts.

@@ -75,6 +75,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixSpelledLetterDictation(corrected);
         corrected = FixConversationalWeightAsWait(corrected);
         corrected = FixConsentFormCompound(corrected);
+        corrected = FixEnglishDokumenDrift(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -134,6 +135,14 @@ public static partial class VocabularyCorrectionService
         });
     }
 
+    private static string FixEnglishDokumenDrift(string text)
+    {
+        return EnglishDokumenDriftRegex().Replace(text, match =>
+        {
+            return char.IsUpper(match.Value[0]) ? "Document" : "document";
+        });
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -190,6 +199,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])consen(?:t)?\s*form(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex ConsentFormCompoundRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])dokumen(?=\s+(?:everything|this|that|it)\b)", RegexOptions.IgnoreCase)]
+    private static partial Regex EnglishDokumenDriftRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();
