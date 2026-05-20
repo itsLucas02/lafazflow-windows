@@ -14,10 +14,10 @@ Status values:
 | Single instance | Launching LafazFlow again should not create duplicate hotkey listeners and should route to the existing app. | Done | `SingleInstanceTests`; second-launch smoke recorded in `tasks/todo.md`. | Installer shortcut polish. |
 | Tray behavior | Tray icon exposes Settings, Open Logs, and Exit, with useful idle/recording/transcribing/error tooltip state. | Partial | Tray service exists and shell UX tests pass, but no broad manual checklist yet. | Task 7: Settings UX And Runtime Diagnostics. |
 | Recorder shell placement | Compact floating shell stays bottom-centered, avoids startup clutter, and does not shift during preview/status changes. | Done | Mini recorder layout tests and owner feedback after shell stability fixes. | Task 5 only for visual fine-tuning. |
-| Version visibility | Compact shell shows a small visible version badge from the app assembly version. | Done | `MiniRecorderViewModelTests.AppVersionUsesCompactMajorMinorFormat`; current target is `v0.6`. | Continue version bumps per roadmap. |
+| Version visibility | Compact shell shows a small visible version badge from the app assembly version. | Done | `MiniRecorderViewModelTests.AppVersionUsesCompactMajorMinorFormat`; current target is `v0.7`. | Continue version bumps per roadmap. |
 | Visual motion | Recorder entrance, exit, audio meter, processing dots, and live transcript expansion feel smooth and do not crash. | Partial | Motion constants, processing dots, and animation easing have been refined; manual owner feel-check remains useful. | Continue tuning only after daily-use feedback. |
 | Audio meter | Voice-reactive bars respond to input level with stable dimensions and aqua/cyan height-based color. | Done | `MiniRecorderVisualSpecTests` cover bar height, smoothing, and color behavior. | Task 5 for fine tuning only. |
-| Audio cues | Start, stop/transcribing, completion, and error cues play from bundled local assets without Windows notification sounds. | Partial | `SoundCueServiceTests` and bundled asset notices exist; volume/timing/settings polish remains. | Task 6: Audio Cue Refinement. |
+| Audio cues | Start, stop/transcribing, completion, and error cues play from bundled local assets without Windows notification sounds. | Done | Cue settings, volume control, non-crashing playback, and recorder timing tests pass. | Revisit only if owner wants different cue assets. |
 | Local transcription | Default flow uses local `whisper.cpp` and local model files without cloud transcription. | Done | README, settings tests, Whisper CLI tests, and successful local latency logs. | Task 7 for clearer runtime checks. |
 | Quality profile | Quality mode can use the local quantized large turbo model, CUDA backend, and VAD when configured. | Partial | CUDA activation and VAD checks are implemented; settings UX still needs clearer health/status. | Task 7: Settings UX And Runtime Diagnostics. |
 | English-only decoding | English dictation should stay English even with multilingual models. | Done | Hardened decode flags and tests from the English-only dictation slice. | Task 3 if new language drift appears. |
@@ -35,8 +35,7 @@ Status values:
 
 ## Next Recommended Order
 
-1. Task 6: Audio Cue Refinement.
-2. Task 7: Settings UX And Runtime Diagnostics.
-3. Task 8: Installer And Release Packaging.
+1. Task 7: Settings UX And Runtime Diagnostics.
+2. Task 8: Installer And Release Packaging.
 
-Task 6 is next because visual motion has been refined and sound cues are the next remaining feel/polish gap.
+Task 7 is next because cue polish is implemented and the remaining daily-use gaps are clearer runtime health, model/backend status, and diagnostic actions.

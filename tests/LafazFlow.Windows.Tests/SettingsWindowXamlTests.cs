@@ -31,6 +31,19 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsSoundCueControls()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Content=\"Play sound cues\"", xaml);
+        Assert.Contains("IsChecked=\"{Binding EnableSoundCues}\"", xaml);
+        Assert.Contains("Text=\"Sound Cue Volume (%)\"", xaml);
+        Assert.Contains("Value=\"{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+    }
+
+    [Fact]
     public void MiniRecorderWindowStaysOutOfTaskbar()
     {
         var repoRoot = FindRepoRoot();

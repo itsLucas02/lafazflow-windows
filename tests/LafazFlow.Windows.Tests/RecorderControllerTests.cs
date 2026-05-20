@@ -243,6 +243,108 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task SoundCuesCanBeDisabledFromSettings()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { EnableSoundCues = false }),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Empty(soundPlayer.PlayedPaths);
+    }
+
+    [Fact]
+    public async Task SoundCuesUseConfiguredVolume()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { SoundCueVolume = 0.8 }),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.NotEmpty(soundPlayer.Volumes);
+        Assert.All(soundPlayer.Volumes, volume => Assert.Equal(0.8f, volume));
+    }
+
+    [Fact]
+    public async Task CompletionCuePlaysOnlyAfterPasteSucceeds()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var paste = new FakeClipboardPasteService(onPaste: () =>
+        {
+            Assert.DoesNotContain(soundPlayer.PlayedPaths, path => path.EndsWith("pastess.mp3"));
+        });
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            paste,
+            CreateSettingsStore(),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.EndsWith("pastess.mp3", soundPlayer.PlayedPaths.Last());
+    }
+
+    [Fact]
+    public async Task FailedDictationPlaysErrorCueWithoutCompletionCue()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => throw new InvalidOperationException("boom")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Contains(soundPlayer.PlayedPaths, path => path.EndsWith("esc.wav"));
+        Assert.DoesNotContain(soundPlayer.PlayedPaths, path => path.EndsWith("pastess.mp3"));
+    }
+
+    [Fact]
     public async Task ToggleDuringStopHandoffDoesNotStartNewRecording()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -411,17 +513,18 @@ public sealed class RecorderControllerTests
         Assert.True(trace.HasCheckpoint(LatencyCheckpoint.Failed));
     }
 
-    private static SettingsStore CreateSettingsStore()
+    private static SettingsStore CreateSettingsStore(Func<AppSettings, AppSettings>? configure = null)
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var cliPath = Path.GetTempFileName();
         var modelPath = Path.GetTempFileName();
         var store = new SettingsStore(root, cliPath, modelPath);
-        store.Save(AppSettings.Default with
+        var settings = AppSettings.Default with
         {
             WhisperCliPath = cliPath,
             ModelPath = modelPath
-        });
+        };
+        store.Save(configure?.Invoke(settings) ?? settings);
         return store;
     }
 
@@ -537,10 +640,12 @@ public sealed class RecorderControllerTests
     private sealed class FakeClipboardPasteService : IClipboardPasteService
     {
         private readonly Func<bool>? _isInsideWindowDispatcher;
+        private readonly Action? _onPaste;
 
-        public FakeClipboardPasteService(Func<bool>? isInsideWindowDispatcher = null)
+        public FakeClipboardPasteService(Func<bool>? isInsideWindowDispatcher = null, Action? onPaste = null)
         {
             _isInsideWindowDispatcher = isInsideWindowDispatcher;
+            _onPaste = onPaste;
         }
 
         public List<string> Texts { get; } = [];
@@ -556,6 +661,7 @@ public sealed class RecorderControllerTests
             IntPtr targetWindow,
             CancellationToken cancellationToken)
         {
+            _onPaste?.Invoke();
             WasPastedInsideWindowDispatcher = _isInsideWindowDispatcher?.Invoke() ?? false;
             Texts.Add(text);
             TargetWindows.Add(targetWindow);
@@ -585,9 +691,12 @@ public sealed class RecorderControllerTests
     {
         public List<string> PlayedPaths { get; } = [];
 
+        public List<float> Volumes { get; } = [];
+
         public void Play(string path, float volume)
         {
             PlayedPaths.Add(path);
+            Volumes.Add(volume);
         }
     }
 

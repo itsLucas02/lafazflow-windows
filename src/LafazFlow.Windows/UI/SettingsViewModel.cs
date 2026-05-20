@@ -26,6 +26,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _appendTrailingSpace;
     private bool _showLiveTranscriptPreview;
     private bool _enableVocabularyCorrections;
+    private bool _enableSoundCues;
+    private double _soundCueVolumePercent;
     private bool _keepRecordingsForDiagnostics;
     private string _validationMessage = "";
     private string _latencyDiagnosticsMessage = "";
@@ -53,6 +55,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         AppendTrailingSpace = settings.AppendTrailingSpace;
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
+        EnableSoundCues = settings.EnableSoundCues;
+        SoundCueVolumePercent = settings.SoundCueVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
         RefreshLatencyDiagnostics();
     }
@@ -147,6 +151,18 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _enableVocabularyCorrections;
         set => SetProperty(ref _enableVocabularyCorrections, value);
+    }
+
+    public bool EnableSoundCues
+    {
+        get => _enableSoundCues;
+        set => SetProperty(ref _enableSoundCues, value);
+    }
+
+    public double SoundCueVolumePercent
+    {
+        get => _soundCueVolumePercent;
+        set => SetProperty(ref _soundCueVolumePercent, value);
     }
 
     public bool KeepRecordingsForDiagnostics
@@ -268,6 +284,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             AppendTrailingSpace = AppendTrailingSpace,
             ShowLiveTranscriptPreview = ShowLiveTranscriptPreview,
             EnableVocabularyCorrections = EnableVocabularyCorrections,
+            EnableSoundCues = EnableSoundCues,
+            SoundCueVolume = Math.Clamp(SoundCueVolumePercent / 100.0, 0, 1),
             KeepRecordingsForDiagnostics = KeepRecordingsForDiagnostics
         };
 
@@ -275,6 +293,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _sourceSettings = settings;
         WhisperThreads = settings.WhisperThreads;
         ClipboardRestoreDelayMs = settings.ClipboardRestoreDelayMs;
+        SoundCueVolumePercent = settings.SoundCueVolume * 100;
         ValidationMessage = "";
         return SettingsSaveResult.Ok;
     }

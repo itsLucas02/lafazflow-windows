@@ -1,4 +1,5 @@
 using System.IO;
+using LafazFlow.Windows.Core;
 using NAudio.Wave;
 
 namespace LafazFlow.Windows.Services;
@@ -16,11 +17,20 @@ public interface ISoundCuePlayer
     void Play(string path, float volume);
 }
 
+public readonly record struct SoundCueOptions(bool Enabled, float Volume)
+{
+    public static SoundCueOptions Default { get; } = new(true, 0.5f);
+
+    public static SoundCueOptions FromSettings(AppSettings settings)
+    {
+        return new SoundCueOptions(
+            settings.EnableSoundCues,
+            (float)Math.Clamp(settings.SoundCueVolume, 0, 1));
+    }
+}
+
 public sealed class SoundCueService
 {
-    private const float DefaultVolume = 0.4f;
-    private const float ErrorVolume = 0.3f;
-
     private readonly string _soundRoot;
     private readonly ISoundCuePlayer _player;
 
@@ -35,28 +45,34 @@ public sealed class SoundCueService
         _player = player;
     }
 
-    public void PlayRecordingStarted()
+    public void PlayRecordingStarted(SoundCueOptions? options = null)
     {
-        Play(SoundCueKind.RecordingStarted);
+        Play(SoundCueKind.RecordingStarted, options);
     }
 
-    public void PlayTranscribingStarted()
+    public void PlayTranscribingStarted(SoundCueOptions? options = null)
     {
-        Play(SoundCueKind.TranscribingStarted);
+        Play(SoundCueKind.TranscribingStarted, options);
     }
 
-    public void PlayCompleted()
+    public void PlayCompleted(SoundCueOptions? options = null)
     {
-        Play(SoundCueKind.Completed);
+        Play(SoundCueKind.Completed, options);
     }
 
-    public void PlayError()
+    public void PlayError(SoundCueOptions? options = null)
     {
-        Play(SoundCueKind.Error);
+        Play(SoundCueKind.Error, options);
     }
 
-    public void Play(SoundCueKind kind)
+    public void Play(SoundCueKind kind, SoundCueOptions? options = null)
     {
+        var resolvedOptions = options ?? SoundCueOptions.Default;
+        if (!resolvedOptions.Enabled || resolvedOptions.Volume <= 0)
+        {
+            return;
+        }
+
         var path = ResolvePath(kind);
         if (!File.Exists(path))
         {
@@ -65,7 +81,7 @@ public sealed class SoundCueService
 
         try
         {
-            _player.Play(path, kind == SoundCueKind.Error ? ErrorVolume : DefaultVolume);
+            _player.Play(path, Math.Clamp(resolvedOptions.Volume, 0, 1));
         }
         catch
         {

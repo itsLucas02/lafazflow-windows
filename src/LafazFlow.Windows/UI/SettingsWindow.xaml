@@ -119,6 +119,15 @@
                           IsChecked="{Binding ShowLiveTranscriptPreview}" />
                 <CheckBox Content="Apply vocabulary corrections"
                           IsChecked="{Binding EnableVocabularyCorrections}" />
+                <CheckBox Content="Play sound cues"
+                          IsChecked="{Binding EnableSoundCues}" />
+                <TextBlock Text="Sound Cue Volume (%)" FontWeight="SemiBold" />
+                <Slider Minimum="0"
+                        Maximum="100"
+                        TickFrequency="10"
+                        IsSnapToTickEnabled="False"
+                        Value="{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,4,8,10" />
                 <CheckBox Content="Use local VAD in quality mode"
                           IsChecked="{Binding EnableVad}" />
                 <TextBlock Text="VAD Model" FontWeight="SemiBold" />

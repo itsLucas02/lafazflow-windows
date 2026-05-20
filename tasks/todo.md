@@ -720,3 +720,24 @@
 - `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Audio Cue Refinement
+- [x] Add settings for enabling sound cues and configuring sound cue volume.
+- [x] Raise the default sound cue volume to `50%`.
+- [x] Clamp saved sound cue volume to the `0.0` through `1.0` range.
+- [x] Make sound cue playback respect the current settings and remain non-fatal for missing assets or audio device errors.
+- [x] Preserve cue timing: start after recording begins, stop/transcribing immediately after stop begins, completion after paste succeeds, and error on real failure.
+- [x] Add Settings UI controls for sound cue enablement and volume.
+- [x] Bump LafazFlow to `0.7.0` so the compact badge shows `v0.7`.
+- [x] Verify focused tests, full build/test, diff check, public scans, publish/relaunch pinned path, then commit and push.
+
+## Review: Audio Cue Refinement
+- Added `EnableSoundCues` and `SoundCueVolume` settings with a default enabled `50%` volume.
+- Added Settings UI controls for cue enablement and cue volume.
+- Sound cue playback now respects current settings, clamps volume, skips disabled/zero-volume cues, and stays non-fatal for missing assets or audio output failures.
+- Recorder cue timing remains pinned: start after recording begins, stop/transcribing immediately after stop starts, completion after paste succeeds, and error on real failure.
+- Bumped LafazFlow to `0.7.0`, so the compact recorder badge now shows `v0.7`.
+- Focused sound/settings/controller tests pass, 74 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 250 tests.
+- `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

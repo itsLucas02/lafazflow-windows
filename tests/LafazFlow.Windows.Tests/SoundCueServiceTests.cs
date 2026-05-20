@@ -27,7 +27,53 @@ public sealed class SoundCueServiceTests
         service.PlayRecordingStarted();
 
         Assert.Equal(assetPath, player.PlayedPath);
-        Assert.Equal(0.4f, player.Volume);
+        Assert.Equal(0.5f, player.Volume);
+    }
+
+    [Fact]
+    public void PlayUsesConfiguredVolumeWhenFileExists()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var assetPath = Path.Combine(root, "pastess.mp3");
+        File.WriteAllBytes(assetPath, [1, 2, 3]);
+        var player = new RecordingSoundCuePlayer();
+        var service = new SoundCueService(root, player);
+
+        service.PlayCompleted(new SoundCueOptions(true, 0.75f));
+
+        Assert.Equal(assetPath, player.PlayedPath);
+        Assert.Equal(0.75f, player.Volume);
+    }
+
+    [Fact]
+    public void PlaySkipsWhenCuesAreDisabled()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1, 2, 3]);
+        var player = new RecordingSoundCuePlayer();
+        var service = new SoundCueService(root, player);
+
+        service.PlayRecordingStarted(new SoundCueOptions(false, 0.5f));
+
+        Assert.Null(player.PlayedPath);
+    }
+
+    [Theory]
+    [InlineData(-1f, 0f)]
+    [InlineData(1.4f, 1f)]
+    public void PlayClampsConfiguredVolume(float inputVolume, float expectedVolume)
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1, 2, 3]);
+        var player = new RecordingSoundCuePlayer();
+        var service = new SoundCueService(root, player);
+
+        service.PlayRecordingStarted(new SoundCueOptions(true, inputVolume));
+
+        Assert.Equal(expectedVolume, player.Volume);
     }
 
     [Fact]
@@ -39,6 +85,19 @@ public sealed class SoundCueServiceTests
         service.PlayCompleted();
 
         Assert.Null(player.PlayedPath);
+    }
+
+    [Fact]
+    public void PlayIgnoresPlayerExceptions()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "esc.wav"), [1, 2, 3]);
+        var service = new SoundCueService(root, new ThrowingSoundCuePlayer());
+
+        var exception = Record.Exception(() => service.PlayError());
+
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -62,6 +121,14 @@ public sealed class SoundCueServiceTests
         {
             PlayedPath = path;
             Volume = volume;
+        }
+    }
+
+    private sealed class ThrowingSoundCuePlayer : ISoundCuePlayer
+    {
+        public void Play(string path, float volume)
+        {
+            throw new InvalidOperationException("Audio output unavailable.");
         }
     }
 }

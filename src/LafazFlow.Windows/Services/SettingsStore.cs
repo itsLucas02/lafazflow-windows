@@ -159,6 +159,11 @@ public sealed class SettingsStore
             migrated = migrated with { VadModelPath = AppSettings.Default.VadModelPath };
         }
 
+        migrated = migrated with
+        {
+            SoundCueVolume = Math.Clamp(migrated.SoundCueVolume, 0, 1)
+        };
+
         return migrated with { SettingsSchemaVersion = AppSettings.CurrentSchemaVersion };
     }
 

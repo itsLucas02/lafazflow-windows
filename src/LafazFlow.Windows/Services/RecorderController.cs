@@ -91,6 +91,7 @@ public sealed class RecorderController
         {
             _viewModel.SetError(validationError);
             LogError(validationError);
+            _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
             _window.ShowBottomCenter();
             return;
         }
@@ -122,7 +123,7 @@ public sealed class RecorderController
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
         StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
-        _soundCues.PlayRecordingStarted();
+        _soundCues.PlayRecordingStarted(SoundCueOptions.FromSettings(settings));
         _window.ShowBottomCenter();
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
     }
@@ -160,7 +161,7 @@ public sealed class RecorderController
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
         _viewModel.State = RecordingState.Transcribing;
-        _soundCues.PlayTranscribingStarted();
+        _soundCues.PlayTranscribingStarted(SoundCueOptions.FromSettings(settings));
         _window.ShowBottomCenter();
         _stopHandoffTask = Task.Run(async () =>
         {
@@ -178,7 +179,7 @@ public sealed class RecorderController
             {
                 var message = ShortError(error);
                 await _window.InvokeAsync(() => _viewModel.SetError(message));
-                _soundCues.PlayError();
+                _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
                 LogError(error.ToString());
                 if (latencyTrace is not null)
                 {
@@ -317,7 +318,7 @@ public sealed class RecorderController
                     job.LatencyTrace?.Mark(LatencyCheckpoint.UiHidden);
                 }
             });
-            _soundCues.PlayCompleted();
+            _soundCues.PlayCompleted(SoundCueOptions.FromSettings(job.Settings));
             succeeded = true;
         }
         catch (Exception error)
@@ -325,7 +326,7 @@ public sealed class RecorderController
             capturedError = error;
             var message = ShortError(error);
             await _window.InvokeAsync(() => _viewModel.SetError(message));
-            _soundCues.PlayError();
+            _soundCues.PlayError(SoundCueOptions.FromSettings(job.Settings));
             LogError(error.ToString());
         }
         finally

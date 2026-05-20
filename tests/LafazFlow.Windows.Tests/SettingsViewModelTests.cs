@@ -27,7 +27,9 @@ public sealed class SettingsViewModelTests
             CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
             QualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
             EnableVad = true,
-            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin"
+            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
+            EnableSoundCues = false,
+            SoundCueVolume = 0.65
         });
 
         var viewModel = SettingsViewModel.Load(store);
@@ -47,6 +49,8 @@ public sealed class SettingsViewModelTests
         Assert.Equal(@"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin", viewModel.QualityModelPath);
         Assert.True(viewModel.EnableVad);
         Assert.Equal(@"C:\Models\whisper\ggml-silero-v5.1.2.bin", viewModel.VadModelPath);
+        Assert.False(viewModel.EnableSoundCues);
+        Assert.Equal(65, viewModel.SoundCueVolumePercent);
     }
 
     [Fact]
@@ -70,6 +74,8 @@ public sealed class SettingsViewModelTests
         viewModel.QualityModelPath = modelPath;
         viewModel.EnableVad = true;
         viewModel.VadModelPath = modelPath;
+        viewModel.EnableSoundCues = false;
+        viewModel.SoundCueVolumePercent = 72;
 
         var result = viewModel.Save();
 
@@ -88,6 +94,8 @@ public sealed class SettingsViewModelTests
         Assert.Equal(modelPath, saved.QualityModelPath);
         Assert.True(saved.EnableVad);
         Assert.Equal(modelPath, saved.VadModelPath);
+        Assert.False(saved.EnableSoundCues);
+        Assert.Equal(0.72, saved.SoundCueVolume, precision: 6);
     }
 
     [Fact]
@@ -169,6 +177,26 @@ public sealed class SettingsViewModelTests
         Assert.Equal("abc123", viewModel.RecentLatencyRows[0].Id);
         Assert.Equal("Showing latest 1 latency entries.", viewModel.LatencyDiagnosticsMessage);
         Assert.Equal("Latest: total 50 ms, whisper 20 ms, paste 30 ms, queue 0 ms, hotkey na ms.", viewModel.LatestLatencySummary);
+    }
+
+    [Theory]
+    [InlineData(-20, 0)]
+    [InlineData(140, 1)]
+    public void SaveClampsSoundCueVolumePercent(double inputPercent, double expectedVolume)
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(store);
+        viewModel.SoundCueVolumePercent = inputPercent;
+
+        var result = viewModel.Save();
+
+        var saved = store.Load();
+        Assert.True(result.Success);
+        Assert.Equal(expectedVolume, saved.SoundCueVolume);
+        Assert.Equal(expectedVolume * 100, viewModel.SoundCueVolumePercent);
     }
 
     [Fact]

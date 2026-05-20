@@ -21,6 +21,8 @@ public sealed class SettingsStoreTests
         Assert.True(settings.AppendTrailingSpace);
         Assert.True(settings.ShowLiveTranscriptPreview);
         Assert.True(settings.EnableVocabularyCorrections);
+        Assert.True(settings.EnableSoundCues);
+        Assert.Equal(0.5, settings.SoundCueVolume);
         Assert.Equal(TranscriptionProfile.Fast, settings.TranscriptionProfile);
         Assert.Equal(WhisperBackend.Cpu, settings.WhisperBackend);
         Assert.False(settings.EnableVad);
@@ -57,7 +59,9 @@ public sealed class SettingsStoreTests
             CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
             QualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
             EnableVad = true,
-            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin"
+            VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
+            EnableSoundCues = false,
+            SoundCueVolume = 0.72
         };
 
         store.Save(expected);
@@ -160,6 +164,34 @@ public sealed class SettingsStoreTests
         Assert.Contains("shadcn/ui", migrated.WhisperInitialPrompt);
         Assert.Contains("build-web-apps:shadcn", migrated.WhisperInitialPrompt);
         Assert.Contains("Context7", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadClampsSoundCueVolumeDuringMigration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 5,
+            SoundCueVolume = 1.5
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.True(migrated.EnableSoundCues);
+        Assert.Equal(1, migrated.SoundCueVolume);
+
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 5,
+            SoundCueVolume = -0.25
+        });
+
+        var lowerMigrated = store.Load();
+
+        Assert.Equal(0, lowerMigrated.SoundCueVolume);
     }
 
     [Fact]
