@@ -47,7 +47,9 @@ public sealed class MiniRecorderVisualSpecTests
     [Fact]
     public void ProcessingPulseUsesReferenceTranscribingRhythm()
     {
-        Assert.Equal(180, MiniRecorderVisualSpec.TranscribingPulseMilliseconds);
+        Assert.Equal(145, MiniRecorderVisualSpec.TranscribingPulseMilliseconds);
+        Assert.Equal(7, MiniRecorderVisualSpec.ProcessingDotCount);
+        Assert.Equal(MiniRecorderVisualSpec.ProcessingDotCount, MiniRecorderVisualSpec.ProcessingPulseStepCount);
     }
 
     [Fact]
@@ -57,6 +59,19 @@ public sealed class MiniRecorderVisualSpecTests
         Assert.Equal(0.58, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(1, 2), precision: 6);
         Assert.Equal(0.34, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(0, 2), precision: 6);
         Assert.Equal(0.22, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(4, 2), precision: 6);
+    }
+
+    [Fact]
+    public void ProcessingPulseHasActiveDotForEveryStep()
+    {
+        for (var step = 0; step < MiniRecorderVisualSpec.ProcessingPulseStepCount; step++)
+        {
+            var activeDotCount = Enumerable
+                .Range(0, MiniRecorderVisualSpec.ProcessingDotCount)
+                .Count(index => Math.Abs(MiniRecorderVisualSpec.CalculateProcessingDotOpacity(index, step) - 0.88) < 0.001);
+
+            Assert.Equal(1, activeDotCount);
+        }
     }
 
     [Fact]
@@ -127,9 +142,25 @@ public sealed class MiniRecorderVisualSpecTests
     [Fact]
     public void WindowEntranceAndExitUseShortReferenceStyleMotion()
     {
-        Assert.Equal(180, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
-        Assert.Equal(160, MiniRecorderVisualSpec.WindowExitMilliseconds);
-        Assert.Equal(0.96, MiniRecorderVisualSpec.WindowEntranceStartScale, precision: 6);
+        Assert.Equal(140, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+        Assert.Equal(120, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        Assert.Equal(120, MiniRecorderVisualSpec.StateFadeMilliseconds);
+        Assert.Equal(220, MiniRecorderVisualSpec.ExpansionMilliseconds);
+        Assert.Equal(16, MiniRecorderVisualSpec.RenderFrameThrottleMilliseconds);
+        Assert.Equal(0.985, MiniRecorderVisualSpec.WindowEntranceStartScale, precision: 6);
+        Assert.Equal(5, MiniRecorderVisualSpec.WindowEntranceTranslateY);
+        Assert.Equal(3, MiniRecorderVisualSpec.WindowExitTranslateY);
+    }
+
+    [Fact]
+    public void AudioSmoothingSoftensSuddenDropsButStillRespondsToSpeech()
+    {
+        var rise = MiniRecorderVisualSpec.SmoothAudioLevel(0.1, 0.9, hasAudioSample: true);
+        var drop = MiniRecorderVisualSpec.SmoothAudioLevel(0.9, 0.1, hasAudioSample: true);
+
+        Assert.True(rise > 0.6);
+        Assert.True(drop > 0.7);
+        Assert.True(drop < 0.9);
     }
 
     [Fact]

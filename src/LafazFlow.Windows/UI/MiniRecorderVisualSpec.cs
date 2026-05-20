@@ -27,17 +27,21 @@ public static class MiniRecorderVisualSpec
     public const double BarMinHeight = 4;
     public const double BarMaxHeight = 28;
     public const double AudioNoiseGate = 0.035;
-    public const double AudioAttackWeight = 0.72;
-    public const double AudioReleaseWeight = 0.22;
+    public const double AudioAttackWeight = 0.64;
+    public const double AudioReleaseWeight = 0.16;
     public const double IdleBreathingAmplitude = 1.35;
     public const int BarCount = 15;
+    public const int ProcessingDotCount = 7;
     public const int ProcessingPulseStepCount = 7;
-    public const int TranscribingPulseMilliseconds = 180;
-    public const int StateFadeMilliseconds = 200;
-    public const int ExpansionMilliseconds = 300;
-    public const int WindowEntranceMilliseconds = 180;
-    public const int WindowExitMilliseconds = 160;
-    public const double WindowEntranceStartScale = 0.96;
+    public const int TranscribingPulseMilliseconds = 145;
+    public const int StateFadeMilliseconds = 120;
+    public const int ExpansionMilliseconds = 220;
+    public const int WindowEntranceMilliseconds = 140;
+    public const int WindowExitMilliseconds = 120;
+    public const int RenderFrameThrottleMilliseconds = 16;
+    public const double WindowEntranceStartScale = 0.985;
+    public const double WindowEntranceTranslateY = 5;
+    public const double WindowExitTranslateY = 3;
 
     public static double ResolveAnimationOrigin(double currentValue, double fallbackValue)
     {

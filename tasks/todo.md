@@ -699,3 +699,24 @@
 - `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Visual Motion Refinement
+- [x] Refine recorder entrance, exit, state fade, expansion, and processing pulse timing constants.
+- [x] Align processing dot count with pulse step count so every pulse step has an active visible dot.
+- [x] Replace hard-coded motion values in the recorder window with visual spec constants.
+- [x] Use transform/opacity easing for entrance/exit and keep layout animation limited to the small live-preview expansion surface.
+- [x] Soften audio smoothing while preserving responsive speech movement and dynamic aqua/cyan bar colors.
+- [x] Bump LafazFlow to `0.6.0` so the compact badge shows `v0.6`.
+- [x] Verify focused tests, full build/test, diff check, public scans, publish/relaunch pinned path, then commit and push.
+
+## Review: Visual Motion Refinement
+- Refined compact recorder motion timing: faster entrance/exit, state fades, live transcript expansion, and processing pulse rhythm.
+- Aligned processing dot count with processing pulse steps so every pulse frame has a visible active dot.
+- Replaced hard-coded recorder motion values with `MiniRecorderVisualSpec` constants for dot count, bar count, frame throttle, scale, and translate offsets.
+- Switched entrance/exit/state animations to cubic easing while keeping transform/opacity as the primary motion path and limiting layout animation to the small live transcript expansion surface.
+- Softened audio smoothing to reduce twitchy drops while preserving responsive speech movement and the existing aqua/cyan dynamic bar colors.
+- Bumped LafazFlow to `0.6.0`, so the compact recorder badge now shows `v0.6`.
+- Focused visual/UI tests pass, 40 tests; full `dotnet build` passes with 0 warnings; full `dotnet test` passes, 237 tests.
+- `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

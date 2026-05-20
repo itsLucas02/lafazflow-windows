@@ -27,8 +27,8 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        _bars = Enumerable.Range(0, 15).Select(_ => CreateBar()).ToArray();
-        _processingDots = Enumerable.Range(0, 5).Select(_ => CreateProcessingDot()).ToArray();
+        _bars = Enumerable.Range(0, MiniRecorderVisualSpec.BarCount).Select(_ => CreateBar()).ToArray();
+        _processingDots = Enumerable.Range(0, MiniRecorderVisualSpec.ProcessingDotCount).Select(_ => CreateProcessingDot()).ToArray();
         RecorderShell.RenderTransformOrigin = new System.Windows.Point(0.5, 1);
         RecorderShell.RenderTransform = new TransformGroup
         {
@@ -63,16 +63,16 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             Opacity = 0;
             _shellScale.ScaleX = MiniRecorderVisualSpec.WindowEntranceStartScale;
             _shellScale.ScaleY = MiniRecorderVisualSpec.WindowEntranceStartScale;
-            _shellTranslate.Y = 6;
+            _shellTranslate.Y = MiniRecorderVisualSpec.WindowEntranceTranslateY;
         }
 
         Show();
         if (!wasVisible)
         {
-            FadeElement(this, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
-            AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
-            AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
-            AnimateDouble(_shellTranslate, TranslateTransform.YProperty, 0, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+            FadeElement(this, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
+            AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
+            AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
+            AnimateDouble(_shellTranslate, TranslateTransform.YProperty, 0, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
         }
     }
 
@@ -87,13 +87,13 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         {
             To = 0,
             Duration = TimeSpan.FromMilliseconds(MiniRecorderVisualSpec.WindowExitMilliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = ExitEase()
         };
         fade.Completed += (_, _) => base.Hide();
         BeginAnimation(OpacityProperty, fade);
-        AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds);
-        AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds);
-        AnimateDouble(_shellTranslate, TranslateTransform.YProperty, 4, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
+        AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
+        AnimateDouble(_shellTranslate, TranslateTransform.YProperty, MiniRecorderVisualSpec.WindowExitTranslateY, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
     }
 
     public Task InvokeAsync(Action action)
@@ -148,7 +148,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     private void OnRendering(object? sender, EventArgs e)
     {
         var now = DateTime.UtcNow;
-        if ((now - _lastRender).TotalMilliseconds < 16)
+        if ((now - _lastRender).TotalMilliseconds < MiniRecorderVisualSpec.RenderFrameThrottleMilliseconds)
         {
             return;
         }
@@ -228,16 +228,16 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             ? MiniRecorderVisualSpec.ExpandedCornerRadius
             : MiniRecorderVisualSpec.CompactCornerRadius;
 
-        AnimateDouble(RecorderShell, WidthProperty, targetWidth, MiniRecorderVisualSpec.ExpansionMilliseconds);
-        AnimateDouble(RecorderShell, HeightProperty, targetHeight, MiniRecorderVisualSpec.ExpansionMilliseconds);
+        AnimateDouble(RecorderShell, WidthProperty, targetWidth, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
+        AnimateDouble(RecorderShell, HeightProperty, targetHeight, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
         AnimateCornerRadius(RecorderShell, new CornerRadius(targetRadius), MiniRecorderVisualSpec.ExpansionMilliseconds);
         TranscriptRow.BeginAnimation(RowDefinition.HeightProperty, new GridLengthAnimation
         {
             To = new GridLength(_viewModel.HasLiveTranscript ? MiniRecorderVisualSpec.LiveTranscriptPanelHeight : 0),
             Duration = TimeSpan.FromMilliseconds(MiniRecorderVisualSpec.ExpansionMilliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = StateEase()
         });
-        FadeElement(LiveTranscriptPanel, _viewModel.HasLiveTranscript ? 1 : 0, MiniRecorderVisualSpec.ExpansionMilliseconds);
+        FadeElement(LiveTranscriptPanel, _viewModel.HasLiveTranscript ? 1 : 0, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
     }
 
     private void UpdateProcessingDots()
@@ -250,7 +250,11 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         }
     }
 
-    private static void FadeElement(UIElement element, double opacity, int? milliseconds = null)
+    private static void FadeElement(
+        UIElement element,
+        double opacity,
+        int? milliseconds = null,
+        IEasingFunction? easing = null)
     {
         if (Math.Abs(element.Opacity - opacity) < 0.01)
         {
@@ -261,21 +265,31 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         {
             To = opacity,
             Duration = TimeSpan.FromMilliseconds(milliseconds ?? MiniRecorderVisualSpec.StateFadeMilliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = easing ?? StateEase()
         });
     }
 
-    private static void AnimateDouble(Animatable target, DependencyProperty property, double value, int milliseconds)
+    private static void AnimateDouble(
+        Animatable target,
+        DependencyProperty property,
+        double value,
+        int milliseconds,
+        IEasingFunction? easing = null)
     {
         target.BeginAnimation(property, new DoubleAnimation
         {
             To = value,
             Duration = TimeSpan.FromMilliseconds(milliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = easing ?? StateEase()
         });
     }
 
-    private static void AnimateDouble(FrameworkElement target, DependencyProperty property, double value, int milliseconds)
+    private static void AnimateDouble(
+        FrameworkElement target,
+        DependencyProperty property,
+        double value,
+        int milliseconds,
+        IEasingFunction? easing = null)
     {
         var currentValue = target.GetValue(property);
         var from = currentValue is double currentDouble
@@ -288,7 +302,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             From = from,
             To = value,
             Duration = TimeSpan.FromMilliseconds(milliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = easing ?? StateEase()
         });
     }
 
@@ -298,8 +312,23 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         {
             To = radius,
             Duration = TimeSpan.FromMilliseconds(milliseconds),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            EasingFunction = StateEase()
         });
+    }
+
+    private static IEasingFunction EntranceEase()
+    {
+        return new CubicEase { EasingMode = EasingMode.EaseOut };
+    }
+
+    private static IEasingFunction ExitEase()
+    {
+        return new CubicEase { EasingMode = EasingMode.EaseIn };
+    }
+
+    private static IEasingFunction StateEase()
+    {
+        return new CubicEase { EasingMode = EasingMode.EaseInOut };
     }
 
     private void RecorderShell_OnMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

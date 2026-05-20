@@ -172,7 +172,7 @@ public sealed class MiniRecorderViewModelTests
         viewModel.AudioLevel = 1;
         viewModel.AudioLevel = 0;
 
-        Assert.Equal(0.78, viewModel.AudioLevel, precision: 6);
+        Assert.Equal(0.84, viewModel.AudioLevel, precision: 6);
     }
 
     [Fact]
