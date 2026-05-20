@@ -74,12 +74,32 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(expected, corrected);
     }
 
+    [Theory]
+    [InlineData("Let's think one, two, three, over.", "Testing one, two, three, over.")]
+    [InlineData("Let's think 1, 2, 3.", "Testing 1, 2, 3.")]
+    [InlineData("Let's think 1,2,3 over.", "Testing 1, 2, 3, over.")]
+    [InlineData("Let's think one two three over.", "Testing one two three, over.")]
+    public void ApplyDefaultsFixesTestingDictationLetsThinkVariants(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesNormalThatsSentences()
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults("That's correct, and that's okay.");
 
         Assert.Equal("That's correct, and that's okay.", corrected);
+    }
+
+    [Fact]
+    public void ApplyDefaultsPreservesNormalLetsThinkSentences()
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults("Let's think about this before coding.");
+
+        Assert.Equal("Let's think about this before coding.", corrected);
     }
 
     [Fact]

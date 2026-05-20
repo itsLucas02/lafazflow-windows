@@ -159,3 +159,11 @@
 ## Treat explicit plan-mode requests as a hard gate
 - Pattern: When the owner says to jump into plan mode first, they expect a concrete written plan and approval checkpoint before implementation.
 - Rule: For non-trivial LafazFlow work, write the plan in `tasks/todo.md`, present the plan for approval, and only execute after an explicit implementation request.
+
+## Expose build identity in more than one surface
+- Pattern: A compact recorder badge alone is not enough to confirm which pinned Windows build is running when Settings or tray are the visible surfaces.
+- Rule: Put compact version identity in the shell, Settings, tray tooltip, and tray menu so the user can verify the active build without guessing.
+
+## Keep phrase repairs tied to observed context
+- Pattern: ASR can turn repeated test phrases into plausible conversational phrases such as `Let's think`, but globally replacing the phrase would corrupt real dictation.
+- Rule: Repair homophone-like phrases only when the surrounding words match the observed dictation context, such as `Let's think` followed by `one two three` or `1 2 3`.

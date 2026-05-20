@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Collections.ObjectModel;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using LafazFlow.Windows.Core;
+using LafazFlow.Windows.Services;
 
 namespace LafazFlow.Windows.UI;
 
@@ -118,7 +118,7 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         }
     }
 
-    public string AppVersion { get; } = BuildAppVersion();
+    public string AppVersion { get; } = AppVersionText.Compact;
 
     public bool IsRecording => State == RecordingState.Recording;
 
@@ -214,12 +214,6 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         }
 
         return string.IsNullOrWhiteSpace(message) ? "Error" : message;
-    }
-
-    private static string BuildAppVersion()
-    {
-        var version = typeof(MiniRecorderViewModel).Assembly.GetName().Version;
-        return version is null ? "v0.0" : $"v{version.Major}.{version.Minor}";
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

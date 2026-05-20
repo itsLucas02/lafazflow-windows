@@ -11,7 +11,7 @@ public sealed class TrayStatusTextTests
     {
         var viewModel = new MiniRecorderViewModel();
 
-        Assert.Equal("LafazFlow - Idle", TrayStatusText.FromViewModel(viewModel));
+        Assert.Equal($"LafazFlow {viewModel.AppVersion} - Idle", TrayStatusText.FromViewModel(viewModel));
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public sealed class TrayStatusTextTests
             State = RecordingState.Recording
         };
 
-        Assert.Equal("LafazFlow - Recording", TrayStatusText.FromViewModel(viewModel));
+        Assert.Equal($"LafazFlow {viewModel.AppVersion} - Recording", TrayStatusText.FromViewModel(viewModel));
     }
 
     [Theory]
@@ -35,7 +35,7 @@ public sealed class TrayStatusTextTests
             State = state
         };
 
-        Assert.Equal("LafazFlow - Transcribing", TrayStatusText.FromViewModel(viewModel));
+        Assert.Equal($"LafazFlow {viewModel.AppVersion} - Transcribing", TrayStatusText.FromViewModel(viewModel));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class TrayStatusTextTests
             PendingTranscriptionCount = 1
         };
 
-        Assert.Equal("LafazFlow - Transcribing", TrayStatusText.FromViewModel(viewModel));
+        Assert.Equal($"LafazFlow {viewModel.AppVersion} - Transcribing", TrayStatusText.FromViewModel(viewModel));
     }
 
     [Fact]
@@ -56,6 +56,6 @@ public sealed class TrayStatusTextTests
 
         viewModel.SetError("Whisper model was not found.");
 
-        Assert.Equal("LafazFlow - Error", TrayStatusText.FromViewModel(viewModel));
+        Assert.Equal($"LafazFlow {viewModel.AppVersion} - Error", TrayStatusText.FromViewModel(viewModel));
     }
 }

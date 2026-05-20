@@ -36,6 +36,7 @@ public sealed class SettingsStoreTests
         Assert.Contains("components.json", settings.WhisperInitialPrompt);
         Assert.Contains("npx shadcn@latest", settings.WhisperInitialPrompt);
         Assert.Contains("build-web-apps:shadcn", settings.WhisperInitialPrompt);
+        Assert.Contains("Testing, testing, one, two, three", settings.WhisperInitialPrompt);
         Assert.Equal("", settings.CustomVocabularyTerms);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
@@ -283,6 +284,25 @@ public sealed class SettingsStoreTests
         Assert.Contains("MCP", migrated.WhisperInitialPrompt);
         Assert.Contains("Vite", migrated.WhisperInitialPrompt);
         Assert.Contains("MediBrave", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadMigratesPreTestingDefaultPromptToCurrentDeveloperPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 7,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
+                + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+                + "npx shadcn@latest, build-web-apps:shadcn."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("Testing, testing, one, two, three", migrated.WhisperInitialPrompt);
     }
 
     [Fact]

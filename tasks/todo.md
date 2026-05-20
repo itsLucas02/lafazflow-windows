@@ -798,3 +798,20 @@
 - Focused vocabulary/settings/controller/live-preview tests pass, 66 tests; full `dotnet test` passes, 279 tests; full `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.0.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+
+## Plan: Testing Bias And Version Visibility
+- [x] Bump LafazFlow to `0.9.1`.
+- [x] Add default prompt bias for `testing` and common test-count phrases.
+- [x] Add narrow vocabulary correction for observed `let's think` test-count misrecognitions.
+- [x] Add shared compact app-version helper and use it from mini recorder, Settings, and tray status/menu.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Testing Bias And Version Visibility
+- Added default prompt bias for `testing`, `Testing, testing, one, two, three`, and `Testing one two three over`.
+- Added narrow offline correction for `Let's think` followed by `one/two/three` or `1/2/3`, including optional `over`, while preserving normal `Let's think about...` sentences.
+- Added shared compact version text and reused it in the mini recorder, Settings title/header, tray tooltip, and tray menu header.
+- Bumped LafazFlow to `0.9.1`; compact visible version remains `v0.9`.
+- Focused correction/settings/tray/version tests pass, 135 tests; full `dotnet test` passes, 290 tests; full `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.1.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

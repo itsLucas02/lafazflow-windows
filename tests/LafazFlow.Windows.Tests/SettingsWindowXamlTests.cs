@@ -72,6 +72,17 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowShowsAppVersion()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Title=\"{Binding SettingsWindowTitle}\"", xaml);
+        Assert.Contains("Text=\"{Binding AppVersion}\"", xaml);
+    }
+
+    [Fact]
     public void MiniRecorderWindowStaysOutOfTaskbar()
     {
         var repoRoot = FindRepoRoot();

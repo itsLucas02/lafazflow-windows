@@ -54,6 +54,8 @@ public sealed class SettingsViewModelTests
         Assert.Equal(65, viewModel.SoundCueVolumePercent);
         Assert.Equal("PDPA\r\nCare Visit", viewModel.CustomVocabularyTerms);
         Assert.Equal("Quality / CUDA / ggml-large-v3-turbo-q5_0.bin", viewModel.RuntimeProfileStatus);
+        Assert.Equal(viewModel.AppVersion, viewModel.SettingsWindowTitle.Split(" - ")[1]);
+        Assert.StartsWith("LafazFlow Settings - v", viewModel.SettingsWindowTitle);
     }
 
     [Fact]

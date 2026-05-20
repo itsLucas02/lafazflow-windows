@@ -230,6 +230,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         "LafazFlow",
         "Recordings");
 
+    public string AppVersion => AppVersionText.Compact;
+
+    public string SettingsWindowTitle => AppVersionText.SettingsTitle;
+
     public string ValidationMessage
     {
         get => _validationMessage;

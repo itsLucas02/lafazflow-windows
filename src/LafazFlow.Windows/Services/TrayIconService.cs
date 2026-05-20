@@ -41,6 +41,8 @@ public sealed class TrayIconService : IDisposable
     private ContextMenuStrip BuildMenu()
     {
         var menu = new ContextMenuStrip();
+        menu.Items.Add(new ToolStripMenuItem(AppVersionText.TrayHeader) { Enabled = false });
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Settings", null, (_, _) => _openSettings());
         menu.Items.Add("Open Logs", null, (_, _) => _openLogs());
         menu.Items.Add(new ToolStripSeparator());

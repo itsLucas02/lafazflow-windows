@@ -71,6 +71,7 @@ public static partial class VocabularyCorrectionService
         }
 
         corrected = FixTestingDictationThats(corrected);
+        corrected = FixTestingDictationLetsThink(corrected);
         corrected = FixDeveloperDictationPhrases(corrected);
         corrected = FixSpelledLetterDictation(corrected);
         corrected = FixConversationalWeightAsWait(corrected);
@@ -108,6 +109,25 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])that['’]?s(?=\s+(?:\d|one\b|two\b|three\b|1-2-3\b))", RegexOptions.IgnoreCase)]
     private static partial Regex TestingLeadThatsRegex();
+
+    private static string FixTestingDictationLetsThink(string text)
+    {
+        return TestingLeadLetsThinkRegex().Replace(text, match =>
+        {
+            var count = match.Groups[1].Value.Contains('1')
+                ? "1, 2, 3"
+                : match.Groups[1].Value.Contains(',')
+                    ? "one, two, three"
+                    : "one two three";
+            var over = match.Groups[2].Success ? ", over" : "";
+            return char.IsUpper(match.Value[0])
+                ? $"Testing {count}{over}"
+                : $"testing {count}{over}";
+        });
+    }
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])let['â€™]?s\s+think\s+((?:one\s*,?\s*two\s*,?\s*three)|(?:1\s*,?\s*2\s*,?\s*3))(\s*,?\s*over)?", RegexOptions.IgnoreCase)]
+    private static partial Regex TestingLeadLetsThinkRegex();
 
     private static string FixDeveloperDictationPhrases(string text)
     {
