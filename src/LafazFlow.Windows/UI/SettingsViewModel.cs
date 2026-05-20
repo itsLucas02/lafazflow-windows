@@ -29,6 +29,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _keepRecordingsForDiagnostics;
     private string _validationMessage = "";
     private string _latencyDiagnosticsMessage = "";
+    private string _latestLatencySummary = "";
 
     private SettingsViewModel(
         SettingsStore settingsStore,
@@ -162,6 +163,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         private set => SetProperty(ref _latencyDiagnosticsMessage, value);
     }
 
+    public string LatestLatencySummary
+    {
+        get => _latestLatencySummary;
+        private set => SetProperty(ref _latestLatencySummary, value);
+    }
+
     public string SettingsFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "LafazFlow");
@@ -213,6 +220,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         LatencyDiagnosticsMessage = RecentLatencyRows.Count == 0
             ? "No latency entries yet."
             : $"Showing latest {RecentLatencyRows.Count} latency entries.";
+        LatestLatencySummary = RecentLatencyRows.Count == 0
+            ? "No latency summary yet."
+            : BuildLatestLatencySummary(RecentLatencyRows[0]);
     }
 
     public void ClearLatencyDiagnostics()
@@ -222,6 +232,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         LatencyDiagnosticsMessage = removed == 0
             ? "No latency entries to clear."
             : $"Cleared {removed} latency entries.";
+    }
+
+    private static string BuildLatestLatencySummary(LatencyDiagnosticRow row)
+    {
+        return row.Status.Equals("failed", StringComparison.OrdinalIgnoreCase)
+            ? $"Latest failed: total {row.TotalStopToDoneMs} ms, whisper {row.WhisperMs} ms, paste {row.PasteMs} ms, queue {row.QueueWaitMs} ms, hotkey {row.HotkeyToVisibleMs} ms, error {row.Error}."
+            : $"Latest: total {row.TotalStopToDoneMs} ms, whisper {row.WhisperMs} ms, paste {row.PasteMs} ms, queue {row.QueueWaitMs} ms, hotkey {row.HotkeyToVisibleMs} ms.";
     }
 
     public SettingsSaveResult Save()

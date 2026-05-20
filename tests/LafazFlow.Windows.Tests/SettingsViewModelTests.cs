@@ -168,6 +168,7 @@ public sealed class SettingsViewModelTests
         Assert.Single(viewModel.RecentLatencyRows);
         Assert.Equal("abc123", viewModel.RecentLatencyRows[0].Id);
         Assert.Equal("Showing latest 1 latency entries.", viewModel.LatencyDiagnosticsMessage);
+        Assert.Equal("Latest: total 50 ms, whisper 20 ms, paste 30 ms, queue 0 ms, hotkey na ms.", viewModel.LatestLatencySummary);
     }
 
     [Fact]
@@ -186,6 +187,7 @@ public sealed class SettingsViewModelTests
 
         Assert.Single(viewModel.RecentLatencyRows);
         Assert.Equal("def456", viewModel.RecentLatencyRows[0].Id);
+        Assert.Equal("Latest failed: total 50 ms, whisper 20 ms, paste na ms, queue 0 ms, hotkey na ms, error InvalidOperationException.", viewModel.LatestLatencySummary);
     }
 
     [Fact]
@@ -206,7 +208,22 @@ public sealed class SettingsViewModelTests
 
         Assert.Empty(viewModel.RecentLatencyRows);
         Assert.Equal("Cleared 1 latency entries.", viewModel.LatencyDiagnosticsMessage);
+        Assert.Equal("No latency summary yet.", viewModel.LatestLatencySummary);
         Assert.Equal([otherLog], File.ReadAllLines(logPath));
+    }
+
+    [Fact]
+    public void LoadShowsNoLatencySummaryWhenLogIsEmpty()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var logPath = CreateLatencyLog("");
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            new LatencyDiagnosticLogStore(logPath));
+
+        Assert.Empty(viewModel.RecentLatencyRows);
+        Assert.Equal("No latency entries yet.", viewModel.LatencyDiagnosticsMessage);
+        Assert.Equal("No latency summary yet.", viewModel.LatestLatencySummary);
     }
 
     private static string CreateLatencyLog(string content)

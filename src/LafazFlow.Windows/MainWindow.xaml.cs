@@ -57,9 +57,9 @@ public partial class MainWindow : Window
         _miniRecorderWindow.Close();
     }
 
-    private void OnDoubleShiftPressed()
+    private void OnDoubleShiftPressed(long hotkeyTimestamp)
     {
-        _ = Dispatcher.BeginInvoke(async () => await _recorderController.ToggleAsync());
+        _ = Dispatcher.BeginInvoke(async () => await _recorderController.ToggleAsync(hotkeyTimestamp));
     }
 
     private void OnSettingsRequested()

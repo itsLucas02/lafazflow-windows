@@ -7,6 +7,7 @@ public sealed class LatencyTrace
     private readonly Func<long> _getTimestamp;
     private readonly long _timestampFrequency;
     private readonly Dictionary<LatencyCheckpoint, long> _checkpoints = [];
+    private readonly object _gate = new();
 
     public LatencyTrace()
         : this(Stopwatch.GetTimestamp, Stopwatch.Frequency)
@@ -33,23 +34,44 @@ public sealed class LatencyTrace
 
     public void Mark(LatencyCheckpoint checkpoint)
     {
-        _checkpoints[checkpoint] = _getTimestamp();
+        Mark(checkpoint, _getTimestamp());
+    }
+
+    public void Mark(LatencyCheckpoint checkpoint, long timestamp)
+    {
+        lock (_gate)
+        {
+            _checkpoints[checkpoint] = timestamp;
+        }
     }
 
     public bool HasCheckpoint(LatencyCheckpoint checkpoint)
     {
-        return _checkpoints.ContainsKey(checkpoint);
+        lock (_gate)
+        {
+            return _checkpoints.ContainsKey(checkpoint);
+        }
     }
 
     public long? ElapsedMilliseconds(LatencyCheckpoint start, LatencyCheckpoint end)
     {
-        if (!_checkpoints.TryGetValue(start, out var startTimestamp)
-            || !_checkpoints.TryGetValue(end, out var endTimestamp))
+        long startTimestamp;
+        long endTimestamp;
+        lock (_gate)
+        {
+            if (!_checkpoints.TryGetValue(start, out startTimestamp)
+                || !_checkpoints.TryGetValue(end, out endTimestamp))
+            {
+                return null;
+            }
+        }
+
+        if (endTimestamp < startTimestamp)
         {
             return null;
         }
 
-        var elapsedTicks = Math.Max(0, endTimestamp - startTimestamp);
+        var elapsedTicks = endTimestamp - startTimestamp;
         return elapsedTicks * 1000 / _timestampFrequency;
     }
 

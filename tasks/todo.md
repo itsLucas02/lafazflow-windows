@@ -679,3 +679,23 @@
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Latency And Fluidity Instrumentation
+- [x] Extend latency checkpoints for hotkey dispatch, recorder visibility, preview start/stop, stop hotkey-to-queue, and UI hide.
+- [x] Carry the double Shift detection timestamp from the low-level hook into the recorder latency trace.
+- [x] Keep preview-stop measurement non-blocking and make latency trace checkpoint storage thread-safe.
+- [x] Extend latency logs and Settings diagnostics with additive fields while preserving older latency rows.
+- [x] Bump LafazFlow to `0.5.0` so the compact badge shows `v0.5`.
+- [x] Verify focused tests, full build/test, diff check, public scans, publish/relaunch pinned path, then commit and push.
+
+## Review: Latency And Fluidity Instrumentation
+- Added additive latency checkpoints for hotkey dispatch, recorder visibility, stop hotkey-to-queue, preview start/stop, and UI hide.
+- Carried the double Shift detection timestamp from the keyboard hook into the recorder trace.
+- Made latency checkpoint storage thread-safe so non-blocking preview-stop timing cannot race latency reporting.
+- Extended `LATENCY` logs and Settings diagnostics with hotkey, queue, preview, paste, hide, and summary fields while preserving older rows with `na`.
+- Bumped LafazFlow to `0.5.0`, so the compact recorder badge now shows `v0.5`.
+- Focused latency/settings/controller tests pass, 55 tests; full `dotnet test` passes, 235 tests.
+- Full `dotnet build` passes with 0 warnings after rerunning separately from tests to avoid a WPF markup-cache file lock.
+- `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+- Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
+- Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.

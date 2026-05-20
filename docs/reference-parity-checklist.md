@@ -14,7 +14,7 @@ Status values:
 | Single instance | Launching LafazFlow again should not create duplicate hotkey listeners and should route to the existing app. | Done | `SingleInstanceTests`; second-launch smoke recorded in `tasks/todo.md`. | Installer shortcut polish. |
 | Tray behavior | Tray icon exposes Settings, Open Logs, and Exit, with useful idle/recording/transcribing/error tooltip state. | Partial | Tray service exists and shell UX tests pass, but no broad manual checklist yet. | Task 7: Settings UX And Runtime Diagnostics. |
 | Recorder shell placement | Compact floating shell stays bottom-centered, avoids startup clutter, and does not shift during preview/status changes. | Done | Mini recorder layout tests and owner feedback after shell stability fixes. | Task 5 only for visual fine-tuning. |
-| Version visibility | Compact shell shows a small visible version badge from the app assembly version. | Done | `MiniRecorderViewModelTests.AppVersionUsesCompactMajorMinorFormat`; current target is `v0.3`. | Continue version bumps per roadmap. |
+| Version visibility | Compact shell shows a small visible version badge from the app assembly version. | Done | `MiniRecorderViewModelTests.AppVersionUsesCompactMajorMinorFormat`; current target is `v0.5`. | Continue version bumps per roadmap. |
 | Visual motion | Recorder entrance, exit, audio meter, processing dots, and live transcript expansion feel smooth and do not crash. | Partial | Animation guards and tests pass; owner still wants closer timing/material feel. | Task 5: Visual Motion Refinement. |
 | Audio meter | Voice-reactive bars respond to input level with stable dimensions and aqua/cyan height-based color. | Done | `MiniRecorderVisualSpecTests` cover bar height, smoothing, and color behavior. | Task 5 for fine tuning only. |
 | Audio cues | Start, stop/transcribing, completion, and error cues play from bundled local assets without Windows notification sounds. | Partial | `SoundCueServiceTests` and bundled asset notices exist; volume/timing/settings polish remains. | Task 6: Audio Cue Refinement. |
@@ -27,7 +27,7 @@ Status values:
 | Formatting cleanup | Remove non-speech markers and handle obvious sentence/question/continuation formatting locally. | Partial | Formatter tests cover blank/audio/music markers and some question/continuation cases; owner still reports quality gaps. | Task 3: Dictation Quality And Developer Vocabulary. |
 | Developer vocabulary | Common coding/product terms and owner-specific words are corrected offline without broad English rewrites. | Partial | Vocabulary tests cover many observed variants; more daily terms remain likely. | Task 3: Dictation Quality And Developer Vocabulary. |
 | Settings window | User can configure local paths, profiles, backend, paste behavior, preview, vocabulary, and diagnostics. | Partial | Settings tests pass; UX needs clearer Fast/Quality status and runtime checks. | Task 7: Settings UX And Runtime Diagnostics. |
-| Diagnostics | Logs and latency rows are local, privacy-safe, and accessible from Settings/tray. | Partial | Latency viewer exists and crash logging added in `v0.2`; UI summary can still improve. | Task 4, then Task 7. |
+| Diagnostics | Logs and latency rows are local, privacy-safe, and accessible from Settings/tray. | Partial | Latency viewer, compact latest summary, and crash logging are implemented; runtime health checks still need Task 7. | Task 7: Settings UX And Runtime Diagnostics. |
 | Crash resilience | UI animation exceptions are logged and narrowly recoverable; app launch smoke shows no fresh crash events. | Done | `AppCrashLogServiceTests`, custom animation tests, `v0.2` launch smoke. | Revisit only after new crash evidence. |
 | Public repository hygiene | Public docs avoid third-party trademark references and do not commit models, logs, recordings, secrets, or local settings. | Done | Trademark and public-readiness scans are part of every release slice. | Maintain every release. |
 | Runtime setup docs | A user can understand required local Whisper CLI/model/CUDA/VAD setup. | Partial | README covers model basics; full Windows runtime guide is not complete. | Task 8: Installer And Release Packaging. |
@@ -35,11 +35,9 @@ Status values:
 
 ## Next Recommended Order
 
-1. Task 3: Dictation Quality And Developer Vocabulary.
-2. Task 4: Latency And Fluidity Instrumentation.
-3. Task 5: Visual Motion Refinement.
-4. Task 6: Audio Cue Refinement.
-5. Task 7: Settings UX And Runtime Diagnostics.
-6. Task 8: Installer And Release Packaging.
+1. Task 5: Visual Motion Refinement.
+2. Task 6: Audio Cue Refinement.
+3. Task 7: Settings UX And Runtime Diagnostics.
+4. Task 8: Installer And Release Packaging.
 
-Task 3 is next because dictation accuracy and formatting quality have the largest daily impact now that crash resilience and the parity checklist are in place.
+Task 5 is next because latency instrumentation is now in place, so visual timing and motion can be tuned with better evidence.

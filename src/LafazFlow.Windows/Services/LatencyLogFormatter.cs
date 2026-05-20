@@ -19,10 +19,15 @@ public static partial class LatencyLogFormatter
             $"model={SafeValue(SafeModelName(trace.ModelPath))}",
             $"threads={trace.Threads}",
             $"target={SafeValue(SafeTargetName(trace.TargetProcessName))}",
+            Pair("toggle_dispatch_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.HotkeyReceived, LatencyCheckpoint.ToggleHandlingStarted)),
+            Pair("hotkey_to_visible_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.HotkeyReceived, LatencyCheckpoint.RecorderShown)),
             Pair("recording_setup_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.RecordingStart, LatencyCheckpoint.RecordingReady)),
             Pair("recording_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.RecordingStart, LatencyCheckpoint.StopRequested)),
             Pair("stop_to_queue_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.StopRequested, LatencyCheckpoint.QueueEnqueued)),
+            Pair("stop_hotkey_to_queue_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.StopHotkeyReceived, LatencyCheckpoint.QueueEnqueued)),
             Pair("queue_wait_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.QueueEnqueued, LatencyCheckpoint.QueueStarted)),
+            Pair("preview_start_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PreviewStartRequested, LatencyCheckpoint.PreviewStarted)),
+            Pair("preview_stop_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PreviewStopRequested, LatencyCheckpoint.PreviewStopped)),
             Pair("whisper_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.WhisperStarted, LatencyCheckpoint.WhisperFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.QueueStarted, LatencyCheckpoint.WhisperFinished)),
             Pair("post_process_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PostProcessingStarted, LatencyCheckpoint.PostProcessingFinished)
@@ -31,6 +36,7 @@ public static partial class LatencyLogFormatter
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.PostProcessingFinished, LatencyCheckpoint.UiUpdateFinished)),
             Pair("paste_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PasteStarted, LatencyCheckpoint.PasteFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.UiUpdateFinished, LatencyCheckpoint.PasteFinished)),
+            Pair("ui_hide_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.UiHideStarted, LatencyCheckpoint.UiHidden)),
             Pair("cleanup_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.CleanupStarted, LatencyCheckpoint.CleanupFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.PasteFinished, LatencyCheckpoint.CleanupFinished)),
             Pair("total_stop_to_done_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.StopRequested, finishCheckpoint)),

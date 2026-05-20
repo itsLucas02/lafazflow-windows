@@ -19,7 +19,7 @@ public sealed class DoubleShiftHotkeyService : IDisposable
     private readonly DoubleShiftDetector _detector = new(DoublePressWindow);
     private IntPtr _hookId;
 
-    public event Action? DoubleShiftPressed;
+    public event Action<long>? DoubleShiftPressed;
 
     public DoubleShiftHotkeyService()
     {
@@ -67,7 +67,7 @@ public sealed class DoubleShiftHotkeyService : IDisposable
                 var isRepeat = (flags & 0x40000000) != 0;
                 if (_detector.RegisterKeyDown(DateTimeOffset.UtcNow, isRepeat))
                 {
-                    DoubleShiftPressed?.Invoke();
+                    DoubleShiftPressed?.Invoke(Stopwatch.GetTimestamp());
                 }
             }
             else if (IsShift(virtualKey) && IsKeyUpMessage(wParam))

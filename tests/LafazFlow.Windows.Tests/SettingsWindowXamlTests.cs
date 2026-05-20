@@ -23,6 +23,9 @@ public sealed class SettingsWindowXamlTests
 
         Assert.Contains("ItemsSource=\"{Binding RecentLatencyRows}\"", xaml);
         Assert.Contains("Text=\"{Binding LatencyDiagnosticsMessage}\"", xaml);
+        Assert.Contains("Text=\"{Binding LatestLatencySummary}\"", xaml);
+        Assert.Contains("Binding=\"{Binding HotkeyToVisibleMs}\"", xaml);
+        Assert.Contains("Binding=\"{Binding UiHideMs}\"", xaml);
         Assert.Contains("Click=\"RefreshLatency_OnClick\"", xaml);
         Assert.Contains("Click=\"ClearLatency_OnClick\"", xaml);
     }

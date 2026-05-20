@@ -59,11 +59,12 @@ public sealed class RecorderController
             _livePreview.AcceptAudioChunk(audioChunk);
     }
 
-    public async Task ToggleAsync()
+    public async Task ToggleAsync(long? hotkeyTimestamp = null)
     {
+        var toggleHandlingTimestamp = Stopwatch.GetTimestamp();
         if (_viewModel.State == RecordingState.Recording)
         {
-            await StopAndTranscribeAsync();
+            await StopAndTranscribeAsync(hotkeyTimestamp, toggleHandlingTimestamp);
             return;
         }
 
@@ -75,10 +76,10 @@ public sealed class RecorderController
             return;
         }
 
-        StartRecording();
+        StartRecording(hotkeyTimestamp, toggleHandlingTimestamp);
     }
 
-    public void StartRecording()
+    public void StartRecording(long? hotkeyTimestamp = null, long? toggleHandlingTimestamp = null)
     {
         var settings = _settingsStore.Load();
         var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
@@ -101,6 +102,16 @@ public sealed class RecorderController
             Threads = settings.WhisperThreads,
             TargetProcessName = GetProcessName(_targetWindow)
         };
+        if (hotkeyTimestamp.HasValue)
+        {
+            _currentLatencyTrace.Mark(LatencyCheckpoint.HotkeyReceived, hotkeyTimestamp.Value);
+        }
+
+        if (toggleHandlingTimestamp.HasValue)
+        {
+            _currentLatencyTrace.Mark(LatencyCheckpoint.ToggleHandlingStarted, toggleHandlingTimestamp.Value);
+        }
+
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingStart);
         _runCancellation = new CancellationTokenSource();
         var recordingsRoot = Path.Combine(
@@ -110,12 +121,13 @@ public sealed class RecorderController
         _currentAudioPath = _audioCapture.Start(recordingsRoot);
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
-        StartLivePreview(settings, _runCancellation.Token);
+        StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
         _soundCues.PlayRecordingStarted();
         _window.ShowBottomCenter();
+        _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
     }
 
-    public Task StopAndTranscribeAsync()
+    public Task StopAndTranscribeAsync(long? hotkeyTimestamp = null, long? toggleHandlingTimestamp = null)
     {
         if (_currentAudioPath is null)
         {
@@ -123,7 +135,20 @@ public sealed class RecorderController
         }
 
         var settings = _settingsStore.Load();
-        _currentLatencyTrace?.Mark(LatencyCheckpoint.StopRequested);
+        if (hotkeyTimestamp.HasValue)
+        {
+            _currentLatencyTrace?.Mark(LatencyCheckpoint.StopHotkeyReceived, hotkeyTimestamp.Value);
+        }
+
+        if (toggleHandlingTimestamp.HasValue)
+        {
+            _currentLatencyTrace?.Mark(LatencyCheckpoint.StopRequested, toggleHandlingTimestamp.Value);
+        }
+        else
+        {
+            _currentLatencyTrace?.Mark(LatencyCheckpoint.StopRequested);
+        }
+
         var cancellationToken = _runCancellation?.Token ?? CancellationToken.None;
         var audioPath = _currentAudioPath;
         var targetWindow = _targetWindow;
@@ -143,7 +168,7 @@ public sealed class RecorderController
             try
             {
                 _audioCapture.Stop();
-                _ = StopLivePreviewAsync();
+                _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
                 _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
                     .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
@@ -180,7 +205,10 @@ public sealed class RecorderController
         return Task.CompletedTask;
     }
 
-    private void StartLivePreview(AppSettings settings, CancellationToken cancellationToken)
+    private void StartLivePreview(
+        AppSettings settings,
+        CancellationToken cancellationToken,
+        LatencyTrace? latencyTrace)
     {
         if (!settings.ShowLiveTranscriptPreview)
         {
@@ -189,6 +217,7 @@ public sealed class RecorderController
 
         try
         {
+            latencyTrace?.Mark(LatencyCheckpoint.PreviewStartRequested);
             _livePreview.StartAsync(
                 settings,
                 partialTranscript =>
@@ -200,6 +229,7 @@ public sealed class RecorderController
                         }
                     }),
                 cancellationToken).GetAwaiter().GetResult();
+            latencyTrace?.Mark(LatencyCheckpoint.PreviewStarted);
         }
         catch (Exception error)
         {
@@ -207,11 +237,13 @@ public sealed class RecorderController
         }
     }
 
-    private async Task StopLivePreviewAsync()
+    private async Task StopLivePreviewAsync(LatencyTrace? latencyTrace)
     {
         try
         {
+            latencyTrace?.Mark(LatencyCheckpoint.PreviewStopRequested);
             await _livePreview.StopAsync();
+            latencyTrace?.Mark(LatencyCheckpoint.PreviewStopped);
         }
         catch (Exception error)
         {
@@ -276,11 +308,13 @@ public sealed class RecorderController
                     cancellationToken));
             job.LatencyTrace?.Mark(LatencyCheckpoint.PasteFinished);
 
+            job.LatencyTrace?.Mark(LatencyCheckpoint.UiHideStarted);
             await _window.InvokeAsync(() =>
             {
                 if (!_viewModel.IsRecording && _viewModel.PendingTranscriptionCount <= 1)
                 {
                     _window.Hide();
+                    job.LatencyTrace?.Mark(LatencyCheckpoint.UiHidden);
                 }
             });
             _soundCues.PlayCompleted();

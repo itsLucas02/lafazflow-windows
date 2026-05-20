@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
 using LafazFlow.Windows.UI;
@@ -335,16 +336,25 @@ public sealed class RecorderControllerTests
             () => (IntPtr)111,
             latencyReporter: reporter);
 
-        controller.StartRecording();
-        await controller.ToggleAsync();
+        await controller.ToggleAsync(Stopwatch.GetTimestamp());
+        await controller.ToggleAsync(Stopwatch.GetTimestamp());
         await controller.WaitForPendingTranscriptionsAsync();
 
         var trace = Assert.Single(reporter.Traces);
         Assert.Equal(LatencyStatus.Completed, trace.Status);
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.HotkeyReceived));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.ToggleHandlingStarted));
         Assert.True(trace.HasCheckpoint(LatencyCheckpoint.RecordingStart));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.RecorderShown));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.StopHotkeyReceived));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.StopRequested));
         Assert.True(trace.HasCheckpoint(LatencyCheckpoint.QueueStarted));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.PreviewStartRequested));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.PreviewStarted));
         Assert.True(trace.HasCheckpoint(LatencyCheckpoint.WhisperFinished));
         Assert.True(trace.HasCheckpoint(LatencyCheckpoint.PasteFinished));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.UiHideStarted));
+        Assert.True(trace.HasCheckpoint(LatencyCheckpoint.UiHidden));
     }
 
     [Fact]

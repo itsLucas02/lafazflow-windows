@@ -7,7 +7,7 @@ public sealed class LatencyDiagnosticLogStoreTests
     [Fact]
     public void ParseLineParsesCompletedLatencyLine()
     {
-        var row = LatencyDiagnosticLogStore.ParseLine("[2026-05-16T16:13:45.8202588+08:00] LATENCY id=abc123 status=completed model=ggml-base.en.bin threads=16 target=Cursor recording_ms=9047 queue_wait_ms=1 whisper_ms=591 paste_ms=1620 total_stop_to_done_ms=1170 total_record_to_done_ms=10218 error=none");
+        var row = LatencyDiagnosticLogStore.ParseLine("[2026-05-16T16:13:45.8202588+08:00] LATENCY id=abc123 status=completed model=ggml-base.en.bin threads=16 target=Cursor toggle_dispatch_ms=12 hotkey_to_visible_ms=60 recording_ms=9047 stop_hotkey_to_queue_ms=30 queue_wait_ms=1 preview_start_ms=4 preview_stop_ms=5 whisper_ms=591 paste_ms=1620 ui_hide_ms=18 total_stop_to_done_ms=1170 total_record_to_done_ms=10218 error=none");
 
         Assert.NotNull(row);
         Assert.Equal("abc123", row.Id);
@@ -15,10 +15,16 @@ public sealed class LatencyDiagnosticLogStoreTests
         Assert.Equal("ggml-base.en.bin", row.Model);
         Assert.Equal("16", row.Threads);
         Assert.Equal("Cursor", row.Target);
+        Assert.Equal("12", row.ToggleDispatchMs);
+        Assert.Equal("60", row.HotkeyToVisibleMs);
         Assert.Equal("9047", row.RecordingMs);
+        Assert.Equal("30", row.StopHotkeyToQueueMs);
         Assert.Equal("1", row.QueueWaitMs);
+        Assert.Equal("4", row.PreviewStartMs);
+        Assert.Equal("5", row.PreviewStopMs);
         Assert.Equal("591", row.WhisperMs);
         Assert.Equal("1620", row.PasteMs);
+        Assert.Equal("18", row.UiHideMs);
         Assert.Equal("1170", row.TotalStopToDoneMs);
         Assert.Equal("10218", row.TotalRecordToDoneMs);
         Assert.Equal("none", row.Error);
@@ -32,7 +38,9 @@ public sealed class LatencyDiagnosticLogStoreTests
         Assert.NotNull(row);
         Assert.Equal("failed", row.Status);
         Assert.Equal("Antigravity", row.Target);
+        Assert.Equal("na", row.HotkeyToVisibleMs);
         Assert.Equal("na", row.PasteMs);
+        Assert.Equal("na", row.UiHideMs);
         Assert.Equal("InvalidOperationException", row.Error);
     }
 
