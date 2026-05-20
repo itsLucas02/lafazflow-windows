@@ -165,6 +165,16 @@
                           IsChecked="{Binding ShowLiveTranscriptPreview}" />
                 <CheckBox Content="Apply vocabulary corrections"
                           IsChecked="{Binding EnableVocabularyCorrections}" />
+                <TextBlock Text="Custom Vocabulary" FontWeight="SemiBold" />
+                <TextBlock Text="One term per line. Terms are added to the local Whisper prompt."
+                           Foreground="#9AA0A6"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,4" />
+                <TextBox Text="{Binding CustomVocabularyTerms, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         TextWrapping="Wrap"
+                         MinHeight="92" />
                 <CheckBox Content="Play sound cues"
                           IsChecked="{Binding EnableSoundCues}" />
                 <TextBlock Text="Sound Cue Volume (%)" FontWeight="SemiBold" />

@@ -44,6 +44,18 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsCustomVocabularyTextBox()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"Custom Vocabulary\"", xaml);
+        Assert.Contains("Text=\"{Binding CustomVocabularyTerms, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("AcceptsReturn=\"True\"", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsRuntimeDiagnosticsControls()
     {
         var repoRoot = FindRepoRoot();

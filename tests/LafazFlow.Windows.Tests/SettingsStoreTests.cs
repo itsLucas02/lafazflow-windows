@@ -36,6 +36,7 @@ public sealed class SettingsStoreTests
         Assert.Contains("components.json", settings.WhisperInitialPrompt);
         Assert.Contains("npx shadcn@latest", settings.WhisperInitialPrompt);
         Assert.Contains("build-web-apps:shadcn", settings.WhisperInitialPrompt);
+        Assert.Equal("", settings.CustomVocabularyTerms);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
 
@@ -54,6 +55,7 @@ public sealed class SettingsStoreTests
             ClipboardRestoreDelayMs = 2000,
             WhisperThreads = 12,
             WhisperInitialPrompt = "Supabase Vercel Tailscale",
+            CustomVocabularyTerms = "PDPA\r\nCare Visit",
             TranscriptionProfile = TranscriptionProfile.Quality,
             WhisperBackend = WhisperBackend.Cuda,
             CudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
@@ -68,6 +70,22 @@ public sealed class SettingsStoreTests
         var actual = store.Load();
 
         Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void LoadMigratesCustomVocabularyTermsToEmptyString()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 6
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Equal("", migrated.CustomVocabularyTerms);
     }
 
     [Fact]
@@ -92,6 +110,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(modelPath, reset.ModelPath);
         Assert.Equal(AppSettings.Default.WhisperThreads, reset.WhisperThreads);
         Assert.True(reset.EnableSoundCues);
+        Assert.Equal("", reset.CustomVocabularyTerms);
         Assert.Equal(reset, loaded);
 
         File.Delete(whisperCliPath);

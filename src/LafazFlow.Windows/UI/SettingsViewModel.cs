@@ -27,6 +27,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private int _clipboardRestoreDelayMs;
     private bool _appendTrailingSpace;
     private bool _showLiveTranscriptPreview;
+    private string _customVocabularyTerms = "";
     private bool _enableVocabularyCorrections;
     private bool _enableSoundCues;
     private double _soundCueVolumePercent;
@@ -62,6 +63,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         ClipboardRestoreDelayMs = settings.ClipboardRestoreDelayMs;
         AppendTrailingSpace = settings.AppendTrailingSpace;
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
+        CustomVocabularyTerms = settings.CustomVocabularyTerms;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
@@ -154,6 +156,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _showLiveTranscriptPreview;
         set => SetProperty(ref _showLiveTranscriptPreview, value);
+    }
+
+    public string CustomVocabularyTerms
+    {
+        get => _customVocabularyTerms;
+        set => SetProperty(ref _customVocabularyTerms, value);
     }
 
     public bool EnableVocabularyCorrections
@@ -362,6 +370,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 : ClipboardRestoreDelayMs,
             AppendTrailingSpace = AppendTrailingSpace,
             ShowLiveTranscriptPreview = ShowLiveTranscriptPreview,
+            CustomVocabularyTerms = CustomVocabularyTerms,
             EnableVocabularyCorrections = EnableVocabularyCorrections,
             EnableSoundCues = EnableSoundCues,
             SoundCueVolume = Math.Clamp(SoundCueVolumePercent / 100.0, 0, 1),
@@ -385,6 +394,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         ClipboardRestoreDelayMs = settings.ClipboardRestoreDelayMs;
         AppendTrailingSpace = settings.AppendTrailingSpace;
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
+        CustomVocabularyTerms = settings.CustomVocabularyTerms;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;

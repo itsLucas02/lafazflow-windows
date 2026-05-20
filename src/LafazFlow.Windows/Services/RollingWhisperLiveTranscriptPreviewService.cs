@@ -53,7 +53,10 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     {
         StopAsync().GetAwaiter().GetResult();
 
-        _settings = settings;
+        _settings = settings with
+        {
+            WhisperInitialPrompt = WhisperPromptBuilder.BuildVocabularyPrompt(settings)
+        };
         _onPartialTranscript = onPartialTranscript;
         _lastPreview = "";
         _totalAudioByteCount = 0;

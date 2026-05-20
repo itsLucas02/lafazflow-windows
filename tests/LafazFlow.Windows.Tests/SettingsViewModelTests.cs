@@ -29,7 +29,8 @@ public sealed class SettingsViewModelTests
             EnableVad = true,
             VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
             EnableSoundCues = false,
-            SoundCueVolume = 0.65
+            SoundCueVolume = 0.65,
+            CustomVocabularyTerms = "PDPA\r\nCare Visit"
         });
 
         var viewModel = SettingsViewModel.Load(store);
@@ -51,6 +52,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(@"C:\Models\whisper\ggml-silero-v5.1.2.bin", viewModel.VadModelPath);
         Assert.False(viewModel.EnableSoundCues);
         Assert.Equal(65, viewModel.SoundCueVolumePercent);
+        Assert.Equal("PDPA\r\nCare Visit", viewModel.CustomVocabularyTerms);
         Assert.Equal("Quality / CUDA / ggml-large-v3-turbo-q5_0.bin", viewModel.RuntimeProfileStatus);
     }
 
@@ -77,6 +79,7 @@ public sealed class SettingsViewModelTests
         viewModel.VadModelPath = modelPath;
         viewModel.EnableSoundCues = false;
         viewModel.SoundCueVolumePercent = 72;
+        viewModel.CustomVocabularyTerms = "PDPA\r\nCare Visit";
 
         var result = viewModel.Save();
 
@@ -97,6 +100,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(modelPath, saved.VadModelPath);
         Assert.False(saved.EnableSoundCues);
         Assert.Equal(0.72, saved.SoundCueVolume, precision: 6);
+        Assert.Equal("PDPA\r\nCare Visit", saved.CustomVocabularyTerms);
     }
 
     [Fact]

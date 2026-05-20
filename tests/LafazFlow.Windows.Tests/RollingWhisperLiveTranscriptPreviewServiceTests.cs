@@ -121,6 +121,35 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
         Assert.Equal(2, calls);
     }
 
+    [Fact]
+    public async Task LivePreviewUsesCombinedCustomVocabularyPrompt()
+    {
+        var prompts = new List<string>();
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            (settings, _, _, _) =>
+            {
+                prompts.Add(settings.WhisperInitialPrompt);
+                return Task.FromResult("Testing one two.");
+            },
+            _ => { });
+
+        await service.StartAsync(AppSettings.Default with
+        {
+            CustomVocabularyTerms = "PDPA\r\nCare Visit\r\nalign"
+        }, _ => { }, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => prompts.Count == 1);
+        await service.StopAsync();
+
+        var prompt = Assert.Single(prompts);
+        Assert.Contains("Supabase", prompt);
+        Assert.Contains("PDPA", prompt);
+        Assert.Contains("Care Visit", prompt);
+        Assert.Contains("align", prompt);
+    }
+
+
     private static RollingWhisperLiveTranscriptPreviewService CreateService(
         IReadOnlyCollection<string> previews,
         out List<string> logs)

@@ -486,6 +486,38 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task CompletedDictationUsesCombinedCustomVocabularyPrompt()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var transcription = new FakeTranscriptionService(_ => Task.FromResult("hello"));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            transcription,
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with
+            {
+                CustomVocabularyTerms = "PDPA\r\nCare Visit\r\nalign"
+            }),
+            new SoundCueService(),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        var prompt = Assert.Single(transcription.InitialPrompts);
+        Assert.Contains("Supabase", prompt);
+        Assert.Contains("PDPA", prompt);
+        Assert.Contains("Care Visit", prompt);
+        Assert.Contains("align", prompt);
+    }
+
+
+    [Fact]
     public async Task FailedDictationReportsLatency()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -624,6 +656,8 @@ public sealed class RecorderControllerTests
             _transcribeAsync = transcribeAsync;
         }
 
+        public List<string> InitialPrompts { get; } = [];
+
         public Task<string> TranscribeAsync(
             string whisperCliPath,
             string modelPath,
@@ -633,6 +667,7 @@ public sealed class RecorderControllerTests
             WhisperDecodeOptions decodeOptions,
             CancellationToken cancellationToken)
         {
+            InitialPrompts.Add(initialPrompt);
             return _transcribeAsync(audioPath);
         }
     }

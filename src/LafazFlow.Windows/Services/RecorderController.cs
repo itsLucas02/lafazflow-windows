@@ -271,11 +271,12 @@ public sealed class RecorderController
         {
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
+            var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
             var transcript = await _transcription.TranscribeAsync(
                 runtime.CliPath,
                 runtime.ModelPath,
                 job.AudioPath,
-                job.Settings.WhisperInitialPrompt,
+                prompt,
                 job.Settings.WhisperThreads,
                 runtime.DecodeOptions,
                 cancellationToken);

@@ -155,3 +155,7 @@
 ## Repair Whisper punctuation conservatively
 - Pattern: Whisper can insert bad internal sentence breaks before continuation phrases, such as `checklist. And then` or `over again. And there`.
 - Rule: Repair only high-confidence continuation boundaries and observed English lexical drift; avoid broad grammar rewriting that would erase intentional sentence starts.
+
+## Treat explicit plan-mode requests as a hard gate
+- Pattern: When the owner says to jump into plan mode first, they expect a concrete written plan and approval checkpoint before implementation.
+- Rule: For non-trivial LafazFlow work, write the plan in `tasks/todo.md`, present the plan for approval, and only execute after an explicit implementation request.

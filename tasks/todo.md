@@ -779,3 +779,22 @@
 - Focused formatter/vocabulary/Whisper tests pass, 99 tests; full `dotnet test` passes, 272 tests; full `dotnet build` passes with 0 warnings.
 - Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, relaunched it, and verified the stable build reports file version `0.8.1.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+## Plan: Custom Vocabulary Settings
+- [x] Bump LafazFlow to `0.9.0`.
+- [x] Add `CustomVocabularyTerms` settings persistence and schema `7` migration tests.
+- [x] Add prompt builder tests for built-in prompt plus custom terms, blank-line trimming, case-insensitive dedupe, and casing preservation.
+- [x] Add Settings ViewModel and XAML tests for multiline custom vocabulary editing.
+- [x] Add transcription wiring tests proving final transcription and live preview receive the combined prompt.
+- [x] Implement schema v7 setting, prompt builder, Settings UI, and transcription wiring.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Custom Vocabulary Settings
+- Added `CustomVocabularyTerms` as a persisted schema `7` setting.
+- Added a prompt builder that appends trimmed custom terms to the built-in local Whisper prompt, dedupes terms case-insensitively, and preserves the user's preferred casing.
+- Added a multiline Custom Vocabulary box in Settings for names, product terms, acronyms, and project-specific words.
+- Wired final transcription and live preview to use the combined built-in plus custom vocabulary prompt.
+- Bumped LafazFlow to `0.9.0`.
+- Focused vocabulary/settings/controller/live-preview tests pass, 66 tests; full `dotnet test` passes, 279 tests; full `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.0.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
