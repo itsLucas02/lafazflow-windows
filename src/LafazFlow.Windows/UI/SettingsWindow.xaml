@@ -61,6 +61,52 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <TextBlock Text="Runtime Status" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding RuntimeProfileStatus}"
+                           Foreground="#C4FFF9"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,4" />
+                <TextBlock Text="{Binding RuntimeDiagnosticsMessage}"
+                           Foreground="#9AA0A6"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,6" />
+                <DataGrid ItemsSource="{Binding RuntimeDiagnosticRows}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          CanUserReorderColumns="False"
+                          CanUserResizeRows="False"
+                          Height="126">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Check" Binding="{Binding Name}" Width="130" />
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="70" />
+                        <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+                <WrapPanel Margin="0,0,0,8">
+                    <Button Content="Refresh Checks"
+                            Width="112"
+                            Margin="0,0,8,10"
+                            Click="RefreshRuntimeDiagnostics_OnClick" />
+                    <Button Content="Test Microphone"
+                            Width="116"
+                            Margin="0,0,8,10"
+                            Click="TestMicrophone_OnClick" />
+                    <Button Content="Test Transcription"
+                            Width="128"
+                            Margin="0,0,8,10"
+                            Click="TestTranscription_OnClick" />
+                    <Button Content="Open Logs"
+                            Width="92"
+                            Margin="0,0,8,10"
+                            Click="OpenLogsFolder_OnClick" />
+                    <Button Content="Reset Settings"
+                            Width="112"
+                            Margin="0,0,0,10"
+                            Click="ResetSettings_OnClick" />
+                </WrapPanel>
+
                 <TextBlock Text="Whisper CLI" FontWeight="SemiBold" />
                 <Grid>
                     <Grid.ColumnDefinitions>

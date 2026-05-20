@@ -74,6 +74,13 @@ public sealed class SettingsStore
         File.WriteAllText(_settingsPath, json);
     }
 
+    public AppSettings ResetToDefaults()
+    {
+        var settings = BuildDefaultSettings();
+        Save(settings);
+        return settings;
+    }
+
     private static JsonSerializerOptions JsonOptions() => new()
     {
         WriteIndented = true

@@ -86,6 +86,35 @@ public partial class SettingsWindow : Window
         OpenFolder(_viewModel.RecordingsFolder);
     }
 
+    private void RefreshRuntimeDiagnostics_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshRuntimeDiagnostics();
+    }
+
+    private void TestMicrophone_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.TestMicrophone();
+    }
+
+    private async void TestTranscription_OnClick(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.TestTranscriptionSmokeAsync(CancellationToken.None);
+    }
+
+    private void ResetSettings_OnClick(object sender, RoutedEventArgs e)
+    {
+        var result = System.Windows.MessageBox.Show(
+            this,
+            "Reset LafazFlow settings to detected defaults?",
+            "Reset Settings",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+        {
+            _viewModel.ResetSettingsToDefaults();
+        }
+    }
+
     private void RefreshLatency_OnClick(object sender, RoutedEventArgs e)
     {
         _viewModel.RefreshLatencyDiagnostics();

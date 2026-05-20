@@ -741,3 +741,22 @@
 - `git diff --check` passes. Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
 - Republished both `artifacts\stable-single` and `artifacts\stable-cuda-quality`, then relaunched the pinned `stable-single` path.
 - Launch smoke stayed running and produced no fresh LafazFlow crash event after relaunch.
+
+## Plan: Settings UX And Runtime Diagnostics
+- [x] Bump LafazFlow to `0.8.0`.
+- [x] Add runtime diagnostics tests for Fast/Quality profile summaries, missing local paths, microphone availability, logs folder writability, and CLI smoke failures.
+- [x] Add settings reset tests to ensure detected defaults are persisted safely.
+- [x] Add Settings window tests for runtime status rows and new action buttons.
+- [x] Implement runtime diagnostics service and testable environment probe.
+- [x] Wire runtime status, test microphone, test transcription, open logs, and reset settings into Settings.
+- [x] Verify with focused tests, full tests, publish, relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Settings UX And Runtime Diagnostics
+- Added a runtime diagnostics service with testable probes for local Whisper files, CUDA/VAD readiness, microphone availability, log-folder writability, and CLI smoke checks.
+- Added a Settings runtime status section with profile summary, diagnostic rows, refresh, test microphone, test transcription, open logs, and reset settings actions.
+- Added `ResetToDefaults()` persistence in `SettingsStore` and wired Settings reset through a confirmation dialog.
+- Bumped LafazFlow to `0.8.0`, so the compact recorder badge now shows `v0.8`.
+- Focused runtime/settings tests pass, 36 tests; full `dotnet test` passes, 261 tests.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, relaunched it, and verified the stable build reports file version `0.8.0.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

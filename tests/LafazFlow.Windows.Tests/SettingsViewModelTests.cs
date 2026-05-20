@@ -51,6 +51,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(@"C:\Models\whisper\ggml-silero-v5.1.2.bin", viewModel.VadModelPath);
         Assert.False(viewModel.EnableSoundCues);
         Assert.Equal(65, viewModel.SoundCueVolumePercent);
+        Assert.Equal("Quality / CUDA / ggml-large-v3-turbo-q5_0.bin", viewModel.RuntimeProfileStatus);
     }
 
     [Fact]
@@ -254,6 +255,83 @@ public sealed class SettingsViewModelTests
         Assert.Equal("No latency summary yet.", viewModel.LatestLatencySummary);
     }
 
+    [Fact]
+    public void RefreshRuntimeDiagnosticsPopulatesStatusRows()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var logsPath = Directory.CreateDirectory(Path.Combine(root, "logs")).FullName;
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(
+            store,
+            runtimeDiagnostics: new RuntimeDiagnosticsService(new FakeRuntimeEnvironmentProbe
+            {
+                ExistingFiles = [cliPath, modelPath],
+                WritableDirectories = [logsPath],
+                MicrophoneDeviceCount = 1
+            }),
+            logsFolderOverride: logsPath);
+
+        viewModel.RefreshRuntimeDiagnostics();
+
+        Assert.Equal("Fast / CPU / " + Path.GetFileName(modelPath), viewModel.RuntimeProfileStatus);
+        Assert.Contains(viewModel.RuntimeDiagnosticRows, row => row.Name == "Whisper CLI" && row.Severity == RuntimeDiagnosticSeverity.Ok);
+        Assert.Equal("Runtime ready.", viewModel.RuntimeDiagnosticsMessage);
+
+        File.Delete(cliPath);
+        File.Delete(modelPath);
+    }
+
+    [Fact]
+    public async Task TestTranscriptionSmokeUpdatesRuntimeMessage()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(
+            store,
+            runtimeDiagnostics: new RuntimeDiagnosticsService(new FakeRuntimeEnvironmentProbe
+            {
+                ExistingFiles = [cliPath, modelPath],
+                SmokeResult = new RuntimeSmokeCheckResult(false, "Unable to start Whisper CLI.")
+            }));
+
+        await viewModel.TestTranscriptionSmokeAsync(CancellationToken.None);
+
+        Assert.Contains("Unable to start Whisper CLI.", viewModel.RuntimeDiagnosticsMessage);
+
+        File.Delete(cliPath);
+        File.Delete(modelPath);
+    }
+
+    [Fact]
+    public void ResetSettingsToDefaultsReloadsEditableProperties()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = @"C:\custom\whisper-cli.exe",
+            ModelPath = @"C:\custom\model.bin",
+            WhisperThreads = 2
+        });
+        var viewModel = SettingsViewModel.Load(store);
+
+        viewModel.ResetSettingsToDefaults();
+
+        Assert.Equal(cliPath, viewModel.WhisperCliPath);
+        Assert.Equal(modelPath, viewModel.ModelPath);
+        Assert.Equal(AppSettings.Default.WhisperThreads, viewModel.WhisperThreads);
+        Assert.Equal("Settings reset to detected defaults.", viewModel.RuntimeDiagnosticsMessage);
+
+        File.Delete(cliPath);
+        File.Delete(modelPath);
+    }
+
     private static string CreateLatencyLog(string content)
     {
         var logPath = Path.Combine(
@@ -261,5 +339,27 @@ public sealed class SettingsViewModelTests
             "lafazflow.log");
         File.WriteAllText(logPath, content);
         return logPath;
+    }
+
+    private sealed class FakeRuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
+    {
+        public HashSet<string> ExistingFiles { get; init; } = [];
+        public HashSet<string> WritableDirectories { get; init; } = [];
+        public int MicrophoneDeviceCount { get; init; } = 1;
+        public RuntimeSmokeCheckResult SmokeResult { get; init; } = new(true, "Whisper CLI started.");
+
+        public bool FileExists(string path) => ExistingFiles.Contains(path);
+
+        public int GetMicrophoneDeviceCount() => MicrophoneDeviceCount;
+
+        public bool CanWriteToDirectory(string path) => WritableDirectories.Contains(path);
+
+        public Task<RuntimeSmokeCheckResult> RunWhisperSmokeCheckAsync(
+            string whisperCliPath,
+            string processPath,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(SmokeResult);
+        }
     }
 }

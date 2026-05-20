@@ -44,6 +44,22 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsRuntimeDiagnosticsControls()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"Runtime Status\"", xaml);
+        Assert.Contains("Text=\"{Binding RuntimeProfileStatus}\"", xaml);
+        Assert.Contains("ItemsSource=\"{Binding RuntimeDiagnosticRows}\"", xaml);
+        Assert.Contains("Click=\"RefreshRuntimeDiagnostics_OnClick\"", xaml);
+        Assert.Contains("Click=\"TestMicrophone_OnClick\"", xaml);
+        Assert.Contains("Click=\"TestTranscription_OnClick\"", xaml);
+        Assert.Contains("Click=\"ResetSettings_OnClick\"", xaml);
+    }
+
+    [Fact]
     public void MiniRecorderWindowStaysOutOfTaskbar()
     {
         var repoRoot = FindRepoRoot();

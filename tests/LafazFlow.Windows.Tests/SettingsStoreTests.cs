@@ -71,6 +71,34 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
+    public void ResetToDefaultsPersistsDetectedDefaults()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var whisperCliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, whisperCliPath, modelPath);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = @"C:\custom\whisper-cli.exe",
+            ModelPath = @"C:\custom\model.bin",
+            WhisperThreads = 2,
+            EnableSoundCues = false
+        });
+
+        var reset = store.ResetToDefaults();
+        var loaded = store.Load();
+
+        Assert.Equal(whisperCliPath, reset.WhisperCliPath);
+        Assert.Equal(modelPath, reset.ModelPath);
+        Assert.Equal(AppSettings.Default.WhisperThreads, reset.WhisperThreads);
+        Assert.True(reset.EnableSoundCues);
+        Assert.Equal(reset, loaded);
+
+        File.Delete(whisperCliPath);
+        File.Delete(modelPath);
+    }
+
+    [Fact]
     public void LoadReturnsDetectedLocalWhisperPathsWhenFileDoesNotExist()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
