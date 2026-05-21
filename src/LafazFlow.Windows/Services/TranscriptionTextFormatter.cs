@@ -117,6 +117,6 @@ public static partial class TranscriptionTextFormatter
     [GeneratedRegex(@"(?<![\p{L}\p{N}])wait\s*\.\s*(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WaitQuestionLeadInRegex();
 
-    [GeneratedRegex(@"\.\s+And\s+(?=(?:then|there|once|maybe|therefore|it|they|we)\b)")]
+    [GeneratedRegex(@"\.\s+And\s+(?=(?:then|there|once|maybe|therefore|it|they|we|you)\b)")]
     private static partial Regex AndContinuationBreakRegex();
 }

@@ -49,6 +49,19 @@ public sealed class TranscriptionTextFormatterTests
     }
 
     [Theory]
+    [InlineData("what do we have next.", "What do we have next?")]
+    [InlineData("what do you suggest us to do then.", "What do you suggest us to do then?")]
+    [InlineData("how do we manage them.", "How do we manage them?")]
+    [InlineData("can you tell me behind the scene.", "Can you tell me behind the scene?")]
+    [InlineData("is there any better idea.", "Is there any better idea?")]
+    public void FormatConvertsClearQuestionPeriodsToQuestionMarks(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
     [InlineData(
         "wait. why is it not marking the previous sentence as a question sentence",
         "Wait, why is it not marking the previous sentence as a question sentence?")]
@@ -106,6 +119,23 @@ public sealed class TranscriptionTextFormatterTests
         "Document everything and then make a checklist. And then we go one by one until everything completes.",
         "Document everything and then make a checklist, and then we go one by one until everything completes.")]
     public void FormatRepairsHighConfidenceAndContinuationBreaks(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData(
+        "We go one by one. And once everything is done, we move it.",
+        "We go one by one, and once everything is done, we move it.")]
+    [InlineData(
+        "It does not work. And you can see why.",
+        "It does not work, and you can see why.")]
+    [InlineData(
+        "The issue is visible. And maybe we can fix it.",
+        "The issue is visible, and maybe we can fix it.")]
+    public void FormatRepairsAdditionalHighConfidenceAndContinuationBreaks(string input, string expected)
     {
         var formatted = TranscriptionTextFormatter.Format(input);
 

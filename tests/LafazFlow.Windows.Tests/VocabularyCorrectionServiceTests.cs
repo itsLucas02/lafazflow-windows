@@ -150,6 +150,30 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(expected, corrected);
     }
 
+    [Theory]
+    [InlineData("Without any rappers.", "Without any wrappers.")]
+    [InlineData("Just purely their code without any rappers at all.", "Just purely their code without any wrappers at all.")]
+    [InlineData("Use component rappers around the alert.", "Use component wrappers around the alert.")]
+    [InlineData("Render it with rappers disabled.", "Render it with wrappers disabled.")]
+    [InlineData("Keep it with no rappers.", "Keep it with no wrappers.")]
+    public void ApplyDefaultsFixesWrapperDictationInCodingContexts(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("The rappers performed well.")]
+    [InlineData("Those are my favorite rappers.")]
+    [InlineData("The rappers released an album.")]
+    public void ApplyDefaultsPreservesRealRapperContexts(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsCleansDeveloperDictationExample()
     {

@@ -167,3 +167,11 @@
 ## Keep phrase repairs tied to observed context
 - Pattern: ASR can turn repeated test phrases into plausible conversational phrases such as `Let's think`, but globally replacing the phrase would corrupt real dictation.
 - Rule: Repair homophone-like phrases only when the surrounding words match the observed dictation context, such as `Let's think` followed by `one two three` or `1 2 3`.
+
+## Preserve known product and person casing during continuation
+- Pattern: Mid-sentence continuation lowercasing can accidentally damage proper nouns and product names, such as `Supabase` becoming `supabase`.
+- Rule: Before lowercasing a continuation token, preserve known product/person names and acronyms that are intentionally cased.
+
+## Bias and repair ambiguous domain words together
+- Pattern: ASR can choose a valid common word like `rappers` when the user means a domain word like `wrappers`.
+- Rule: Add both prompt bias and context-bound offline repair for ambiguous domain words, and include negative tests for the valid common-word meaning.

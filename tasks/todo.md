@@ -815,3 +815,24 @@
 - Focused correction/settings/tray/version tests pass, 135 tests; full `dotnet test` passes, 290 tests; full `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.1.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+
+## Plan: Formatting Engine Polish
+- [x] Bump LafazFlow to `0.9.2`.
+- [x] Add formatter regression tests for clearer question endings and conservative `. And ...` continuation repair.
+- [x] Add target-context tests for mid-sentence casing while preserving known product/name casing.
+- [x] Add narrow `rappers` to `wrappers` vocabulary tests for coding/UI contexts while preserving real rapper contexts.
+- [x] Add prompt bias for `wrapper`, `wrappers`, `component wrapper`, and `without wrappers`, with default-prompt migration tests.
+- [x] Implement formatter, vocabulary, prompt, migration, and version changes.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Formatting Engine Polish
+- Added question punctuation regressions for clear question phrases such as `what do we have next`, `can you tell me`, and `is there`.
+- Expanded conservative `. And ...` continuation repair to include the observed `And you...` pattern while preserving normal separate sentences.
+- Added target-context preservation for known product/name casing after mid-sentence punctuation: `Supabase`, `Context7`, `Luqman`, and `MediBrave`.
+- Added context-bound `rappers` to `wrappers` correction for coding/UI phrases such as `without any rappers`, `component rappers`, and `with no rappers`, while preserving real music contexts.
+- Added default prompt bias for `wrapper`, `wrappers`, `component wrapper`, and `without wrappers`, plus migration from the previous default prompt.
+- Bumped LafazFlow to `0.9.2`; compact visible version remains `v0.9`.
+- Focused formatter/vocabulary/settings tests pass, 147 tests; full `dotnet test` passes, 316 tests; full `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.2.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

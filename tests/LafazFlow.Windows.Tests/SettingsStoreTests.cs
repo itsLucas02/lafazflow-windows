@@ -37,6 +37,8 @@ public sealed class SettingsStoreTests
         Assert.Contains("npx shadcn@latest", settings.WhisperInitialPrompt);
         Assert.Contains("build-web-apps:shadcn", settings.WhisperInitialPrompt);
         Assert.Contains("Testing, testing, one, two, three", settings.WhisperInitialPrompt);
+        Assert.Contains("component wrapper", settings.WhisperInitialPrompt);
+        Assert.Contains("without wrappers", settings.WhisperInitialPrompt);
         Assert.Equal("", settings.CustomVocabularyTerms);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
@@ -303,6 +305,26 @@ public sealed class SettingsStoreTests
 
         Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
         Assert.Contains("Testing, testing, one, two, three", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadMigratesPreWrapperDefaultPromptToCurrentDeveloperPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 8,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
+                + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+                + "npx shadcn@latest, build-web-apps:shadcn, testing, Testing, testing, one, two, three, Testing one two three over."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("component wrapper", migrated.WhisperInitialPrompt);
+        Assert.Contains("without wrappers", migrated.WhisperInitialPrompt);
     }
 
     [Fact]

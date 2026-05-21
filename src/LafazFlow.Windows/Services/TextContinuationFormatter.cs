@@ -2,6 +2,14 @@ namespace LafazFlow.Windows.Services;
 
 public static class TextContinuationFormatter
 {
+    private static readonly HashSet<string> ProtectedLeadingTokens = new(StringComparer.Ordinal)
+    {
+        "Context7",
+        "Luqman",
+        "MediBrave",
+        "Supabase"
+    };
+
     public static string ApplyTargetContext(string transcript, string textBeforeCaret)
     {
         if (string.IsNullOrWhiteSpace(transcript) || string.IsNullOrWhiteSpace(textBeforeCaret))
@@ -53,7 +61,7 @@ public static class TextContinuationFormatter
     private static bool ShouldPreserveLeadingToken(string transcript, int firstLetterIndex)
     {
         var tokenEnd = firstLetterIndex;
-        while (tokenEnd < transcript.Length && char.IsLetter(transcript[tokenEnd]))
+        while (tokenEnd < transcript.Length && char.IsLetterOrDigit(transcript[tokenEnd]))
         {
             tokenEnd++;
         }
@@ -64,6 +72,7 @@ public static class TextContinuationFormatter
             return true;
         }
 
-        return token.Length > 1 && token.All(char.IsUpper);
+        return ProtectedLeadingTokens.Contains(token)
+            || (token.Length > 1 && token.All(char.IsUpper));
     }
 }

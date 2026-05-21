@@ -77,6 +77,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixConversationalWeightAsWait(corrected);
         corrected = FixConsentFormCompound(corrected);
         corrected = FixEnglishDokumenDrift(corrected);
+        corrected = FixWrapperDictationInCodingContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -163,6 +164,11 @@ public static partial class VocabularyCorrectionService
         });
     }
 
+    private static string FixWrapperDictationInCodingContext(string text)
+    {
+        return WrapperCodingContextRegex().Replace(text, match => $"{match.Groups[1].Value}wrappers");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -222,6 +228,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])dokumen(?=\s+(?:everything|this|that|it)\b)", RegexOptions.IgnoreCase)]
     private static partial Regex EnglishDokumenDriftRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:without\s+any|with\s+no|no|with|component)\s+)rappers(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex WrapperCodingContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();
