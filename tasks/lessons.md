@@ -175,3 +175,7 @@
 ## Bias and repair ambiguous domain words together
 - Pattern: ASR can choose a valid common word like `rappers` when the user means a domain word like `wrappers`.
 - Rule: Add both prompt bias and context-bound offline repair for ambiguous domain words, and include negative tests for the valid common-word meaning.
+
+## Preserve valid acronyms when repairing homophones
+- Pattern: ASR can turn short words into acronym-like tokens, such as `theirs` becoming `DRs`, but the acronym can also be legitimate.
+- Rule: Repair acronym-like homophones only in observed phrase contexts and add negative tests for legitimate acronym use.

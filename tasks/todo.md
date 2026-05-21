@@ -836,3 +836,21 @@
 - Focused formatter/vocabulary/settings tests pass, 147 tests; full `dotnet test` passes, 316 tests; full `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.2.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+
+## Plan: Theirs DRS Dictation Repair
+- [x] Bump LafazFlow to `0.9.3`.
+- [x] Add narrow vocabulary tests for `DRs` to `theirs` in observed UI/code comparison contexts.
+- [x] Add negative vocabulary tests preserving legitimate `DRS` acronym contexts.
+- [x] Add default prompt bias for `theirs`, `theirs originally`, and `compare theirs`, with migration from the previous default prompt.
+- [x] Implement vocabulary correction, prompt, migration, and version changes.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Theirs DRS Dictation Repair
+- Added context-bound `DRs` to `theirs` correction for observed comparison phrases such as `see DRs originally`, `compare DRs`, `use DRs originally`, and `took DRs`.
+- Preserved legitimate acronym contexts such as `DRS system`, `DRS score`, and `DRS file`.
+- Added default prompt bias for `theirs`, `theirs originally`, and `compare theirs`, plus migration from the previous default prompt.
+- Bumped LafazFlow to `0.9.3`; compact visible version remains `v0.9`.
+- Focused vocabulary/settings tests pass, 100 tests; full `dotnet test` passes, 324 tests; full `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.3.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

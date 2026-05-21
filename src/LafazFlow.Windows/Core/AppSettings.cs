@@ -2,13 +2,13 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
         "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
         + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
         + "npx shadcn@latest, build-web-apps:shadcn, testing, Testing, testing, one, two, three, Testing one two three over, "
-        + "wrapper, wrappers, component wrapper, without wrappers.";
+        + "wrapper, wrappers, component wrapper, without wrappers, theirs, theirs originally, compare theirs.";
 
     public int SettingsSchemaVersion { get; init; } = CurrentSchemaVersion;
     public string HotkeyGesture { get; init; } = "DoubleShift";

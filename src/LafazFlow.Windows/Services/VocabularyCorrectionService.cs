@@ -78,6 +78,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixConsentFormCompound(corrected);
         corrected = FixEnglishDokumenDrift(corrected);
         corrected = FixWrapperDictationInCodingContext(corrected);
+        corrected = FixTheirsDictationDrsInUiComparisonContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -169,6 +170,11 @@ public static partial class VocabularyCorrectionService
         return WrapperCodingContextRegex().Replace(text, match => $"{match.Groups[1].Value}wrappers");
     }
 
+    private static string FixTheirsDictationDrsInUiComparisonContext(string text)
+    {
+        return TheirsDrsContextRegex().Replace(text, match => $"{match.Groups[1].Value}theirs");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -231,6 +237,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:without\s+any|with\s+no|no|with|component)\s+)rappers(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex WrapperCodingContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:see|compare|use|took)\s+)DRs(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex TheirsDrsContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

@@ -174,6 +174,29 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(input, corrected);
     }
 
+    [Theory]
+    [InlineData("I would like to see DRs originally without being wrapped.", "I would like to see theirs originally without being wrapped.")]
+    [InlineData("I want to compare DRs rawly.", "I want to compare theirs rawly.")]
+    [InlineData("Can we use DRs originally?", "Can we use theirs originally?")]
+    [InlineData("What if we just took DRs?", "What if we just took theirs?")]
+    public void ApplyDefaultsFixesTheirsDictationDrsInUiComparisonContexts(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("The DRS system is enabled.")]
+    [InlineData("Check the DRS score.")]
+    [InlineData("Open the DRS file.")]
+    public void ApplyDefaultsPreservesDrsAcronymContexts(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsCleansDeveloperDictationExample()
     {
