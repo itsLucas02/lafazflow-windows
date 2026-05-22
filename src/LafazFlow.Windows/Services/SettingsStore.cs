@@ -29,6 +29,11 @@ public sealed class SettingsStore
         + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
         + "npx shadcn@latest, build-web-apps:shadcn, testing, Testing, testing, one, two, three, Testing one two three over, "
         + "wrapper, wrappers, component wrapper, without wrappers.";
+    private const string PreStaleDefaultWhisperInitialPrompt =
+        "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
+        + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+        + "npx shadcn@latest, build-web-apps:shadcn, testing, Testing, testing, one, two, three, Testing one two three over, "
+        + "wrapper, wrappers, component wrapper, without wrappers, theirs, theirs originally, compare theirs.";
 
     private static readonly string[] ModelPriority =
     [
@@ -148,7 +153,8 @@ public sealed class SettingsStore
             || string.Equals(migrated.WhisperInitialPrompt, Context7DefaultWhisperInitialPrompt, StringComparison.Ordinal)
             || string.Equals(migrated.WhisperInitialPrompt, PreTestingDefaultWhisperInitialPrompt, StringComparison.Ordinal)
             || string.Equals(migrated.WhisperInitialPrompt, PreWrapperDefaultWhisperInitialPrompt, StringComparison.Ordinal)
-            || string.Equals(migrated.WhisperInitialPrompt, PreTheirsDefaultWhisperInitialPrompt, StringComparison.Ordinal))
+            || string.Equals(migrated.WhisperInitialPrompt, PreTheirsDefaultWhisperInitialPrompt, StringComparison.Ordinal)
+            || string.Equals(migrated.WhisperInitialPrompt, PreStaleDefaultWhisperInitialPrompt, StringComparison.Ordinal))
         {
             migrated = migrated with { WhisperInitialPrompt = AppSettings.DefaultWhisperInitialPrompt };
         }

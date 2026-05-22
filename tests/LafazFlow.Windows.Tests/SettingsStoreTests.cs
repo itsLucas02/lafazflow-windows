@@ -41,6 +41,9 @@ public sealed class SettingsStoreTests
         Assert.Contains("without wrappers", settings.WhisperInitialPrompt);
         Assert.Contains("theirs originally", settings.WhisperInitialPrompt);
         Assert.Contains("compare theirs", settings.WhisperInitialPrompt);
+        Assert.Contains("stale document", settings.WhisperInitialPrompt);
+        Assert.Contains("stale docs", settings.WhisperInitialPrompt);
+        Assert.Contains("stale file", settings.WhisperInitialPrompt);
         Assert.Equal("", settings.CustomVocabularyTerms);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
@@ -348,6 +351,28 @@ public sealed class SettingsStoreTests
         Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
         Assert.Contains("theirs originally", migrated.WhisperInitialPrompt);
         Assert.Contains("compare theirs", migrated.WhisperInitialPrompt);
+    }
+
+    [Fact]
+    public void LoadMigratesPreStaleDefaultPromptToCurrentDeveloperPrompt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 10,
+            WhisperInitialPrompt = "Supabase, Vercel, Tailscale, Netlify, Mintlify, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
+                + "shadcn, shadcn/ui, shadcn-ui, components.json, Radix UI, Tailwind CSS, FieldGroup, InputGroup, "
+                + "npx shadcn@latest, build-web-apps:shadcn, testing, Testing, testing, one, two, three, Testing one two three over, "
+                + "wrapper, wrappers, component wrapper, without wrappers, theirs, theirs originally, compare theirs."
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Contains("stale document", migrated.WhisperInitialPrompt);
+        Assert.Contains("stale docs", migrated.WhisperInitialPrompt);
+        Assert.Contains("stale file", migrated.WhisperInitialPrompt);
     }
 
     [Fact]

@@ -5,12 +5,12 @@ namespace LafazFlow.Windows.Tests;
 public sealed class AppVersionTextTests
 {
     [Fact]
-    public void CompactUsesAssemblyMajorMinorFormat()
+    public void CompactUsesAssemblyMajorMinorPatchFormat()
     {
         var version = typeof(AppVersionText).Assembly.GetName().Version;
 
         Assert.NotNull(version);
-        Assert.Equal($"v{version.Major}.{version.Minor}", AppVersionText.Compact);
+        Assert.Equal($"v{version.Major}.{version.Minor}.{version.Build}", AppVersionText.Compact);
     }
 
     [Fact]

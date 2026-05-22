@@ -197,6 +197,31 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(input, corrected);
     }
 
+    [Theory]
+    [InlineData("Please update the still document.", "Please update the stale document.")]
+    [InlineData("Please update the steel document.", "Please update the stale document.")]
+    [InlineData("Update stale docs, not steel docs.", "Update stale docs, not stale docs.")]
+    [InlineData("Open the still file.", "Open the stale file.")]
+    [InlineData("Open the steel file.", "Open the stale file.")]
+    public void ApplyDefaultsFixesStaleDocumentDictationContexts(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("I am still working.")]
+    [InlineData("Still, we should continue.")]
+    [InlineData("The steel frame is strong.")]
+    [InlineData("The steel beam is ready.")]
+    public void ApplyDefaultsPreservesNormalStillAndSteelSentences(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsCleansDeveloperDictationExample()
     {

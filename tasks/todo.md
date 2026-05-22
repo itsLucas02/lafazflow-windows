@@ -854,3 +854,22 @@
 - Focused vocabulary/settings tests pass, 100 tests; full `dotnet test` passes, 324 tests; full `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.3.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+
+## Plan: Full Patch Version And Stale Document Repair
+- [x] Bump LafazFlow to `0.9.4`.
+- [x] Show full semantic patch version in shell, Settings, tray tooltip, and tray menu.
+- [x] Add default prompt bias for `stale`, `stale document`, `stale docs`, and `stale file`.
+- [x] Add narrow vocabulary correction for `still/steel document`, `still/steel docs`, and `still/steel file`.
+- [x] Preserve normal `still` and `steel` sentences.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Full Patch Version And Stale Document Repair
+- Changed shared app version text from major/minor to full semantic patch format, so shell, Settings, tray tooltip, and tray menu now show `v0.9.4`.
+- Added default prompt bias for `stale`, `stale document`, `stale docs`, and `stale file`, plus migration from the previous default prompt.
+- Added narrow correction for `still document`, `steel document`, `still docs`, `steel docs`, `still file`, and `steel file`.
+- Preserved normal `still` and `steel` sentences such as `I am still working` and `The steel frame is strong`.
+- Bumped LafazFlow to `0.9.4`.
+- Focused version/vocabulary/settings tests pass, 154 tests; full `dotnet test` passes, 334 tests; full `dotnet build` passes with 0 warnings.
+- Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.4.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.

@@ -179,3 +179,11 @@
 ## Preserve valid acronyms when repairing homophones
 - Pattern: ASR can turn short words into acronym-like tokens, such as `theirs` becoming `DRs`, but the acronym can also be legitimate.
 - Rule: Repair acronym-like homophones only in observed phrase contexts and add negative tests for legitimate acronym use.
+
+## Show the full patch version in user-facing build identity
+- Pattern: Major/minor-only labels hide patch releases, making it hard to confirm whether the running pinned build includes the latest fix.
+- Rule: Display full semantic patch format in all user-facing build identity surfaces while keeping file/product metadata aligned.
+
+## Keep common-word repairs domain-bound
+- Pattern: ASR can confuse domain words such as `stale` with valid common words like `still` or `steel`.
+- Rule: Repair only in narrow domain phrases, such as `stale document/docs/file`, and include negative tests for normal common-word usage.
