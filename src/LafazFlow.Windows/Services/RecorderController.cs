@@ -285,7 +285,7 @@ public sealed class RecorderController
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingStarted);
             if (job.Settings.EnableVocabularyCorrections)
             {
-                transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
+                transcript = VocabularyCorrectionService.Apply(transcript, job.Settings.CustomCorrectionRules);
             }
 
             var targetContext = _targetTextContext.GetTextBeforeCaret(job.TargetWindow);

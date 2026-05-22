@@ -187,6 +187,16 @@
                          VerticalScrollBarVisibility="Auto"
                          TextWrapping="Wrap"
                          MinHeight="92" />
+                <TextBlock Text="Custom Correction Rules" FontWeight="SemiBold" />
+                <TextBlock Text="One rule per line: heard phrase =&gt; corrected phrase."
+                           Foreground="#9AA0A6"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,4" />
+                <TextBox Text="{Binding CustomCorrectionRules, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         TextWrapping="Wrap"
+                         MinHeight="92" />
                 <CheckBox Content="Play sound cues"
                           IsChecked="{Binding EnableSoundCues}" />
                 <TextBlock Text="Sound Cue Volume (%)" FontWeight="SemiBold" />

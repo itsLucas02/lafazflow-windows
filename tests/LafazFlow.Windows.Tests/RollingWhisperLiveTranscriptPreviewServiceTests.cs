@@ -149,6 +149,25 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
         Assert.Contains("align", prompt);
     }
 
+    [Fact]
+    public async Task LivePreviewAppliesCustomCorrectionRules()
+    {
+        var service = CreateService(
+            previews: ["Open superbiz."],
+            logs: out _);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default with
+        {
+            CustomCorrectionRules = "Supabase => Supabase database"
+        }, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 1);
+        await service.StopAsync();
+
+        Assert.Equal(["Open Supabase database."], received);
+    }
+
 
     private static RollingWhisperLiveTranscriptPreviewService CreateService(
         IReadOnlyCollection<string> previews,

@@ -85,10 +85,76 @@ public static partial class VocabularyCorrectionService
         return corrected;
     }
 
+    public static string Apply(string text, string customCorrectionRules)
+    {
+        return ApplyCustomRules(ApplyDefaults(text), customCorrectionRules);
+    }
+
+    public static IReadOnlyList<string> ValidateCustomCorrectionRules(string customCorrectionRules)
+    {
+        var errors = new List<string>();
+        _ = ParseCustomCorrectionRules(customCorrectionRules, errors);
+
+        return errors;
+    }
+
+    private static string ApplyCustomRules(string text, string customCorrectionRules)
+    {
+        var corrected = text;
+        foreach (var rule in ParseCustomCorrectionRules(customCorrectionRules, errors: null))
+        {
+            corrected = PhraseRegex(rule.Heard).Replace(corrected, rule.Replacement);
+        }
+
+        return corrected;
+    }
+
+    private static IReadOnlyList<CustomCorrectionRule> ParseCustomCorrectionRules(
+        string customCorrectionRules,
+        List<string>? errors)
+    {
+        if (string.IsNullOrWhiteSpace(customCorrectionRules))
+        {
+            return [];
+        }
+
+        var rules = new List<CustomCorrectionRule>();
+        var lines = customCorrectionRules.Split(["\r\n", "\n", "\r"], StringSplitOptions.None);
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var line = lines[index].Trim();
+            if (line.Length == 0)
+            {
+                continue;
+            }
+
+            var arrowIndex = line.IndexOf("=>", StringComparison.Ordinal);
+            if (arrowIndex < 0)
+            {
+                errors?.Add($"Correction rule line {index + 1} must use 'heard phrase => corrected phrase'.");
+                continue;
+            }
+
+            var heard = line[..arrowIndex].Trim();
+            var replacement = line[(arrowIndex + 2)..].Trim();
+            if (heard.Length == 0 || replacement.Length == 0)
+            {
+                errors?.Add($"Correction rule line {index + 1} must include text before and after '=>'.");
+                continue;
+            }
+
+            rules.Add(new CustomCorrectionRule(heard, replacement));
+        }
+
+        return rules;
+    }
+
     private static Regex PhraseRegex(string phrase)
     {
         return new Regex($@"(?<![\p{{L}}\p{{N}}]){Regex.Escape(phrase)}(?![\p{{L}}\p{{N}}])", RegexOptions.IgnoreCase);
     }
+
+    private sealed record CustomCorrectionRule(string Heard, string Replacement);
 
     private static string FixTestingDictationThats(string text)
     {

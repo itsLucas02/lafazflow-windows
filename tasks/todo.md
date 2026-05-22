@@ -873,3 +873,21 @@
 - Focused version/vocabulary/settings tests pass, 154 tests; full `dotnet test` passes, 334 tests; full `dotnet build` passes with 0 warnings.
 - Republished and relaunched `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, and verified the stable build reports file version `0.9.4.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and code identifiers.
+
+## Plan: Custom Correction Rules
+- [x] Bump LafazFlow to `0.10.0` and settings schema to `12`.
+- [x] Add failing tests for persisted `CustomCorrectionRules`, Settings validation, Settings UI binding, built-in-plus-custom correction order, live preview correction, and final transcription correction.
+- [x] Add a multiline `Custom Correction Rules` Settings field using `heard phrase => corrected phrase`, with validation for malformed lines.
+- [x] Apply built-in vocabulary corrections first and user correction rules second, gated by `EnableVocabularyCorrections`.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Custom Correction Rules
+- Added Settings support for multiline custom correction rules in the format `heard phrase => corrected phrase`.
+- Added validation so malformed nonblank rule lines are rejected before settings are saved.
+- Added schema `12` persistence for `CustomCorrectionRules`, defaulting and migrating to an empty value.
+- Applied corrections in this order: built-in vocabulary corrections first, custom rules second, only when vocabulary corrections are enabled.
+- Wired custom rules into both final transcription and live preview.
+- Bumped LafazFlow to `0.10.0`.
+- Focused correction/settings/controller/live-preview tests pass, 166 tests; full `dotnet test` passes, 346 tests; full `dotnet build` passes with 0 warnings.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

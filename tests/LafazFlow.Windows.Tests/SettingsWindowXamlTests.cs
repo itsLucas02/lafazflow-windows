@@ -56,6 +56,19 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsCustomCorrectionRulesTextBox()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"Custom Correction Rules\"", xaml);
+        Assert.Contains("heard phrase =&gt; corrected phrase", xaml);
+        Assert.Contains("Text=\"{Binding CustomCorrectionRules, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("AcceptsReturn=\"True\"", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsRuntimeDiagnosticsControls()
     {
         var repoRoot = FindRepoRoot();

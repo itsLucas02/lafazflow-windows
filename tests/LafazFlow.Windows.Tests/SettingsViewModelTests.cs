@@ -30,7 +30,8 @@ public sealed class SettingsViewModelTests
             VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
             EnableSoundCues = false,
             SoundCueVolume = 0.65,
-            CustomVocabularyTerms = "PDPA\r\nCare Visit"
+            CustomVocabularyTerms = "PDPA\r\nCare Visit",
+            CustomCorrectionRules = "superbiz => Supabase\r\nsteel document => stale document"
         });
 
         var viewModel = SettingsViewModel.Load(store);
@@ -53,6 +54,7 @@ public sealed class SettingsViewModelTests
         Assert.False(viewModel.EnableSoundCues);
         Assert.Equal(65, viewModel.SoundCueVolumePercent);
         Assert.Equal("PDPA\r\nCare Visit", viewModel.CustomVocabularyTerms);
+        Assert.Equal("superbiz => Supabase\r\nsteel document => stale document", viewModel.CustomCorrectionRules);
         Assert.Equal("Quality / CUDA / ggml-large-v3-turbo-q5_0.bin", viewModel.RuntimeProfileStatus);
         Assert.Equal(viewModel.AppVersion, viewModel.SettingsWindowTitle.Split(" - ")[1]);
         Assert.StartsWith("LafazFlow Settings - v", viewModel.SettingsWindowTitle);
@@ -82,6 +84,7 @@ public sealed class SettingsViewModelTests
         viewModel.EnableSoundCues = false;
         viewModel.SoundCueVolumePercent = 72;
         viewModel.CustomVocabularyTerms = "PDPA\r\nCare Visit";
+        viewModel.CustomCorrectionRules = "superbiz => Supabase\r\nstill document => stale document";
 
         var result = viewModel.Save();
 
@@ -103,6 +106,34 @@ public sealed class SettingsViewModelTests
         Assert.False(saved.EnableSoundCues);
         Assert.Equal(0.72, saved.SoundCueVolume, precision: 6);
         Assert.Equal("PDPA\r\nCare Visit", saved.CustomVocabularyTerms);
+        Assert.Equal("superbiz => Supabase\r\nstill document => stale document", saved.CustomCorrectionRules);
+    }
+
+    [Fact]
+    public void SaveRejectsMalformedCustomCorrectionRules()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = cliPath,
+            ModelPath = modelPath,
+            CustomCorrectionRules = "superbiz => Supabase"
+        });
+        var viewModel = SettingsViewModel.Load(store);
+        viewModel.CustomCorrectionRules = "broken rule";
+
+        var result = viewModel.Save();
+
+        var saved = store.Load();
+        Assert.False(result.Success);
+        Assert.Contains("Correction rule line 1 must use 'heard phrase => corrected phrase'.", result.Errors);
+        Assert.Equal("superbiz => Supabase", saved.CustomCorrectionRules);
+
+        File.Delete(cliPath);
+        File.Delete(modelPath);
     }
 
     [Fact]
@@ -332,6 +363,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(cliPath, viewModel.WhisperCliPath);
         Assert.Equal(modelPath, viewModel.ModelPath);
         Assert.Equal(AppSettings.Default.WhisperThreads, viewModel.WhisperThreads);
+        Assert.Equal("", viewModel.CustomCorrectionRules);
         Assert.Equal("Settings reset to detected defaults.", viewModel.RuntimeDiagnosticsMessage);
 
         File.Delete(cliPath);

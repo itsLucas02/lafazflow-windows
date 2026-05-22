@@ -516,6 +516,62 @@ public sealed class RecorderControllerTests
         Assert.Contains("align", prompt);
     }
 
+    [Fact]
+    public async Task CompletedDictationAppliesCustomCorrectionRules()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("Open superbiz.")),
+            paste,
+            CreateSettingsStore(settings => settings with
+            {
+                CustomCorrectionRules = "Supabase => Supabase database"
+            }),
+            new SoundCueService(),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["Open Supabase database. "], paste.Texts);
+        Assert.Equal("Open Supabase database.", viewModel.RecentTranscripts[0]);
+    }
+
+    [Fact]
+    public async Task CompletedDictationSkipsCustomCorrectionRulesWhenCorrectionsAreDisabled()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("Open superbiz.")),
+            paste,
+            CreateSettingsStore(settings => settings with
+            {
+                EnableVocabularyCorrections = false,
+                CustomCorrectionRules = "superbiz => Supabase"
+            }),
+            new SoundCueService(),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["Open superbiz. "], paste.Texts);
+    }
+
 
     [Fact]
     public async Task FailedDictationReportsLatency()

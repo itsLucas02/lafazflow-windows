@@ -28,6 +28,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _appendTrailingSpace;
     private bool _showLiveTranscriptPreview;
     private string _customVocabularyTerms = "";
+    private string _customCorrectionRules = "";
     private bool _enableVocabularyCorrections;
     private bool _enableSoundCues;
     private double _soundCueVolumePercent;
@@ -64,6 +65,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         AppendTrailingSpace = settings.AppendTrailingSpace;
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
         CustomVocabularyTerms = settings.CustomVocabularyTerms;
+        CustomCorrectionRules = settings.CustomCorrectionRules;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
@@ -162,6 +164,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _customVocabularyTerms;
         set => SetProperty(ref _customVocabularyTerms, value);
+    }
+
+    public string CustomCorrectionRules
+    {
+        get => _customCorrectionRules;
+        set => SetProperty(ref _customCorrectionRules, value);
     }
 
     public bool EnableVocabularyCorrections
@@ -375,6 +383,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             AppendTrailingSpace = AppendTrailingSpace,
             ShowLiveTranscriptPreview = ShowLiveTranscriptPreview,
             CustomVocabularyTerms = CustomVocabularyTerms,
+            CustomCorrectionRules = CustomCorrectionRules,
             EnableVocabularyCorrections = EnableVocabularyCorrections,
             EnableSoundCues = EnableSoundCues,
             SoundCueVolume = Math.Clamp(SoundCueVolumePercent / 100.0, 0, 1),
@@ -399,6 +408,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         AppendTrailingSpace = settings.AppendTrailingSpace;
         ShowLiveTranscriptPreview = settings.ShowLiveTranscriptPreview;
         CustomVocabularyTerms = settings.CustomVocabularyTerms;
+        CustomCorrectionRules = settings.CustomCorrectionRules;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
@@ -450,6 +460,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             errors.Add("VAD model path does not exist.");
         }
+
+        errors.AddRange(VocabularyCorrectionService.ValidateCustomCorrectionRules(CustomCorrectionRules));
 
         return errors;
     }

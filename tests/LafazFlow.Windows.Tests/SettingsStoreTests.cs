@@ -45,6 +45,7 @@ public sealed class SettingsStoreTests
         Assert.Contains("stale docs", settings.WhisperInitialPrompt);
         Assert.Contains("stale file", settings.WhisperInitialPrompt);
         Assert.Equal("", settings.CustomVocabularyTerms);
+        Assert.Equal("", settings.CustomCorrectionRules);
         Assert.False(settings.KeepRecordingsForDiagnostics);
     }
 
@@ -71,7 +72,8 @@ public sealed class SettingsStoreTests
             EnableVad = true,
             VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
             EnableSoundCues = false,
-            SoundCueVolume = 0.72
+            SoundCueVolume = 0.72,
+            CustomCorrectionRules = "superbiz => Supabase\r\nsteel document => stale document"
         };
 
         store.Save(expected);
@@ -97,6 +99,22 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
+    public void LoadMigratesCustomCorrectionRulesToEmptyString()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 11
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Equal("", migrated.CustomCorrectionRules);
+    }
+
+    [Fact]
     public void ResetToDefaultsPersistsDetectedDefaults()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -119,6 +137,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(AppSettings.Default.WhisperThreads, reset.WhisperThreads);
         Assert.True(reset.EnableSoundCues);
         Assert.Equal("", reset.CustomVocabularyTerms);
+        Assert.Equal("", reset.CustomCorrectionRules);
         Assert.Equal(reset, loaded);
 
         File.Delete(whisperCliPath);

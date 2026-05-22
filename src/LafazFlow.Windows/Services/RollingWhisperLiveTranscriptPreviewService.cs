@@ -151,6 +151,11 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             var settings = _settings ?? throw new OperationCanceledException();
             var threads = Math.Clamp(Math.Max(1, settings.WhisperThreads / 2), 1, Environment.ProcessorCount);
             var preview = await _transcribeSnapshotAsync(settings, snapshot.Audio, threads, cancellationToken);
+            if (settings.EnableVocabularyCorrections)
+            {
+                preview = VocabularyCorrectionService.Apply(preview, settings.CustomCorrectionRules);
+            }
+
             if (!_stabilizer.TryAccept(preview, out var stablePreview))
             {
                 _stats.CountSuppression(_stabilizer.LastSuppressionReason);
@@ -200,11 +205,6 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         {
             await WriteWavAsync(audioPath, pcmAudio, cancellationToken);
             var transcript = await RunWhisperAsync(settings, audioPath, threads, cancellationToken);
-            if (settings.EnableVocabularyCorrections)
-            {
-                transcript = VocabularyCorrectionService.ApplyDefaults(transcript);
-            }
-
             return transcript.Trim();
         }
         catch (OperationCanceledException)

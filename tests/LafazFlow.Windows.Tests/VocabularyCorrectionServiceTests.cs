@@ -301,4 +301,82 @@ public sealed class VocabularyCorrectionServiceTests
 
         Assert.Equal("Testing one, two, three.", corrected);
     }
+
+    [Fact]
+    public void ApplyUsesCustomRulesAfterDefaults()
+    {
+        var corrected = VocabularyCorrectionService.Apply(
+            "Open superbiz.",
+            "Supabase => MySupabase");
+
+        Assert.Equal("Open MySupabase.", corrected);
+    }
+
+    [Fact]
+    public void ApplyUsesCustomRulesInOrder()
+    {
+        var corrected = VocabularyCorrectionService.Apply(
+            "Open foo.",
+            """
+            foo => bar
+            bar => baz
+            """);
+
+        Assert.Equal("Open baz.", corrected);
+    }
+
+    [Fact]
+    public void ApplyCustomRulesProtectsPhraseBoundaries()
+    {
+        var corrected = VocabularyCorrectionService.Apply(
+            "Do not change concatenate or cat.",
+            "cat => dog");
+
+        Assert.Equal("Do not change concatenate or dog.", corrected);
+    }
+
+    [Fact]
+    public void ApplyCustomRulesAllowsObservedPersonalRepairs()
+    {
+        var corrected = VocabularyCorrectionService.Apply(
+            "Update the steel document and open contact seven.",
+            """
+            steel document => stale document
+            Context7 => Context7 MCP
+            """);
+
+        Assert.Equal("Update the stale document and open Context7 MCP.", corrected);
+    }
+
+    [Fact]
+    public void ValidateCustomCorrectionRulesAcceptsBlankAndValidLines()
+    {
+        var errors = VocabularyCorrectionService.ValidateCustomCorrectionRules(
+            """
+            superbiz => Supabase
+
+            contact seven => Context7
+            """);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidateCustomCorrectionRulesRejectsMalformedLines()
+    {
+        var errors = VocabularyCorrectionService.ValidateCustomCorrectionRules(
+            """
+            missing arrow
+             => replacement
+            heard =>
+            """);
+
+        Assert.Equal(
+            [
+                "Correction rule line 1 must use 'heard phrase => corrected phrase'.",
+                "Correction rule line 2 must include text before and after '=>'.",
+                "Correction rule line 3 must include text before and after '=>'."
+            ],
+            errors);
+    }
 }
