@@ -124,6 +124,10 @@
 - Pattern: The local model can produce new stable phonetic variants for known product names, such as `superbiz` for `Supabase`.
 - Rule: Add exact observed product-name variants to the offline vocabulary table with focused regression tests instead of waiting for model changes.
 
+## Capture near-miss product spellings immediately
+- Pattern: Local ASR can get a technical term nearly right but transpose letters, such as `Supabase` becoming `Supabaes`; prompt bias alone does not guarantee the final spelling.
+- Rule: Add observed near-miss product spellings to offline vocabulary corrections with a failing regression first, especially for daily-use developer terms.
+
 ## Include new agent tooling names in both vocabulary and prompt
 - Pattern: Agent tooling names such as `Context7` can be misheard as ordinary phrases like `contact seven`, and correction-only fixes do not help existing prompt context.
 - Rule: Add observed variants to offline vocabulary, add the canonical term to the default prompt, and migrate existing default prompts while preserving custom prompts.
