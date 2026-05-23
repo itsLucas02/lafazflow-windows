@@ -103,6 +103,34 @@ public sealed class TranscriptionBenchTests
         Assert.Equal(0, macosLike.Runtime.DecodeOptions.MaxContextTokens);
     }
 
+    [Fact]
+    public void BenchOptionsResolvesNamedRegressionPack()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+
+        var options = BenchOptions.Parse(["--pack", "daily", "--packs-root", root, "--take", "3"]);
+
+        Assert.Equal("daily", options.PackName);
+        Assert.Equal(root, options.PacksRoot);
+        Assert.Equal(Path.Combine(root, "daily"), options.RecordingsDirectory);
+        Assert.Equal(3, options.Take);
+    }
+
+    [Fact]
+    public void BenchOptionsRejectsUnsafeRegressionPackName()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            BenchOptions.Parse(["--pack", @"..\secret"]));
+
+        Assert.Contains("letters, numbers, dots, dashes, and underscores", exception.Message);
+    }
+
+    [Fact]
+    public void BenchmarkRunnerTracksStripeAsDefaultKeyTerm()
+    {
+        Assert.Contains("Stripe", BenchmarkRunner.DefaultKeyTerms);
+    }
+
     private static string WriteTempFile(string root, string name)
     {
         var path = Path.Combine(root, name);

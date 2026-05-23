@@ -951,3 +951,22 @@
 - Bumped LafazFlow to `0.10.3`.
 - Focused vocabulary/settings tests pass, 125 tests; full `dotnet test` passes, 359 tests; full `dotnet build` passes with 0 warnings.
 - Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Regression Pack Command
+- [x] Write implementation plan at `docs/superpowers/plans/2026-05-24-regression-pack-command.md`.
+- [x] Add a private local `--pack daily` resolver for benchmark fixtures.
+- [x] Add tests for pack path parsing, custom pack roots, and invalid pack names.
+- [x] Add `Stripe` to benchmark key-term checks.
+- [x] Improve empty-pack CLI guidance.
+- [x] Verify focused tests, full tests, build, safety scans, and a local pack smoke run.
+
+## Review: Regression Pack Command
+- Added `--pack <name>` and `--packs-root <path>` support to `tools/LafazFlow.TranscriptionBench`.
+- `--pack daily` resolves to `%LOCALAPPDATA%\LafazFlow\RegressionPacks\daily` by default and expects private `.wav` plus matching `.txt` fixture pairs.
+- Added pack-name validation to prevent unsafe path traversal names such as `..\secret`.
+- Added `Stripe` to benchmark key-term tracking.
+- Improved empty-pack CLI output with the exact folder and fixture-pair example.
+- Seeded the private local `daily` pack from the owner-recorded target clips; these files remain outside the repo.
+- Smoke run passed: `--pack daily --take 4 --configs current-settings` produced `4/4` successful runs, `928 ms` average latency, `0.000` edit distance, and `7/7` key terms.
+- Focused `TranscriptionBenchTests` pass, 7 tests; full `dotnet test` passes, 362 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

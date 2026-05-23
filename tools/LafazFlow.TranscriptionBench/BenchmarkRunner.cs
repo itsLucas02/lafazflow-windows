@@ -13,6 +13,7 @@ public sealed class BenchmarkRunner
         "Context7",
         "Luqman",
         "MediBrave",
+        "Stripe",
         "stale",
         "wrapper",
         "align"
