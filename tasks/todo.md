@@ -936,3 +936,18 @@
 - Bumped LafazFlow to `0.10.2`.
 - Focused vocabulary regression passes; full `dotnet test` passes, 351 tests; full `dotnet build` passes with 0 warnings.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Stripe Vocabulary Hotfix
+- [x] Add focused regression tests for `strike`/lowercase `stripe` in payment/developer contexts.
+- [x] Preserve normal English uses such as worker strikes and visual stripes.
+- [x] Add `Stripe` to the built-in local prompt and migrate previous default prompts.
+- [x] Bump LafazFlow to `0.10.3`.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+
+## Review: Stripe Vocabulary Hotfix
+- Added context-bound offline repairs for `strike`/lowercase `stripe` in payment/developer phrases such as `Stripe checkout`, `Stripe webhooks`, and `Stripe dashboard`.
+- Preserved normal English uses such as worker strikes, lightning strikes, and visual stripes.
+- Added `Stripe` to the default local Whisper prompt and bumped settings schema so previous default prompts migrate while custom prompts remain preserved.
+- Bumped LafazFlow to `0.10.3`.
+- Focused vocabulary/settings tests pass, 125 tests; full `dotnet test` passes, 359 tests; full `dotnet build` passes with 0 warnings.
+- Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

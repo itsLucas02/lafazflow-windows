@@ -82,6 +82,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixWrapperDictationInCodingContext(corrected);
         corrected = FixTheirsDictationDrsInUiComparisonContext(corrected);
         corrected = FixStaleDocumentDictationContext(corrected);
+        corrected = FixStripeDictationInPaymentContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -249,6 +250,12 @@ public static partial class VocabularyCorrectionService
         return StaleDocumentContextRegex().Replace(text, match => $"stale {match.Groups[1].Value.ToLowerInvariant()}");
     }
 
+    private static string FixStripeDictationInPaymentContext(string text)
+    {
+        var corrected = StripeActionContextRegex().Replace(text, match => $"{match.Groups[1].Value}Stripe");
+        return StripeProductContextRegex().Replace(corrected, match => $"Stripe {match.Groups[1].Value}");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -317,6 +324,12 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:still|steel)\s+(document|docs|file)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex StaleDocumentContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:use|using|open|install|configure|setup|set\s+up|add|integrate|enable|connect|call|check)\s+)(?:strike|stripe)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex StripeActionContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:strike|stripe)\s+(checkout|billing|payment|payments|webhook|webhooks|api|sdk|dashboard|integration|customer|customers|subscription|subscriptions)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex StripeProductContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

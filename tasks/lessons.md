@@ -191,3 +191,7 @@
 ## Keep common-word repairs domain-bound
 - Pattern: ASR can confuse domain words such as `stale` with valid common words like `still` or `steel`.
 - Rule: Repair only in narrow domain phrases, such as `stale document/docs/file`, and include negative tests for normal common-word usage.
+
+## Keep payment-provider homophones context-bound
+- Pattern: ASR can hear `Stripe` as `strike` or lowercase `stripe`, but both are valid English words outside payment/developer contexts.
+- Rule: Repair `strike`/`stripe` to `Stripe` only near payment, checkout, billing, webhook, integration, or explicit app-action words, with negative tests for normal usage.

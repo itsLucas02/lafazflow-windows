@@ -222,6 +222,30 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(input, corrected);
     }
 
+    [Theory]
+    [InlineData("Use strike checkout.", "Use Stripe checkout.")]
+    [InlineData("Configure strike webhooks.", "Configure Stripe webhooks.")]
+    [InlineData("Open stripe dashboard.", "Open Stripe dashboard.")]
+    [InlineData("Add strike payments.", "Add Stripe payments.")]
+    [InlineData("Integrate stripe billing.", "Integrate Stripe billing.")]
+    public void ApplyDefaultsFixesStripePaymentContexts(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("The workers strike tomorrow.")]
+    [InlineData("Draw a blue stripe on the card.")]
+    [InlineData("That was a lightning strike.")]
+    public void ApplyDefaultsPreservesNormalStrikeAndStripeContexts(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsCleansDeveloperDictationExample()
     {

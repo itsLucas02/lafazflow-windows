@@ -27,6 +27,7 @@ public sealed class SettingsStoreTests
         Assert.Equal(WhisperBackend.Cpu, settings.WhisperBackend);
         Assert.False(settings.EnableVad);
         Assert.Contains("Supabase", settings.WhisperInitialPrompt);
+        Assert.Contains("Stripe", settings.WhisperInitialPrompt);
         Assert.Contains("Context7", settings.WhisperInitialPrompt);
         Assert.Contains("MCP", settings.WhisperInitialPrompt);
         Assert.Contains("Vite", settings.WhisperInitialPrompt);
@@ -392,6 +393,7 @@ public sealed class SettingsStoreTests
         Assert.Contains("stale document", migrated.WhisperInitialPrompt);
         Assert.Contains("stale docs", migrated.WhisperInitialPrompt);
         Assert.Contains("stale file", migrated.WhisperInitialPrompt);
+        Assert.Contains("Stripe", migrated.WhisperInitialPrompt);
     }
 
     [Fact]
