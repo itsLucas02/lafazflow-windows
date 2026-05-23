@@ -60,11 +60,14 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         var safeThreads = Math.Clamp(threads, 1, Environment.ProcessorCount);
         var fallbackArgs = decodeOptions.NoFallback ? " -nf" : "";
         var nonSpeechArgs = decodeOptions.SuppressNonSpeechTokens ? " -sns" : "";
+        var maxContextArgs = decodeOptions.MaxContextTokens is { } maxContextTokens
+            ? $" -mc {maxContextTokens}"
+            : "";
         var vadArgs = decodeOptions.EnableVad
             ? $" --vad -vm {Quote(decodeOptions.VadModelPath)} -vt 0.50 -vspd 250 -vsd 100 -vp 30 -vo 0.10"
             : "";
 
-        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -l en -tp {FormatTemperature(decodeOptions.Temperature)}{fallbackArgs}{nonSpeechArgs}{vadArgs}{promptArgs} -of {Quote(outputBasePath)}";
+        return $"-m {Quote(modelPath)} -f {Quote(audioPath)} -t {safeThreads} -otxt -nt -l en -tp {FormatTemperature(decodeOptions.Temperature)}{fallbackArgs}{nonSpeechArgs}{maxContextArgs}{vadArgs}{promptArgs} -of {Quote(outputBasePath)}";
     }
 
     public static WhisperRuntimeOptions ResolveRuntime(AppSettings settings)

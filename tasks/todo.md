@@ -904,3 +904,22 @@
 - Bumped LafazFlow to `0.10.1`.
 - Focused vocabulary regression passes; full `dotnet test` passes, 346 tests; full `dotnet build` passes with 0 warnings.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Transcription Parity Harness
+- [x] Build a local-only console benchmark harness that runs the same WAV fixtures through multiple LafazFlow transcription configurations.
+- [x] Use private ignored recordings with matching `.txt` expected transcripts so no voice recordings are committed.
+- [x] Run current settings, Fast CPU, Quality CPU, Quality CUDA when available, and macOS-like decode options against the same audio.
+- [x] Record local metrics: total latency, model/backend/profile, normalized edit distance, key-term hits, raw transcript, post-processed transcript, expected transcript, and errors.
+- [x] Add a report command that writes local Markdown/CSV under ignored diagnostics output.
+- [x] Use the report to decide whether the next implementation should tune decode flags, switch defaults, add a persistent Whisper worker, or investigate a Parakeet/FluidAudio-style local backend.
+- [x] Verify harness tests, full build/test, public safety scans, and confirm no WAV/model/output artifacts are tracked.
+
+## Review: Transcription Parity Harness
+- Added `tools/LafazFlow.TranscriptionBench`, a local-only console tool for benchmarking existing private LafazFlow recordings.
+- The harness discovers `.wav` files with matching `.txt` expected transcripts from `%LOCALAPPDATA%\LafazFlow\Recordings`.
+- Added benchmark configs for current settings, Fast CPU, Quality CPU, Quality CUDA with VAD when available, and macOS-like q5 decode settings.
+- Reports are written locally to `%LOCALAPPDATA%\LafazFlow\Benchmarks` as Markdown and CSV with full transcript text for debugging.
+- Added ignored benchmark folders to keep fixtures/reports out of public git.
+- Focused benchmark/Whisper tests pass, 13 tests; full `dotnet test` passes, 351 tests; full `dotnet build` passes with 0 warnings.
+- Real smoke run passed with one existing recording and `fast-cpu-base-en`, producing local Markdown/CSV reports.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

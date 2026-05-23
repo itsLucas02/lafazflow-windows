@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\LafazFlow.Windows\LafazFlow.Windows.csproj" />
+    <ProjectReference Include="..\..\tools\LafazFlow.TranscriptionBench\LafazFlow.TranscriptionBench.csproj" />
   </ItemGroup>
 
 </Project>

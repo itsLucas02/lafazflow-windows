@@ -66,6 +66,25 @@ public sealed class WhisperCliTranscriptionServiceTests
     }
 
     [Fact]
+    public void BuildArgumentsUsesMacOsLikeDecodeSettings()
+    {
+        var args = WhisperCliTranscriptionService.BuildArguments(
+            @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+            @"C:\Audio\sample.wav",
+            @"C:\Audio\sample",
+            "Supabase",
+            16,
+            WhisperDecodeOptions.MacOsLike);
+
+        Assert.Contains("-l en", args);
+        Assert.Contains("-tp 0.2", args);
+        Assert.Contains("-mc 0", args);
+        Assert.DoesNotContain("-nf", args);
+        Assert.DoesNotContain("-sns", args);
+        Assert.DoesNotContain("--vad", args);
+    }
+
+    [Fact]
     public void ResolveRuntimeUsesCudaQualityProfileWhenConfigured()
     {
         var settings = AppSettings.Default with

@@ -11,6 +11,9 @@ TestResults/
 models/
 recordings/
 artifacts/
+benchmarks/
+benchmark-fixtures/
+benchmark-reports/
 local-settings.json
 *.wav
 *.mp3
