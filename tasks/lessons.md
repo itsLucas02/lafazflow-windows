@@ -125,7 +125,7 @@
 - Rule: Add exact observed product-name variants to the offline vocabulary table with focused regression tests instead of waiting for model changes.
 
 ## Capture near-miss product spellings immediately
-- Pattern: Local ASR can get a technical term nearly right but transpose letters, such as `Supabase` becoming `Supabaes`; prompt bias alone does not guarantee the final spelling.
+- Pattern: Local ASR can get a technical term nearly right but transpose letters or add a familiar suffix, such as `Supabase` becoming `Supabaes` or `Supabease`; prompt bias alone does not guarantee the final spelling.
 - Rule: Add observed near-miss product spellings to offline vocabulary corrections with a failing regression first, especially for daily-use developer terms.
 
 ## Include new agent tooling names in both vocabulary and prompt

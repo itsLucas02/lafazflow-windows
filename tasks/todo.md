@@ -923,3 +923,16 @@
 - Focused benchmark/Whisper tests pass, 13 tests; full `dotnet test` passes, 351 tests; full `dotnet build` passes with 0 warnings.
 - Real smoke run passed with one existing recording and `fast-cpu-base-en`, producing local Markdown/CSV reports.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Supabase Supabease Hotfix
+- [x] Bump LafazFlow to `0.10.2`.
+- [x] Add a focused regression for `Supabease` to `Supabase`.
+- [x] Add the observed near-miss product spelling to offline vocabulary correction.
+- [x] Verify focused tests, full tests, build, publish/relaunch, and public safety scans.
+- [x] Commit and push the Windows repo changes.
+
+## Review: Supabase Supabease Hotfix
+- Added `Supabease` as an offline correction to `Supabase`.
+- Bumped LafazFlow to `0.10.2`.
+- Focused vocabulary regression passes; full `dotnet test` passes, 351 tests; full `dotnet build` passes with 0 warnings.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

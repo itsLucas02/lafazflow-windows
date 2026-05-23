@@ -10,6 +10,7 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("superbase"), "Supabase"),
         (PhraseRegex("superbiz"), "Supabase"),
         (PhraseRegex("supabaes"), "Supabase"),
+        (PhraseRegex("supabease"), "Supabase"),
         (PhraseRegex("vircell"), "Vercel"),
         (PhraseRegex("tail, skill"), "Tailscale"),
         (PhraseRegex("tail skill"), "Tailscale"),
