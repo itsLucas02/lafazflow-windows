@@ -1,4 +1,5 @@
 using LafazFlow.Windows.Services;
+using NAudio.Wave;
 
 namespace LafazFlow.Windows.Tests;
 
@@ -135,6 +136,20 @@ public sealed class SoundCueServiceTests
         Assert.True(File.Exists(Path.Combine(soundRoot, "recstop.mp3")));
         Assert.True(File.Exists(Path.Combine(soundRoot, "pastess.mp3")));
         Assert.True(File.Exists(Path.Combine(soundRoot, "esc.wav")));
+    }
+
+    [Theory]
+    [InlineData("recstart.mp3", 0.55)]
+    [InlineData("recstop.mp3", 0.55)]
+    public void StartAndStopCuesStayBriefForResponsiveFeedback(string fileName, double maxDurationSeconds)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds", fileName);
+
+        using var reader = new AudioFileReader(path);
+
+        Assert.True(
+            reader.TotalTime.TotalSeconds <= maxDurationSeconds,
+            $"{fileName} is {reader.TotalTime.TotalSeconds:0.000}s; expected <= {maxDurationSeconds:0.000}s.");
     }
 
     private sealed class RecordingSoundCuePlayer : ISoundCuePlayer

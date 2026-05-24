@@ -199,3 +199,7 @@
 ## Do not hide calibrated user audio behind extra gain cuts
 - Pattern: A user-facing volume slider is already the owner's calibrated loudness control; adding quiet per-cue multipliers made sound cues barely audible.
 - Rule: Keep cue playback at the configured volume unless there is a measured clipping or harshness problem, and verify volume math with regression tests before release.
+
+## Keep hotkey cue assets short
+- Pattern: Even when playback starts immediately, cue files with long trailing silence feel sluggish and make start/stop feedback seem delayed or missing.
+- Rule: Start and stop cue assets should stay under roughly half a second, with tests guarding decoded duration.

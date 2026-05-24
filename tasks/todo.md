@@ -1029,3 +1029,22 @@
 - Focused sound cue tests first failed against the v0.10.5 regression, then passed after the fix: 23 tests.
 - Full `dotnet test` passes, 373 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Responsive Sound Cue Asset Hotfix v0.10.7
+- [x] Measure bundled cue durations and loudness to identify why feedback feels slow.
+- [x] Add a regression test requiring start/stop cue assets to stay brief.
+- [x] Trim start/stop trailing silence while leaving completion/error assets unchanged.
+- [x] Modestly normalize the stop cue so it is audible without changing Settings volume math.
+- [x] Bump LafazFlow to `0.10.7`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of faster start/stop cue feel.
+
+## Review: Responsive Sound Cue Asset Hotfix v0.10.7
+- Root cause: start/stop cue assets decoded at about `1.296s`; most of that was trailing silence, so hotkey feedback felt slow even when playback started.
+- Trimmed `recstart.mp3` to about `0.474s`.
+- Trimmed `recstop.mp3` to about `0.480s` and modestly normalized it from roughly `-9.9 dB` peak to roughly `-5.7 dB` peak so the stop cue is audible again.
+- Left completion/error cue files unchanged.
+- Added a regression test requiring start/stop cues to stay under `0.55s`.
+- Bumped LafazFlow to `0.10.7`.
+- Focused sound cue tests pass, 23 tests; full `dotnet test` passes, 375 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
