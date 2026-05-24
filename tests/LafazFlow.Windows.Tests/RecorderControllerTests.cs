@@ -238,7 +238,7 @@ public sealed class RecorderControllerTests
 
         Assert.Equal(RecordingState.Transcribing, stateDuringStop);
         Assert.True(showProcessingDuringStop);
-        Assert.EndsWith("recstop.mp3", playedPathsDuringStop.Last());
+        Assert.EndsWith("recstop.wav", playedPathsDuringStop.Last());
         Assert.False(stopCompletedDuringStop);
     }
 
@@ -625,8 +625,8 @@ public sealed class RecorderControllerTests
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1]);
-        File.WriteAllBytes(Path.Combine(root, "recstop.mp3"), [1]);
+        File.WriteAllBytes(Path.Combine(root, "recstart.wav"), [1]);
+        File.WriteAllBytes(Path.Combine(root, "recstop.wav"), [1]);
         File.WriteAllBytes(Path.Combine(root, "pastess.mp3"), [1]);
         File.WriteAllBytes(Path.Combine(root, "esc.wav"), [1]);
         return new SoundCueService(root, player);

@@ -1048,3 +1048,24 @@
 - Bumped LafazFlow to `0.10.7`.
 - Focused sound cue tests pass, 23 tests; full `dotnet test` passes, 375 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Smooth Sound Cue Playback Hotfix v0.10.8
+- [x] Audit start/stop cue files for clipping, duration, silence, format, and loudness.
+- [x] Rebuild start/stop cues from the original source assets instead of reusing tightly cut MP3s.
+- [x] Convert start/stop cues to short PCM WAV files with small fades to avoid MP3 edge artifacts.
+- [x] Update app cue mapping and copied content files from `recstart.mp3`/`recstop.mp3` to `recstart.wav`/`recstop.wav`.
+- [x] Add regression tests proving start/stop cues are short PCM WAV files.
+- [x] Bump LafazFlow to `0.10.8`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of crackle-free start/stop cues.
+
+## Review: Smooth Sound Cue Playback Hotfix v0.10.8
+- Root cause: the v0.10.7 start/stop cues were tightly trimmed MP3 files. They did not clip, but short MP3 cue boundaries can crackle or break up during NAudio playback.
+- Rebuilt start/stop cues from the original longer source assets, not from the v0.10.7 cut files.
+- Converted start/stop cues to PCM WAV with small fade-in/fade-out edges: `recstart.wav` is about `0.474s`; `recstop.wav` is about `0.511s`.
+- Updated app cue mapping and content copy rules to use `recstart.wav` and `recstop.wav`.
+- Removed the short MP3 start/stop cue files from the repo to avoid accidental packaging.
+- Added regression tests proving start/stop cues stay brief and use 16-bit PCM WAV.
+- Bumped LafazFlow to `0.10.8`.
+- Focused sound/recorder tests pass, 28 tests; full `dotnet test` passes, 377 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

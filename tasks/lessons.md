@@ -203,3 +203,7 @@
 ## Keep hotkey cue assets short
 - Pattern: Even when playback starts immediately, cue files with long trailing silence feel sluggish and make start/stop feedback seem delayed or missing.
 - Rule: Start and stop cue assets should stay under roughly half a second, with tests guarding decoded duration.
+
+## Avoid MP3 for tiny UI cues
+- Pattern: Tightly trimmed MP3 cues can crackle or break up at playback boundaries even when they do not clip.
+- Rule: Use short PCM WAV assets with small fades for hotkey/start/stop cues, and test that those cue files remain PCM WAV.

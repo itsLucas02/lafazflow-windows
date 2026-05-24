@@ -97,8 +97,8 @@ public sealed class SoundCueService
     {
         return kind switch
         {
-            SoundCueKind.RecordingStarted => "recstart.mp3",
-            SoundCueKind.TranscribingStarted => "recstop.mp3",
+            SoundCueKind.RecordingStarted => "recstart.wav",
+            SoundCueKind.TranscribingStarted => "recstop.wav",
             SoundCueKind.Completed => "pastess.mp3",
             SoundCueKind.Error => "esc.wav",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")

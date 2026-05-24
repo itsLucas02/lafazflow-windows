@@ -6,8 +6,8 @@ namespace LafazFlow.Windows.Tests;
 public sealed class SoundCueServiceTests
 {
     [Theory]
-    [InlineData(SoundCueKind.RecordingStarted, "recstart.mp3")]
-    [InlineData(SoundCueKind.TranscribingStarted, "recstop.mp3")]
+    [InlineData(SoundCueKind.RecordingStarted, "recstart.wav")]
+    [InlineData(SoundCueKind.TranscribingStarted, "recstop.wav")]
     [InlineData(SoundCueKind.Completed, "pastess.mp3")]
     [InlineData(SoundCueKind.Error, "esc.wav")]
     public void GetFileNameMapsCueKindsToBundledAssets(SoundCueKind kind, string expectedFileName)
@@ -20,7 +20,7 @@ public sealed class SoundCueServiceTests
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        var assetPath = Path.Combine(root, "recstart.mp3");
+        var assetPath = Path.Combine(root, "recstart.wav");
         File.WriteAllBytes(assetPath, [1, 2, 3]);
         var player = new RecordingSoundCuePlayer();
         var service = new SoundCueService(root, player);
@@ -78,7 +78,7 @@ public sealed class SoundCueServiceTests
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1, 2, 3]);
+        File.WriteAllBytes(Path.Combine(root, "recstart.wav"), [1, 2, 3]);
         var player = new RecordingSoundCuePlayer();
         var service = new SoundCueService(root, player);
 
@@ -94,7 +94,7 @@ public sealed class SoundCueServiceTests
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        File.WriteAllBytes(Path.Combine(root, "recstart.mp3"), [1, 2, 3]);
+        File.WriteAllBytes(Path.Combine(root, "recstart.wav"), [1, 2, 3]);
         var player = new RecordingSoundCuePlayer();
         var service = new SoundCueService(root, player);
 
@@ -132,15 +132,15 @@ public sealed class SoundCueServiceTests
     {
         var soundRoot = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds");
 
-        Assert.True(File.Exists(Path.Combine(soundRoot, "recstart.mp3")));
-        Assert.True(File.Exists(Path.Combine(soundRoot, "recstop.mp3")));
+        Assert.True(File.Exists(Path.Combine(soundRoot, "recstart.wav")));
+        Assert.True(File.Exists(Path.Combine(soundRoot, "recstop.wav")));
         Assert.True(File.Exists(Path.Combine(soundRoot, "pastess.mp3")));
         Assert.True(File.Exists(Path.Combine(soundRoot, "esc.wav")));
     }
 
     [Theory]
-    [InlineData("recstart.mp3", 0.55)]
-    [InlineData("recstop.mp3", 0.55)]
+    [InlineData("recstart.wav", 0.55)]
+    [InlineData("recstop.wav", 0.55)]
     public void StartAndStopCuesStayBriefForResponsiveFeedback(string fileName, double maxDurationSeconds)
     {
         var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds", fileName);
@@ -150,6 +150,19 @@ public sealed class SoundCueServiceTests
         Assert.True(
             reader.TotalTime.TotalSeconds <= maxDurationSeconds,
             $"{fileName} is {reader.TotalTime.TotalSeconds:0.000}s; expected <= {maxDurationSeconds:0.000}s.");
+    }
+
+    [Theory]
+    [InlineData("recstart.wav")]
+    [InlineData("recstop.wav")]
+    public void StartAndStopCuesUsePcmWavToAvoidShortMp3EdgeArtifacts(string fileName)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds", fileName);
+
+        using var reader = new WaveFileReader(path);
+
+        Assert.Equal(WaveFormatEncoding.Pcm, reader.WaveFormat.Encoding);
+        Assert.Equal(16, reader.WaveFormat.BitsPerSample);
     }
 
     private sealed class RecordingSoundCuePlayer : ISoundCuePlayer
