@@ -1090,3 +1090,20 @@
 - Bumped LafazFlow to `0.10.9`.
 - Focused sound/logging tests pass, 30 tests; full `dotnet test` passes, 381 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Completion Cue Loudness Tuning v0.10.10
+- [x] Keep start, stop/processing, and error cue gains unchanged.
+- [x] Boost only the completed cue so fade-out success feedback is easier to hear.
+- [x] Clamp final playback volume at `1.0` to avoid clipping through the mixer.
+- [x] Bump LafazFlow to `0.10.10`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of completed cue loudness.
+
+## Review: Completion Cue Loudness Tuning v0.10.10
+- Boosted only the completed cue gain to `1.45`.
+- Kept start, stop/processing, and error cue gains at `1.0`.
+- Final playback volume remains clamped at `1.0`, so high Settings volume cannot exceed mixer max.
+- Bumped LafazFlow to `0.10.10`.
+- Hardened latency diagnostics log reading to tolerate shared log access while the app is running.
+- Focused sound/diagnostics tests pass, 32 tests; full `dotnet test` passes, 382 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

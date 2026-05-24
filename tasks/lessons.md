@@ -211,3 +211,7 @@
 ## Keep UI audio on a persistent output path
 - Pattern: Opening a new audio output device for each short cue can crackle or break up during recording and transcription handoff.
 - Rule: Decode cues once, cache them, and play through a persistent mixer/output device so start/stop feedback is not competing with device initialization.
+
+## Tune one sound cue at a time
+- Pattern: Global cue loudness changes can regress cues that already feel right while leaving a specific cue too quiet.
+- Rule: When the owner reports one cue is too subtle, adjust only that cue gain and keep the other cue gains covered by tests.

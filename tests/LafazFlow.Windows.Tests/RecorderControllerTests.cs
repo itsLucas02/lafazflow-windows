@@ -291,7 +291,7 @@ public sealed class RecorderControllerTests
             soundPlayer.Volumes,
             volume => Assert.Equal(0.8f, volume, precision: 6),
             volume => Assert.Equal(0.8f, volume, precision: 6),
-            volume => Assert.Equal(0.8f, volume, precision: 6));
+            volume => Assert.Equal(1.0f, volume, precision: 6));
     }
 
     [Fact]
@@ -568,7 +568,8 @@ public sealed class RecorderControllerTests
                 CustomCorrectionRules = "superbiz => Supabase"
             }),
             new SoundCueService(),
-            () => (IntPtr)111);
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""));
 
         controller.StartRecording();
         await controller.ToggleAsync();

@@ -112,7 +112,7 @@ public sealed class SoundCueService
         {
             SoundCueKind.RecordingStarted => 1.0f,
             SoundCueKind.TranscribingStarted => 1.0f,
-            SoundCueKind.Completed => 1.0f,
+            SoundCueKind.Completed => 1.45f,
             SoundCueKind.Error => 1.0f,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")
         };

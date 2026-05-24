@@ -44,15 +44,15 @@ public sealed class SoundCueServiceTests
         service.PlayCompleted(new SoundCueOptions(true, 0.75f));
 
         Assert.Equal(assetPath, player.PlayedPath);
-        Assert.Equal(0.75f, player.Volume);
+        Assert.Equal(1.0f, player.Volume);
     }
 
     [Theory]
     [InlineData(SoundCueKind.RecordingStarted, 1.0f)]
     [InlineData(SoundCueKind.TranscribingStarted, 1.0f)]
-    [InlineData(SoundCueKind.Completed, 1.0f)]
+    [InlineData(SoundCueKind.Completed, 1.45f)]
     [InlineData(SoundCueKind.Error, 1.0f)]
-    public void GetCueGainKeepsSettingsVolumeAudible(SoundCueKind kind, float expectedGain)
+    public void GetCueGainKeepsStartStopNeutralAndBoostsCompletion(SoundCueKind kind, float expectedGain)
     {
         Assert.Equal(expectedGain, SoundCueService.GetCueGain(kind));
     }
@@ -60,8 +60,9 @@ public sealed class SoundCueServiceTests
     [Theory]
     [InlineData(SoundCueKind.RecordingStarted, 0.5f, 0.5f)]
     [InlineData(SoundCueKind.TranscribingStarted, 0.5f, 0.5f)]
-    [InlineData(SoundCueKind.Completed, 0.5f, 0.5f)]
+    [InlineData(SoundCueKind.Completed, 0.5f, 0.725f)]
     [InlineData(SoundCueKind.Error, 0.5f, 0.5f)]
+    [InlineData(SoundCueKind.Completed, 0.8f, 1.0f)]
     [InlineData(SoundCueKind.TranscribingStarted, 2.0f, 1.0f)]
     public void ResolvePlaybackVolumeAppliesGlobalVolumeAndCueGain(
         SoundCueKind kind,

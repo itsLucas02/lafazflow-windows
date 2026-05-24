@@ -26,7 +26,7 @@ public sealed partial class LatencyDiagnosticLogStore
             return [];
         }
 
-        return File.ReadLines(_logPath)
+        return ReadAllLinesShared(_logPath)
             .Select(ParseLine)
             .Where(row => row is not null)
             .Cast<LatencyDiagnosticRow>()
@@ -42,13 +42,33 @@ public sealed partial class LatencyDiagnosticLogStore
             return 0;
         }
 
-        var lines = File.ReadAllLines(_logPath);
+        var lines = ReadAllLinesShared(_logPath);
         var retained = lines
             .Where(line => !IsLatencyLine(line))
             .ToArray();
         File.WriteAllLines(_logPath, retained);
 
         return lines.Length - retained.Length;
+    }
+
+    private static string[] ReadAllLinesShared(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            var lines = new List<string>();
+            while (reader.ReadLine() is { } line)
+            {
+                lines.Add(line);
+            }
+
+            return lines.ToArray();
+        }
+        catch (IOException)
+        {
+            return [];
+        }
     }
 
     public static LatencyDiagnosticRow? ParseLine(string line)
