@@ -165,6 +165,22 @@ public sealed class SoundCueServiceTests
         Assert.Equal(16, reader.WaveFormat.BitsPerSample);
     }
 
+    [Theory]
+    [InlineData("recstart.wav")]
+    [InlineData("recstop.wav")]
+    [InlineData("pastess.mp3")]
+    [InlineData("esc.wav")]
+    public void BundledCuesDecodeToPersistentMixerFormat(string fileName)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds", fileName);
+
+        using var reader = new AudioFileReader(path);
+
+        Assert.Equal(WaveFormatEncoding.IeeeFloat, reader.WaveFormat.Encoding);
+        Assert.Equal(44100, reader.WaveFormat.SampleRate);
+        Assert.Equal(2, reader.WaveFormat.Channels);
+    }
+
     private sealed class RecordingSoundCuePlayer : ISoundCuePlayer
     {
         public string? PlayedPath { get; private set; }

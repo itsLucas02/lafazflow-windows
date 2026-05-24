@@ -207,3 +207,7 @@
 ## Avoid MP3 for tiny UI cues
 - Pattern: Tightly trimmed MP3 cues can crackle or break up at playback boundaries even when they do not clip.
 - Rule: Use short PCM WAV assets with small fades for hotkey/start/stop cues, and test that those cue files remain PCM WAV.
+
+## Keep UI audio on a persistent output path
+- Pattern: Opening a new audio output device for each short cue can crackle or break up during recording and transcription handoff.
+- Rule: Decode cues once, cache them, and play through a persistent mixer/output device so start/stop feedback is not competing with device initialization.

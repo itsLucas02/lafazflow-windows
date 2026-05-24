@@ -1,6 +1,7 @@
 using System.IO;
 using LafazFlow.Windows.Core;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace LafazFlow.Windows.Services;
 
@@ -125,35 +126,112 @@ public sealed class SoundCueService
     private sealed class NAudioSoundCuePlayer : ISoundCuePlayer
     {
         private readonly object _syncRoot = new();
-        private readonly List<(WaveOutEvent Output, AudioFileReader Reader)> _activePlayers = [];
+        private readonly Dictionary<string, CachedSound> _cache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly WaveOutEvent _output;
+        private readonly MixingSampleProvider _mixer;
+
+        public NAudioSoundCuePlayer()
+        {
+            _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
+            {
+                ReadFully = true
+            };
+            _output = new WaveOutEvent
+            {
+                DesiredLatency = 120,
+                NumberOfBuffers = 3
+            };
+            _output.Init(_mixer);
+            _output.Play();
+        }
 
         public void Play(string path, float volume)
         {
-            var reader = new AudioFileReader(path)
-            {
-                Volume = volume
-            };
-            var output = new WaveOutEvent();
-            output.Init(reader);
-            output.PlaybackStopped += (_, _) => DisposePlayer(output, reader);
-
             lock (_syncRoot)
             {
-                _activePlayers.Add((output, reader));
-            }
+                var sound = GetOrLoad(path);
+                _mixer.AddMixerInput(new CachedSoundSampleProvider(sound, volume));
 
-            output.Play();
+                if (_output.PlaybackState != PlaybackState.Playing)
+                {
+                    _output.Play();
+                }
+            }
         }
 
-        private void DisposePlayer(WaveOutEvent output, AudioFileReader reader)
+        private CachedSound GetOrLoad(string path)
         {
-            lock (_syncRoot)
+            if (_cache.TryGetValue(path, out var cachedSound))
             {
-                _activePlayers.RemoveAll(player => ReferenceEquals(player.Output, output));
+                return cachedSound;
             }
 
-            output.Dispose();
-            reader.Dispose();
+            var sound = new CachedSound(path, _mixer.WaveFormat);
+            _cache[path] = sound;
+            return sound;
+        }
+    }
+
+    private sealed class CachedSound
+    {
+        public CachedSound(string path, WaveFormat expectedWaveFormat)
+        {
+            using var reader = new AudioFileReader(path);
+            if (!WaveFormatMatches(reader.WaveFormat, expectedWaveFormat))
+            {
+                throw new InvalidOperationException(
+                    $"Sound cue '{Path.GetFileName(path)}' must be {expectedWaveFormat.SampleRate} Hz stereo float audio.");
+            }
+
+            var wholeFile = new List<float>((int)(reader.Length / 4));
+            var readBuffer = new float[reader.WaveFormat.SampleRate * reader.WaveFormat.Channels];
+            int samplesRead;
+            while ((samplesRead = reader.Read(readBuffer, 0, readBuffer.Length)) > 0)
+            {
+                wholeFile.AddRange(readBuffer.Take(samplesRead));
+            }
+
+            AudioData = wholeFile.ToArray();
+            WaveFormat = reader.WaveFormat;
+        }
+
+        public float[] AudioData { get; }
+
+        public WaveFormat WaveFormat { get; }
+
+        private static bool WaveFormatMatches(WaveFormat actual, WaveFormat expected)
+        {
+            return actual.SampleRate == expected.SampleRate
+                && actual.Channels == expected.Channels
+                && actual.Encoding == expected.Encoding;
+        }
+    }
+
+    private sealed class CachedSoundSampleProvider : ISampleProvider
+    {
+        private readonly CachedSound _sound;
+        private readonly float _volume;
+        private long _position;
+
+        public CachedSoundSampleProvider(CachedSound sound, float volume)
+        {
+            _sound = sound;
+            _volume = volume;
+        }
+
+        public WaveFormat WaveFormat => _sound.WaveFormat;
+
+        public int Read(float[] buffer, int offset, int count)
+        {
+            var availableSamples = _sound.AudioData.Length - _position;
+            var samplesToCopy = Math.Min(availableSamples, count);
+            for (var index = 0; index < samplesToCopy; index++)
+            {
+                buffer[offset + index] = _sound.AudioData[_position + index] * _volume;
+            }
+
+            _position += samplesToCopy;
+            return (int)samplesToCopy;
         }
     }
 }

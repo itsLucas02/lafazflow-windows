@@ -1069,3 +1069,24 @@
 - Bumped LafazFlow to `0.10.8`.
 - Focused sound/recorder tests pass, 28 tests; full `dotnet test` passes, 377 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Persistent Sound Cue Mixer Hotfix v0.10.9
+- [x] Audit why crackling remains after switching start/stop assets to WAV.
+- [x] Replace per-cue `WaveOutEvent` creation with one persistent output device.
+- [x] Cache decoded cue samples instead of opening/decoding the file on every play.
+- [x] Mix overlapping cues through one `MixingSampleProvider`.
+- [x] Add tests proving all bundled cues decode to the persistent mixer format.
+- [x] Bump LafazFlow to `0.10.9`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of crackle-free processing cue playback.
+
+## Review: Persistent Sound Cue Mixer Hotfix v0.10.9
+- Root cause: crackling persisted after the WAV asset fix, especially during stop/processing, because playback still created and initialized a new `WaveOutEvent` output device for each cue.
+- Replaced per-cue output-device creation with one persistent `WaveOutEvent` and `MixingSampleProvider`.
+- Cached decoded cue samples on first play so hotkey feedback does not open/decode files during the stop/transcription handoff.
+- Mixed overlapping cues through the persistent mixer instead of opening competing output devices.
+- Added tests proving all bundled cues decode to the persistent mixer format.
+- Also hardened `RecorderController` error logging so a locked log file cannot break dictation flow.
+- Bumped LafazFlow to `0.10.9`.
+- Focused sound/logging tests pass, 30 tests; full `dotnet test` passes, 381 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

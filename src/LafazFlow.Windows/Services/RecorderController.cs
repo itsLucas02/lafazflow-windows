@@ -379,9 +379,19 @@ public sealed class RecorderController
             "LafazFlow",
             "Logs");
         Directory.CreateDirectory(logRoot);
-        File.AppendAllText(
-            Path.Combine(logRoot, "lafazflow.log"),
-            $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
+        try
+        {
+            using var stream = new FileStream(
+                Path.Combine(logRoot, "lafazflow.log"),
+                FileMode.Append,
+                FileAccess.Write,
+                FileShare.ReadWrite);
+            using var writer = new StreamWriter(stream);
+            writer.WriteLine($"[{DateTimeOffset.Now:O}] {message}");
+        }
+        catch
+        {
+        }
     }
 
     [DllImport("user32.dll")]
