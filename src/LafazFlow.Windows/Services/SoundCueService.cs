@@ -81,7 +81,7 @@ public sealed class SoundCueService
 
         try
         {
-            _player.Play(path, Math.Clamp(resolvedOptions.Volume, 0, 1));
+            _player.Play(path, ResolvePlaybackVolume(kind, resolvedOptions));
         }
         catch
         {
@@ -103,6 +103,23 @@ public sealed class SoundCueService
             SoundCueKind.Error => "esc.wav",
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")
         };
+    }
+
+    public static float GetCueGain(SoundCueKind kind)
+    {
+        return kind switch
+        {
+            SoundCueKind.RecordingStarted => 0.8f,
+            SoundCueKind.TranscribingStarted => 1.0f,
+            SoundCueKind.Completed => 0.8f,
+            SoundCueKind.Error => 0.55f,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")
+        };
+    }
+
+    public static float ResolvePlaybackVolume(SoundCueKind kind, SoundCueOptions options)
+    {
+        return (float)Math.Clamp(options.Volume * GetCueGain(kind), 0, 1);
     }
 
     private sealed class NAudioSoundCuePlayer : ISoundCuePlayer

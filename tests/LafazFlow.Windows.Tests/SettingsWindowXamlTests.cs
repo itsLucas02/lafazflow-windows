@@ -35,12 +35,28 @@ public sealed class SettingsWindowXamlTests
     {
         var repoRoot = FindRepoRoot();
         var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml.cs");
         var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
 
         Assert.Contains("Content=\"Play sound cues\"", xaml);
         Assert.Contains("IsChecked=\"{Binding EnableSoundCues}\"", xaml);
         Assert.Contains("Text=\"Sound Cue Volume (%)\"", xaml);
         Assert.Contains("Value=\"{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("Content=\"Test Start\"", xaml);
+        Assert.Contains("Content=\"Test Stop\"", xaml);
+        Assert.Contains("Content=\"Test Done\"", xaml);
+        Assert.Contains("Content=\"Test Error\"", xaml);
+        Assert.Contains("Click=\"TestStartSoundCue_OnClick\"", xaml);
+        Assert.Contains("Click=\"TestStopSoundCue_OnClick\"", xaml);
+        Assert.Contains("Click=\"TestDoneSoundCue_OnClick\"", xaml);
+        Assert.Contains("Click=\"TestErrorSoundCue_OnClick\"", xaml);
+        Assert.Contains("_soundCues.PlayRecordingStarted(BuildEditedSoundCueOptions())", codeBehind);
+        Assert.Contains("_soundCues.PlayTranscribingStarted(BuildEditedSoundCueOptions())", codeBehind);
+        Assert.Contains("_soundCues.PlayCompleted(BuildEditedSoundCueOptions())", codeBehind);
+        Assert.Contains("_soundCues.PlayError(BuildEditedSoundCueOptions())", codeBehind);
+        Assert.Contains("_viewModel.EnableSoundCues", codeBehind);
+        Assert.Contains("_viewModel.SoundCueVolumePercent / 100.0", codeBehind);
     }
 
     [Fact]

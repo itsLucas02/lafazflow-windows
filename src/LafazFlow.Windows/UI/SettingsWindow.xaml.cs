@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using LafazFlow.Windows.Services;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace LafazFlow.Windows.UI;
@@ -8,11 +9,18 @@ namespace LafazFlow.Windows.UI;
 public partial class SettingsWindow : Window
 {
     private readonly SettingsViewModel _viewModel;
+    private readonly SoundCueService _soundCues;
 
     public SettingsWindow(SettingsViewModel viewModel)
+        : this(viewModel, new SoundCueService())
+    {
+    }
+
+    public SettingsWindow(SettingsViewModel viewModel, SoundCueService soundCues)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _soundCues = soundCues;
         DataContext = viewModel;
     }
 
@@ -125,6 +133,26 @@ public partial class SettingsWindow : Window
         _viewModel.ClearLatencyDiagnostics();
     }
 
+    private void TestStartSoundCue_OnClick(object sender, RoutedEventArgs e)
+    {
+        _soundCues.PlayRecordingStarted(BuildEditedSoundCueOptions());
+    }
+
+    private void TestStopSoundCue_OnClick(object sender, RoutedEventArgs e)
+    {
+        _soundCues.PlayTranscribingStarted(BuildEditedSoundCueOptions());
+    }
+
+    private void TestDoneSoundCue_OnClick(object sender, RoutedEventArgs e)
+    {
+        _soundCues.PlayCompleted(BuildEditedSoundCueOptions());
+    }
+
+    private void TestErrorSoundCue_OnClick(object sender, RoutedEventArgs e)
+    {
+        _soundCues.PlayError(BuildEditedSoundCueOptions());
+    }
+
     private void Cancel_OnClick(object sender, RoutedEventArgs e)
     {
         Close();
@@ -137,6 +165,13 @@ public partial class SettingsWindow : Window
         {
             Close();
         }
+    }
+
+    private SoundCueOptions BuildEditedSoundCueOptions()
+    {
+        return new SoundCueOptions(
+            _viewModel.EnableSoundCues,
+            (float)Math.Clamp(_viewModel.SoundCueVolumePercent / 100.0, 0, 1));
     }
 
     private static void OpenFolder(string path)

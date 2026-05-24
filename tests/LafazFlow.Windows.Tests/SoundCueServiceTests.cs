@@ -27,7 +27,7 @@ public sealed class SoundCueServiceTests
         service.PlayRecordingStarted();
 
         Assert.Equal(assetPath, player.PlayedPath);
-        Assert.Equal(0.5f, player.Volume);
+        Assert.Equal(0.4f, player.Volume);
     }
 
     [Fact]
@@ -43,7 +43,33 @@ public sealed class SoundCueServiceTests
         service.PlayCompleted(new SoundCueOptions(true, 0.75f));
 
         Assert.Equal(assetPath, player.PlayedPath);
-        Assert.Equal(0.75f, player.Volume);
+        Assert.Equal(0.6f, player.Volume);
+    }
+
+    [Theory]
+    [InlineData(SoundCueKind.RecordingStarted, 0.8f)]
+    [InlineData(SoundCueKind.TranscribingStarted, 1.0f)]
+    [InlineData(SoundCueKind.Completed, 0.8f)]
+    [InlineData(SoundCueKind.Error, 0.55f)]
+    public void GetCueGainReturnsGentlePerCueMultipliers(SoundCueKind kind, float expectedGain)
+    {
+        Assert.Equal(expectedGain, SoundCueService.GetCueGain(kind));
+    }
+
+    [Theory]
+    [InlineData(SoundCueKind.RecordingStarted, 0.5f, 0.4f)]
+    [InlineData(SoundCueKind.TranscribingStarted, 0.5f, 0.5f)]
+    [InlineData(SoundCueKind.Completed, 0.5f, 0.4f)]
+    [InlineData(SoundCueKind.Error, 0.5f, 0.275f)]
+    [InlineData(SoundCueKind.TranscribingStarted, 2.0f, 1.0f)]
+    public void ResolvePlaybackVolumeAppliesGlobalVolumeAndCueGain(
+        SoundCueKind kind,
+        float inputVolume,
+        float expectedVolume)
+    {
+        var volume = SoundCueService.ResolvePlaybackVolume(kind, new SoundCueOptions(true, inputVolume));
+
+        Assert.Equal(expectedVolume, volume, precision: 6);
     }
 
     [Fact]

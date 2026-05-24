@@ -206,6 +206,24 @@
                         IsSnapToTickEnabled="False"
                         Value="{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}"
                         Margin="0,4,8,10" />
+                <WrapPanel Margin="0,0,0,8">
+                    <Button Content="Test Start"
+                            Width="92"
+                            Margin="0,0,8,10"
+                            Click="TestStartSoundCue_OnClick" />
+                    <Button Content="Test Stop"
+                            Width="88"
+                            Margin="0,0,8,10"
+                            Click="TestStopSoundCue_OnClick" />
+                    <Button Content="Test Done"
+                            Width="92"
+                            Margin="0,0,8,10"
+                            Click="TestDoneSoundCue_OnClick" />
+                    <Button Content="Test Error"
+                            Width="92"
+                            Margin="0,0,0,10"
+                            Click="TestErrorSoundCue_OnClick" />
+                </WrapPanel>
                 <CheckBox Content="Use local VAD in quality mode"
                           IsChecked="{Binding EnableVad}" />
                 <TextBlock Text="VAD Model" FontWeight="SemiBold" />

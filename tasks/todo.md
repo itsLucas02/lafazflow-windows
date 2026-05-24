@@ -990,3 +990,25 @@
 - Focused recorder/version tests pass, 48 tests; full `dotnet test` passes, 364 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.4.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Sound Cue Polish v0.10.5
+- [x] Keep existing bundled sound files unchanged.
+- [x] Add per-cue gain multipliers in `SoundCueService`.
+- [x] Keep Settings volume as the master volume and clamp final playback volume.
+- [x] Add four Settings test buttons: Test Start, Test Stop, Test Done, and Test Error.
+- [x] Make test buttons use current edited sound settings, including unsaved enablement and volume.
+- [x] Bump LafazFlow to `0.10.5`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of the four Settings cue test buttons.
+
+## Review: Sound Cue Polish v0.10.5
+- Kept the existing bundled sound files unchanged.
+- Added per-cue gain multipliers: start `0.8`, stop/transcribing `1.0`, done `0.8`, error `0.55`.
+- Final playback volume now uses `master volume * cue gain`, clamped from `0.0` to `1.0`.
+- Added four Settings cue test buttons: Test Start, Test Stop, Test Done, and Test Error.
+- Test buttons use the currently edited Settings values, including unsaved sound enablement and volume.
+- Bumped LafazFlow to `0.10.5`.
+- Focused sound/settings/controller tests pass, 48 tests; full `dotnet test` passes, 373 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.5.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+- Manual listening review is left to the owner because automated verification can prove wiring and volume policy, but not whether the cue feels pleasant through the actual speaker/headphone setup.
