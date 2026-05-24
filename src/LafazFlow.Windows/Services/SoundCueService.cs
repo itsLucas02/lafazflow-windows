@@ -109,10 +109,10 @@ public sealed class SoundCueService
     {
         return kind switch
         {
-            SoundCueKind.RecordingStarted => 0.8f,
+            SoundCueKind.RecordingStarted => 1.0f,
             SoundCueKind.TranscribingStarted => 1.0f,
-            SoundCueKind.Completed => 0.8f,
-            SoundCueKind.Error => 0.55f,
+            SoundCueKind.Completed => 1.0f,
+            SoundCueKind.Error => 1.0f,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")
         };
     }

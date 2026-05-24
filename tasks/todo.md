@@ -1012,3 +1012,20 @@
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.5.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
 - Manual listening review is left to the owner because automated verification can prove wiring and volume policy, but not whether the cue feels pleasant through the actual speaker/headphone setup.
+
+## Plan: Sound Cue Audibility Hotfix v0.10.6
+- [x] Reproduce the volume regression with focused sound cue tests.
+- [x] Restore cue playback so Settings volume maps directly to actual playback volume.
+- [x] Keep the Settings cue test buttons from v0.10.5.
+- [x] Bump LafazFlow to `0.10.6`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of restored cue loudness.
+
+## Review: Sound Cue Audibility Hotfix v0.10.6
+- Root cause: v0.10.5 added per-cue gain multipliers on top of the user's calibrated Settings volume, dropping default start/done cues to `0.4` and error cues to `0.275`.
+- Restored playback gain to `1.0` for all cue kinds so Settings volume maps directly to actual playback volume again.
+- Kept the four Settings test buttons from v0.10.5.
+- Bumped LafazFlow to `0.10.6`.
+- Focused sound cue tests first failed against the v0.10.5 regression, then passed after the fix: 23 tests.
+- Full `dotnet test` passes, 373 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

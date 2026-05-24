@@ -289,9 +289,9 @@ public sealed class RecorderControllerTests
 
         Assert.Collection(
             soundPlayer.Volumes,
-            volume => Assert.Equal(0.64f, volume, precision: 6),
             volume => Assert.Equal(0.8f, volume, precision: 6),
-            volume => Assert.Equal(0.64f, volume, precision: 6));
+            volume => Assert.Equal(0.8f, volume, precision: 6),
+            volume => Assert.Equal(0.8f, volume, precision: 6));
     }
 
     [Fact]

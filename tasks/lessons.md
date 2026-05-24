@@ -195,3 +195,7 @@
 ## Keep payment-provider homophones context-bound
 - Pattern: ASR can hear `Stripe` as `strike` or lowercase `stripe`, but both are valid English words outside payment/developer contexts.
 - Rule: Repair `strike`/`stripe` to `Stripe` only near payment, checkout, billing, webhook, integration, or explicit app-action words, with negative tests for normal usage.
+
+## Do not hide calibrated user audio behind extra gain cuts
+- Pattern: A user-facing volume slider is already the owner's calibrated loudness control; adding quiet per-cue multipliers made sound cues barely audible.
+- Rule: Keep cue playback at the configured volume unless there is a measured clipping or harshness problem, and verify volume math with regression tests before release.
