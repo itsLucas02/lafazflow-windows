@@ -41,8 +41,16 @@ public sealed class SettingsWindowXamlTests
 
         Assert.Contains("Content=\"Play sound cues\"", xaml);
         Assert.Contains("IsChecked=\"{Binding EnableSoundCues}\"", xaml);
-        Assert.Contains("Text=\"Sound Cue Volume (%)\"", xaml);
+        Assert.Contains("Text=\"Master Volume (%)\"", xaml);
         Assert.Contains("Value=\"{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("Text=\"Start\"", xaml);
+        Assert.Contains("Text=\"Stop\"", xaml);
+        Assert.Contains("Text=\"Done\"", xaml);
+        Assert.Contains("Text=\"Error\"", xaml);
+        Assert.Contains("Value=\"{Binding SoundCueRecordingStartedVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("Value=\"{Binding SoundCueTranscribingStartedVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("Value=\"{Binding SoundCueCompletedVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
+        Assert.Contains("Value=\"{Binding SoundCueErrorVolumePercent, UpdateSourceTrigger=PropertyChanged}\"", xaml);
         Assert.Contains("Content=\"Test Start\"", xaml);
         Assert.Contains("Content=\"Test Stop\"", xaml);
         Assert.Contains("Content=\"Test Done\"", xaml);
@@ -57,6 +65,10 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("_soundCues.PlayError(BuildEditedSoundCueOptions())", codeBehind);
         Assert.Contains("_viewModel.EnableSoundCues", codeBehind);
         Assert.Contains("_viewModel.SoundCueVolumePercent / 100.0", codeBehind);
+        Assert.Contains("_viewModel.SoundCueRecordingStartedVolumePercent / 100.0", codeBehind);
+        Assert.Contains("_viewModel.SoundCueTranscribingStartedVolumePercent / 100.0", codeBehind);
+        Assert.Contains("_viewModel.SoundCueCompletedVolumePercent / 100.0", codeBehind);
+        Assert.Contains("_viewModel.SoundCueErrorVolumePercent / 100.0", codeBehind);
     }
 
     [Fact]

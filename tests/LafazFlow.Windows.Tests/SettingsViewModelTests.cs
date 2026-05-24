@@ -30,6 +30,10 @@ public sealed class SettingsViewModelTests
             VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
             EnableSoundCues = false,
             SoundCueVolume = 0.65,
+            SoundCueRecordingStartedVolume = 0.8,
+            SoundCueTranscribingStartedVolume = 0.9,
+            SoundCueCompletedVolume = 1.7,
+            SoundCueErrorVolume = 0.6,
             CustomVocabularyTerms = "PDPA\r\nCare Visit",
             CustomCorrectionRules = "superbiz => Supabase\r\nsteel document => stale document"
         });
@@ -53,6 +57,10 @@ public sealed class SettingsViewModelTests
         Assert.Equal(@"C:\Models\whisper\ggml-silero-v5.1.2.bin", viewModel.VadModelPath);
         Assert.False(viewModel.EnableSoundCues);
         Assert.Equal(65, viewModel.SoundCueVolumePercent);
+        Assert.Equal(80, viewModel.SoundCueRecordingStartedVolumePercent);
+        Assert.Equal(90, viewModel.SoundCueTranscribingStartedVolumePercent);
+        Assert.Equal(170, viewModel.SoundCueCompletedVolumePercent);
+        Assert.Equal(60, viewModel.SoundCueErrorVolumePercent);
         Assert.Equal("PDPA\r\nCare Visit", viewModel.CustomVocabularyTerms);
         Assert.Equal("superbiz => Supabase\r\nsteel document => stale document", viewModel.CustomCorrectionRules);
         Assert.Equal("Quality / CUDA / ggml-large-v3-turbo-q5_0.bin", viewModel.RuntimeProfileStatus);
@@ -83,6 +91,10 @@ public sealed class SettingsViewModelTests
         viewModel.VadModelPath = modelPath;
         viewModel.EnableSoundCues = false;
         viewModel.SoundCueVolumePercent = 72;
+        viewModel.SoundCueRecordingStartedVolumePercent = 80;
+        viewModel.SoundCueTranscribingStartedVolumePercent = 90;
+        viewModel.SoundCueCompletedVolumePercent = 170;
+        viewModel.SoundCueErrorVolumePercent = 60;
         viewModel.CustomVocabularyTerms = "PDPA\r\nCare Visit";
         viewModel.CustomCorrectionRules = "superbiz => Supabase\r\nstill document => stale document";
 
@@ -105,6 +117,10 @@ public sealed class SettingsViewModelTests
         Assert.Equal(modelPath, saved.VadModelPath);
         Assert.False(saved.EnableSoundCues);
         Assert.Equal(0.72, saved.SoundCueVolume, precision: 6);
+        Assert.Equal(0.8, saved.SoundCueRecordingStartedVolume, precision: 6);
+        Assert.Equal(0.9, saved.SoundCueTranscribingStartedVolume, precision: 6);
+        Assert.Equal(1.7, saved.SoundCueCompletedVolume, precision: 6);
+        Assert.Equal(0.6, saved.SoundCueErrorVolume, precision: 6);
         Assert.Equal("PDPA\r\nCare Visit", saved.CustomVocabularyTerms);
         Assert.Equal("superbiz => Supabase\r\nstill document => stale document", saved.CustomCorrectionRules);
     }
@@ -235,6 +251,35 @@ public sealed class SettingsViewModelTests
         Assert.True(result.Success);
         Assert.Equal(expectedVolume, saved.SoundCueVolume);
         Assert.Equal(expectedVolume * 100, viewModel.SoundCueVolumePercent);
+    }
+
+    [Theory]
+    [InlineData(-20, 0)]
+    [InlineData(250, 2)]
+    public void SaveClampsPerCueSoundVolumePercents(double inputPercent, double expectedVolume)
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(store);
+        viewModel.SoundCueRecordingStartedVolumePercent = inputPercent;
+        viewModel.SoundCueTranscribingStartedVolumePercent = inputPercent;
+        viewModel.SoundCueCompletedVolumePercent = inputPercent;
+        viewModel.SoundCueErrorVolumePercent = inputPercent;
+
+        var result = viewModel.Save();
+
+        var saved = store.Load();
+        Assert.True(result.Success);
+        Assert.Equal(expectedVolume, saved.SoundCueRecordingStartedVolume);
+        Assert.Equal(expectedVolume, saved.SoundCueTranscribingStartedVolume);
+        Assert.Equal(expectedVolume, saved.SoundCueCompletedVolume);
+        Assert.Equal(expectedVolume, saved.SoundCueErrorVolume);
+        Assert.Equal(expectedVolume * 100, viewModel.SoundCueRecordingStartedVolumePercent);
+        Assert.Equal(expectedVolume * 100, viewModel.SoundCueTranscribingStartedVolumePercent);
+        Assert.Equal(expectedVolume * 100, viewModel.SoundCueCompletedVolumePercent);
+        Assert.Equal(expectedVolume * 100, viewModel.SoundCueErrorVolumePercent);
     }
 
     [Fact]

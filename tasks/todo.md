@@ -1107,3 +1107,24 @@
 - Hardened latency diagnostics log reading to tolerate shared log access while the app is running.
 - Focused sound/diagnostics tests pass, 32 tests; full `dotnet test` passes, 382 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Per-Cue Sound Settings v0.10.11
+- [x] Keep the existing master sound cue volume as the global cap.
+- [x] Add persisted per-cue volume controls for Start, Stop, Done, and Error.
+- [x] Clamp per-cue levels to `0%` through `200%` and clamp final playback to mixer max.
+- [x] Update Settings so each cue has a slider and a matching test button.
+- [x] Migrate older settings to the new cue defaults.
+- [x] Bump LafazFlow to `0.10.11`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+- [ ] Owner listening review of the per-cue sliders on real speakers/headphones.
+
+## Review: Per-Cue Sound Settings v0.10.11
+- Added per-cue persisted volume settings: Start `100%`, Stop `100%`, Done `145%`, and Error `100%`.
+- Kept the master volume as the overall level, then multiply it by the edited cue level and clamp final playback to `1.0`.
+- Settings now shows a master slider plus separate Start, Stop, Done, and Error sliders with test buttons.
+- Settings schema migrated to `14`, including clamp protection for older or manually edited settings files.
+- Bumped LafazFlow to `0.10.11`.
+- Focused sound/settings/controller tests pass, 89 tests.
+- Full `dotnet test` passes, 381 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.11.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

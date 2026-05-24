@@ -190,7 +190,11 @@ public sealed class SettingsStore
 
         migrated = migrated with
         {
-            SoundCueVolume = Math.Clamp(migrated.SoundCueVolume, 0, 1)
+            SoundCueVolume = Math.Clamp(migrated.SoundCueVolume, 0, 1),
+            SoundCueRecordingStartedVolume = Math.Clamp(migrated.SoundCueRecordingStartedVolume, 0, 2),
+            SoundCueTranscribingStartedVolume = Math.Clamp(migrated.SoundCueTranscribingStartedVolume, 0, 2),
+            SoundCueCompletedVolume = Math.Clamp(migrated.SoundCueCompletedVolume, 0, 2),
+            SoundCueErrorVolume = Math.Clamp(migrated.SoundCueErrorVolume, 0, 2)
         };
 
         return migrated with { SettingsSchemaVersion = AppSettings.CurrentSchemaVersion };

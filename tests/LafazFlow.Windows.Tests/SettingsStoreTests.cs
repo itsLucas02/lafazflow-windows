@@ -23,6 +23,10 @@ public sealed class SettingsStoreTests
         Assert.True(settings.EnableVocabularyCorrections);
         Assert.True(settings.EnableSoundCues);
         Assert.Equal(0.5, settings.SoundCueVolume);
+        Assert.Equal(1.0, settings.SoundCueRecordingStartedVolume);
+        Assert.Equal(1.0, settings.SoundCueTranscribingStartedVolume);
+        Assert.Equal(1.45, settings.SoundCueCompletedVolume);
+        Assert.Equal(1.0, settings.SoundCueErrorVolume);
         Assert.Equal(TranscriptionProfile.Fast, settings.TranscriptionProfile);
         Assert.Equal(WhisperBackend.Cpu, settings.WhisperBackend);
         Assert.False(settings.EnableVad);
@@ -74,6 +78,10 @@ public sealed class SettingsStoreTests
             VadModelPath = @"C:\Models\whisper\ggml-silero-v5.1.2.bin",
             EnableSoundCues = false,
             SoundCueVolume = 0.72,
+            SoundCueRecordingStartedVolume = 0.8,
+            SoundCueTranscribingStartedVolume = 0.9,
+            SoundCueCompletedVolume = 1.7,
+            SoundCueErrorVolume = 0.6,
             CustomCorrectionRules = "superbiz => Supabase\r\nsteel document => stale document"
         };
 
@@ -267,6 +275,47 @@ public sealed class SettingsStoreTests
         var lowerMigrated = store.Load();
 
         Assert.Equal(0, lowerMigrated.SoundCueVolume);
+    }
+
+    [Fact]
+    public void LoadMigratesPerCueSoundVolumes()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 13
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Equal(1.0, migrated.SoundCueRecordingStartedVolume);
+        Assert.Equal(1.0, migrated.SoundCueTranscribingStartedVolume);
+        Assert.Equal(1.45, migrated.SoundCueCompletedVolume);
+        Assert.Equal(1.0, migrated.SoundCueErrorVolume);
+    }
+
+    [Fact]
+    public void LoadClampsPerCueSoundVolumesDuringMigration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 13,
+            SoundCueRecordingStartedVolume = -0.25,
+            SoundCueTranscribingStartedVolume = 2.5,
+            SoundCueCompletedVolume = 3,
+            SoundCueErrorVolume = -1
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(0, migrated.SoundCueRecordingStartedVolume);
+        Assert.Equal(2, migrated.SoundCueTranscribingStartedVolume);
+        Assert.Equal(2, migrated.SoundCueCompletedVolume);
+        Assert.Equal(0, migrated.SoundCueErrorVolume);
     }
 
     [Fact]

@@ -171,7 +171,11 @@ public partial class SettingsWindow : Window
     {
         return new SoundCueOptions(
             _viewModel.EnableSoundCues,
-            (float)Math.Clamp(_viewModel.SoundCueVolumePercent / 100.0, 0, 1));
+            (float)Math.Clamp(_viewModel.SoundCueVolumePercent / 100.0, 0, 1),
+            (float)Math.Clamp(_viewModel.SoundCueRecordingStartedVolumePercent / 100.0, 0, 2),
+            (float)Math.Clamp(_viewModel.SoundCueTranscribingStartedVolumePercent / 100.0, 0, 2),
+            (float)Math.Clamp(_viewModel.SoundCueCompletedVolumePercent / 100.0, 0, 2),
+            (float)Math.Clamp(_viewModel.SoundCueErrorVolumePercent / 100.0, 0, 2));
     }
 
     private static void OpenFolder(string path)

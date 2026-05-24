@@ -18,15 +18,30 @@ public interface ISoundCuePlayer
     void Play(string path, float volume);
 }
 
-public readonly record struct SoundCueOptions(bool Enabled, float Volume)
+public readonly record struct SoundCueOptions(
+    bool Enabled,
+    float Volume,
+    float RecordingStartedVolume,
+    float TranscribingStartedVolume,
+    float CompletedVolume,
+    float ErrorVolume)
 {
-    public static SoundCueOptions Default { get; } = new(true, 0.5f);
+    public SoundCueOptions(bool enabled, float volume)
+        : this(enabled, volume, 1.0f, 1.0f, 1.45f, 1.0f)
+    {
+    }
+
+    public static SoundCueOptions Default { get; } = new(true, 0.5f, 1.0f, 1.0f, 1.45f, 1.0f);
 
     public static SoundCueOptions FromSettings(AppSettings settings)
     {
         return new SoundCueOptions(
             settings.EnableSoundCues,
-            (float)Math.Clamp(settings.SoundCueVolume, 0, 1));
+            (float)Math.Clamp(settings.SoundCueVolume, 0, 1),
+            (float)Math.Clamp(settings.SoundCueRecordingStartedVolume, 0, 2),
+            (float)Math.Clamp(settings.SoundCueTranscribingStartedVolume, 0, 2),
+            (float)Math.Clamp(settings.SoundCueCompletedVolume, 0, 2),
+            (float)Math.Clamp(settings.SoundCueErrorVolume, 0, 2));
     }
 }
 
@@ -106,21 +121,21 @@ public sealed class SoundCueService
         };
     }
 
-    public static float GetCueGain(SoundCueKind kind)
+    public static float GetCueVolume(SoundCueKind kind, SoundCueOptions options)
     {
         return kind switch
         {
-            SoundCueKind.RecordingStarted => 1.0f,
-            SoundCueKind.TranscribingStarted => 1.0f,
-            SoundCueKind.Completed => 1.45f,
-            SoundCueKind.Error => 1.0f,
+            SoundCueKind.RecordingStarted => options.RecordingStartedVolume,
+            SoundCueKind.TranscribingStarted => options.TranscribingStartedVolume,
+            SoundCueKind.Completed => options.CompletedVolume,
+            SoundCueKind.Error => options.ErrorVolume,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown sound cue.")
         };
     }
 
     public static float ResolvePlaybackVolume(SoundCueKind kind, SoundCueOptions options)
     {
-        return (float)Math.Clamp(options.Volume * GetCueGain(kind), 0, 1);
+        return (float)Math.Clamp(options.Volume * GetCueVolume(kind, options), 0, 1);
     }
 
     private sealed class NAudioSoundCuePlayer : ISoundCuePlayer

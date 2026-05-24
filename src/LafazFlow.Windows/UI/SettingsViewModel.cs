@@ -32,6 +32,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _enableVocabularyCorrections;
     private bool _enableSoundCues;
     private double _soundCueVolumePercent;
+    private double _soundCueRecordingStartedVolumePercent;
+    private double _soundCueTranscribingStartedVolumePercent;
+    private double _soundCueCompletedVolumePercent;
+    private double _soundCueErrorVolumePercent;
     private bool _keepRecordingsForDiagnostics;
     private string _validationMessage = "";
     private string _runtimeProfileStatus = "";
@@ -69,6 +73,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
+        SoundCueRecordingStartedVolumePercent = settings.SoundCueRecordingStartedVolume * 100;
+        SoundCueTranscribingStartedVolumePercent = settings.SoundCueTranscribingStartedVolume * 100;
+        SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
+        SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
         RefreshLatencyDiagnostics();
         RefreshRuntimeDiagnostics();
@@ -188,6 +196,30 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _soundCueVolumePercent;
         set => SetProperty(ref _soundCueVolumePercent, value);
+    }
+
+    public double SoundCueRecordingStartedVolumePercent
+    {
+        get => _soundCueRecordingStartedVolumePercent;
+        set => SetProperty(ref _soundCueRecordingStartedVolumePercent, value);
+    }
+
+    public double SoundCueTranscribingStartedVolumePercent
+    {
+        get => _soundCueTranscribingStartedVolumePercent;
+        set => SetProperty(ref _soundCueTranscribingStartedVolumePercent, value);
+    }
+
+    public double SoundCueCompletedVolumePercent
+    {
+        get => _soundCueCompletedVolumePercent;
+        set => SetProperty(ref _soundCueCompletedVolumePercent, value);
+    }
+
+    public double SoundCueErrorVolumePercent
+    {
+        get => _soundCueErrorVolumePercent;
+        set => SetProperty(ref _soundCueErrorVolumePercent, value);
     }
 
     public bool KeepRecordingsForDiagnostics
@@ -387,6 +419,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             EnableVocabularyCorrections = EnableVocabularyCorrections,
             EnableSoundCues = EnableSoundCues,
             SoundCueVolume = Math.Clamp(SoundCueVolumePercent / 100.0, 0, 1),
+            SoundCueRecordingStartedVolume = Math.Clamp(SoundCueRecordingStartedVolumePercent / 100.0, 0, 2),
+            SoundCueTranscribingStartedVolume = Math.Clamp(SoundCueTranscribingStartedVolumePercent / 100.0, 0, 2),
+            SoundCueCompletedVolume = Math.Clamp(SoundCueCompletedVolumePercent / 100.0, 0, 2),
+            SoundCueErrorVolume = Math.Clamp(SoundCueErrorVolumePercent / 100.0, 0, 2),
             KeepRecordingsForDiagnostics = KeepRecordingsForDiagnostics
         };
     }
@@ -412,6 +448,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
+        SoundCueRecordingStartedVolumePercent = settings.SoundCueRecordingStartedVolume * 100;
+        SoundCueTranscribingStartedVolumePercent = settings.SoundCueTranscribingStartedVolume * 100;
+        SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
+        SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
     }
 

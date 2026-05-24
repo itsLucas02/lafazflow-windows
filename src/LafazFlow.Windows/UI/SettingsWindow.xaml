@@ -197,33 +197,89 @@
                          VerticalScrollBarVisibility="Auto"
                          TextWrapping="Wrap"
                          MinHeight="92" />
+                <TextBlock Text="Sound Cues" FontWeight="SemiBold" Margin="0,8,0,0" />
                 <CheckBox Content="Play sound cues"
                           IsChecked="{Binding EnableSoundCues}" />
-                <TextBlock Text="Sound Cue Volume (%)" FontWeight="SemiBold" />
+                <TextBlock Text="Master Volume (%)" FontWeight="SemiBold" />
                 <Slider Minimum="0"
                         Maximum="100"
                         TickFrequency="10"
                         IsSnapToTickEnabled="False"
                         Value="{Binding SoundCueVolumePercent, UpdateSourceTrigger=PropertyChanged}"
                         Margin="0,4,8,10" />
-                <WrapPanel Margin="0,0,0,8">
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="96" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Start" VerticalAlignment="Center" />
+                    <Slider Grid.Row="0"
+                            Grid.Column="1"
+                            Minimum="0"
+                            Maximum="200"
+                            TickFrequency="25"
+                            IsSnapToTickEnabled="False"
+                            Value="{Binding SoundCueRecordingStartedVolumePercent, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,8,8" />
                     <Button Content="Test Start"
+                            Grid.Row="0"
+                            Grid.Column="2"
                             Width="92"
-                            Margin="0,0,8,10"
+                            Margin="0,0,0,8"
                             Click="TestStartSoundCue_OnClick" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Stop" VerticalAlignment="Center" />
+                    <Slider Grid.Row="1"
+                            Grid.Column="1"
+                            Minimum="0"
+                            Maximum="200"
+                            TickFrequency="25"
+                            IsSnapToTickEnabled="False"
+                            Value="{Binding SoundCueTranscribingStartedVolumePercent, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,8,8" />
                     <Button Content="Test Stop"
+                            Grid.Row="1"
+                            Grid.Column="2"
                             Width="88"
-                            Margin="0,0,8,10"
+                            Margin="0,0,0,8"
                             Click="TestStopSoundCue_OnClick" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Done" VerticalAlignment="Center" />
+                    <Slider Grid.Row="2"
+                            Grid.Column="1"
+                            Minimum="0"
+                            Maximum="200"
+                            TickFrequency="25"
+                            IsSnapToTickEnabled="False"
+                            Value="{Binding SoundCueCompletedVolumePercent, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,8,8" />
                     <Button Content="Test Done"
+                            Grid.Row="2"
+                            Grid.Column="2"
                             Width="92"
-                            Margin="0,0,8,10"
+                            Margin="0,0,0,8"
                             Click="TestDoneSoundCue_OnClick" />
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Error" VerticalAlignment="Center" />
+                    <Slider Grid.Row="3"
+                            Grid.Column="1"
+                            Minimum="0"
+                            Maximum="200"
+                            TickFrequency="25"
+                            IsSnapToTickEnabled="False"
+                            Value="{Binding SoundCueErrorVolumePercent, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,8,8" />
                     <Button Content="Test Error"
+                            Grid.Row="3"
+                            Grid.Column="2"
                             Width="92"
-                            Margin="0,0,0,10"
+                            Margin="0,0,0,8"
                             Click="TestErrorSoundCue_OnClick" />
-                </WrapPanel>
+                </Grid>
                 <CheckBox Content="Use local VAD in quality mode"
                           IsChecked="{Binding EnableVad}" />
                 <TextBlock Text="VAD Model" FontWeight="SemiBold" />

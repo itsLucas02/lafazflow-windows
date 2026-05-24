@@ -41,35 +41,33 @@ public sealed class SoundCueServiceTests
         var player = new RecordingSoundCuePlayer();
         var service = new SoundCueService(root, player);
 
-        service.PlayCompleted(new SoundCueOptions(true, 0.75f));
+        service.PlayCompleted(new SoundCueOptions(true, 0.75f, 1.0f, 1.0f, 1.45f, 1.0f));
 
         Assert.Equal(assetPath, player.PlayedPath);
         Assert.Equal(1.0f, player.Volume);
     }
 
     [Theory]
-    [InlineData(SoundCueKind.RecordingStarted, 1.0f)]
-    [InlineData(SoundCueKind.TranscribingStarted, 1.0f)]
-    [InlineData(SoundCueKind.Completed, 1.45f)]
-    [InlineData(SoundCueKind.Error, 1.0f)]
-    public void GetCueGainKeepsStartStopNeutralAndBoostsCompletion(SoundCueKind kind, float expectedGain)
-    {
-        Assert.Equal(expectedGain, SoundCueService.GetCueGain(kind));
-    }
-
-    [Theory]
-    [InlineData(SoundCueKind.RecordingStarted, 0.5f, 0.5f)]
-    [InlineData(SoundCueKind.TranscribingStarted, 0.5f, 0.5f)]
-    [InlineData(SoundCueKind.Completed, 0.5f, 0.725f)]
-    [InlineData(SoundCueKind.Error, 0.5f, 0.5f)]
-    [InlineData(SoundCueKind.Completed, 0.8f, 1.0f)]
-    [InlineData(SoundCueKind.TranscribingStarted, 2.0f, 1.0f)]
-    public void ResolvePlaybackVolumeAppliesGlobalVolumeAndCueGain(
+    [InlineData(SoundCueKind.RecordingStarted, 0.5f, 0.8f, 0.4f)]
+    [InlineData(SoundCueKind.TranscribingStarted, 0.5f, 0.9f, 0.45f)]
+    [InlineData(SoundCueKind.Completed, 0.5f, 1.45f, 0.725f)]
+    [InlineData(SoundCueKind.Error, 0.5f, 0.6f, 0.3f)]
+    [InlineData(SoundCueKind.Completed, 0.8f, 1.7f, 1.0f)]
+    public void ResolvePlaybackVolumeAppliesMasterAndPerCueVolume(
         SoundCueKind kind,
-        float inputVolume,
+        float masterVolume,
+        float cueVolume,
         float expectedVolume)
     {
-        var volume = SoundCueService.ResolvePlaybackVolume(kind, new SoundCueOptions(true, inputVolume));
+        var options = new SoundCueOptions(
+            true,
+            masterVolume,
+            RecordingStartedVolume: kind == SoundCueKind.RecordingStarted ? cueVolume : 1.0f,
+            TranscribingStartedVolume: kind == SoundCueKind.TranscribingStarted ? cueVolume : 1.0f,
+            CompletedVolume: kind == SoundCueKind.Completed ? cueVolume : 1.45f,
+            ErrorVolume: kind == SoundCueKind.Error ? cueVolume : 1.0f);
+
+        var volume = SoundCueService.ResolvePlaybackVolume(kind, options);
 
         Assert.Equal(expectedVolume, volume, precision: 6);
     }
