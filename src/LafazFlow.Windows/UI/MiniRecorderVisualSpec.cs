@@ -21,23 +21,25 @@ public static class MiniRecorderVisualSpec
     public const double ControlBarHeight = 40;
     public const double CompactCornerRadius = 20;
     public const double ExpandedCornerRadius = 14;
-    public const double LiveTranscriptPanelHeight = 56;
+    public const double LiveTranscriptOverlayWidth = 300;
+    public const double LiveTranscriptOverlayHeight = 44;
+    public const double LiveTranscriptOverlayGap = 12;
     public const double BarWidth = 3;
     public const double BarSpacing = 2;
     public const double BarMinHeight = 4;
     public const double BarMaxHeight = 28;
     public const double AudioNoiseGate = 0.035;
-    public const double AudioAttackWeight = 0.64;
-    public const double AudioReleaseWeight = 0.16;
+    public const double AudioAttackWeight = 0.72;
+    public const double AudioReleaseWeight = 0.18;
     public const double IdleBreathingAmplitude = 1.35;
     public const int BarCount = 15;
     public const int ProcessingDotCount = 7;
     public const int ProcessingPulseStepCount = 7;
     public const int TranscribingPulseMilliseconds = 145;
-    public const int StateFadeMilliseconds = 120;
-    public const int ExpansionMilliseconds = 220;
-    public const int WindowEntranceMilliseconds = 140;
-    public const int WindowExitMilliseconds = 120;
+    public const int StateFadeMilliseconds = 90;
+    public const int PreviewOverlayFadeMilliseconds = 140;
+    public const int WindowEntranceMilliseconds = 120;
+    public const int WindowExitMilliseconds = 95;
     public const int RenderFrameThrottleMilliseconds = 16;
     public const double WindowEntranceStartScale = 0.985;
     public const double WindowEntranceTranslateY = 5;
@@ -108,6 +110,22 @@ public static class MiniRecorderVisualSpec
             1 => 0.58,
             2 => 0.34,
             _ => 0.22
+        };
+    }
+
+    public static double CalculateProcessingDotScale(int index, int activeStep)
+    {
+        if (index == activeStep)
+        {
+            return 1.35;
+        }
+
+        var trailingDistance = activeStep - index;
+        return trailingDistance switch
+        {
+            1 => 1.16,
+            2 => 1.04,
+            _ => 0.92
         };
     }
 

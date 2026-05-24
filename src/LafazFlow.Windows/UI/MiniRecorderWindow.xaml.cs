@@ -13,8 +13,10 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     private readonly MiniRecorderViewModel _viewModel;
     private readonly WpfRectangle[] _bars;
     private readonly WpfRectangle[] _processingDots;
+    private readonly ScaleTransform[] _processingDotScales;
     private readonly ScaleTransform _shellScale = new(1, 1);
     private readonly TranslateTransform _shellTranslate = new(0, 0);
+    private readonly TranslateTransform _previewTranslate = new(0, 4);
     private DateTime _lastRender = DateTime.UtcNow;
     private bool _lastShowVisualizer = true;
     private bool _lastShowProcessingIndicator;
@@ -29,6 +31,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         DataContext = viewModel;
         _bars = Enumerable.Range(0, MiniRecorderVisualSpec.BarCount).Select(_ => CreateBar()).ToArray();
         _processingDots = Enumerable.Range(0, MiniRecorderVisualSpec.ProcessingDotCount).Select(_ => CreateProcessingDot()).ToArray();
+        _processingDotScales = _processingDots.Select(dot => (ScaleTransform)dot.RenderTransform).ToArray();
         RecorderShell.RenderTransformOrigin = new System.Windows.Point(0.5, 1);
         RecorderShell.RenderTransform = new TransformGroup
         {
@@ -38,6 +41,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
                 _shellTranslate
             }
         };
+        LiveTranscriptOverlay.RenderTransform = _previewTranslate;
 
         foreach (var bar in _bars)
         {
@@ -140,8 +144,10 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             RadiusX = 1.5,
             RadiusY = 1.5,
             Margin = new Thickness(2, 0, 2, 0),
-            Fill = new SolidColorBrush(WpfColor.FromArgb(230, 255, 255, 255)),
-            Opacity = 0.35
+            Fill = new SolidColorBrush(ToWpfColor(MiniRecorderVisualSpec.CalculateAudioBarColor(20))),
+            Opacity = 0.35,
+            RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
+            RenderTransform = new ScaleTransform(1, 1)
         };
     }
 
@@ -156,7 +162,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         _lastRender = now;
         var time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         UpdateModeVisibility();
-        UpdateLiveTranscriptLayout();
+        UpdateLiveTranscriptOverlay();
 
         var pulseBucket = (int)(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / MiniRecorderVisualSpec.TranscribingPulseMilliseconds);
         if (_viewModel.ShowProcessingIndicator && pulseBucket != _lastProcessingPulseBucket)
@@ -210,7 +216,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         }
     }
 
-    private void UpdateLiveTranscriptLayout()
+    private void UpdateLiveTranscriptOverlay()
     {
         if (_lastHasLiveTranscript == _viewModel.HasLiveTranscript)
         {
@@ -218,26 +224,17 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         }
 
         _lastHasLiveTranscript = _viewModel.HasLiveTranscript;
-        var targetWidth = _viewModel.HasLiveTranscript
-            ? MiniRecorderVisualSpec.ExpandedWidth
-            : MiniRecorderVisualSpec.BalancedCompactWidth;
-        var targetHeight = _viewModel.HasLiveTranscript
-            ? MiniRecorderVisualSpec.ControlBarHeight + MiniRecorderVisualSpec.LiveTranscriptPanelHeight
-            : MiniRecorderVisualSpec.ControlBarHeight;
-        var targetRadius = _viewModel.HasLiveTranscript
-            ? MiniRecorderVisualSpec.ExpandedCornerRadius
-            : MiniRecorderVisualSpec.CompactCornerRadius;
-
-        AnimateDouble(RecorderShell, WidthProperty, targetWidth, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
-        AnimateDouble(RecorderShell, HeightProperty, targetHeight, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
-        AnimateCornerRadius(RecorderShell, new CornerRadius(targetRadius), MiniRecorderVisualSpec.ExpansionMilliseconds);
-        TranscriptRow.BeginAnimation(RowDefinition.HeightProperty, new GridLengthAnimation
-        {
-            To = new GridLength(_viewModel.HasLiveTranscript ? MiniRecorderVisualSpec.LiveTranscriptPanelHeight : 0),
-            Duration = TimeSpan.FromMilliseconds(MiniRecorderVisualSpec.ExpansionMilliseconds),
-            EasingFunction = StateEase()
-        });
-        FadeElement(LiveTranscriptPanel, _viewModel.HasLiveTranscript ? 1 : 0, MiniRecorderVisualSpec.ExpansionMilliseconds, StateEase());
+        FadeElement(
+            LiveTranscriptOverlay,
+            _viewModel.HasLiveTranscript ? 1 : 0,
+            MiniRecorderVisualSpec.PreviewOverlayFadeMilliseconds,
+            StateEase());
+        AnimateDouble(
+            _previewTranslate,
+            TranslateTransform.YProperty,
+            _viewModel.HasLiveTranscript ? 0 : 4,
+            MiniRecorderVisualSpec.PreviewOverlayFadeMilliseconds,
+            StateEase());
     }
 
     private void UpdateProcessingDots()
@@ -247,6 +244,9 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             _processingDots[index].Opacity = MiniRecorderVisualSpec.CalculateProcessingDotOpacity(
                 index,
                 _viewModel.ProcessingPulseStep);
+            var scale = MiniRecorderVisualSpec.CalculateProcessingDotScale(index, _viewModel.ProcessingPulseStep);
+            _processingDotScales[index].ScaleX = scale;
+            _processingDotScales[index].ScaleY = scale;
         }
     }
 

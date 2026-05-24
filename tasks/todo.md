@@ -970,3 +970,23 @@
 - Smoke run passed: `--pack daily --take 4 --configs current-settings` produced `4/4` successful runs, `928 ms` average latency, `0.000` edit distance, and `7/7` key terms.
 - Focused `TranscriptionBenchTests` pass, 7 tests; full `dotnet test` passes, 362 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Recorder UX Polish v0.10.4
+- [x] Keep the mini recorder shell fixed at compact height during recording and processing.
+- [x] Replace shell-expanding live transcript preview with a subtle overlay above the shell.
+- [x] Tune recorder motion for faster daily dictation: 120 ms entrance, 95 ms exit, 90 ms state fade, and 140 ms preview overlay fade.
+- [x] Add aqua processing dots with active-dot scale progression.
+- [x] Tune audio level smoothing for faster attack and controlled release.
+- [x] Bump LafazFlow to `0.10.4`.
+- [x] Verify focused tests, full tests, build, safety scans, stable publish/relaunch, and launch smoke.
+
+## Review: Recorder UX Polish v0.10.4
+- Mini recorder shell now stays compact and fixed at 40 px height while recording and processing.
+- Live transcript preview is now a separate subtle overlay above the shell instead of resizing the shell.
+- Recorder motion is faster for daily dictation: 120 ms entrance, 95 ms exit, 90 ms state fade, and 140 ms preview overlay fade.
+- Processing dots now use the aqua palette and active-dot scale progression.
+- Audio smoothing now uses a faster attack with controlled release for a more responsive meter.
+- Bumped LafazFlow to `0.10.4`.
+- Focused recorder/version tests pass, 48 tests; full `dotnet test` passes, 364 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.4.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

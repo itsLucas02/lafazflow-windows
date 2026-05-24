@@ -106,6 +106,24 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("ShowActivated=\"False\"", xaml);
     }
 
+    [Fact]
+    public void MiniRecorderUsesOverlayPreviewWithoutResizingShell()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "MiniRecorderWindow.xaml");
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "MiniRecorderWindow.xaml.cs");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
+
+        Assert.Contains("x:Name=\"LiveTranscriptOverlay\"", xaml);
+        Assert.Contains("Height=\"40\"", xaml);
+        Assert.DoesNotContain("TranscriptRow", xaml);
+        Assert.DoesNotContain("Grid.RowDefinitions", xaml);
+        Assert.Contains("UpdateLiveTranscriptOverlay", codeBehind);
+        Assert.DoesNotContain("AnimateDouble(RecorderShell, WidthProperty", codeBehind);
+        Assert.DoesNotContain("AnimateDouble(RecorderShell, HeightProperty", codeBehind);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -15,7 +15,9 @@ public sealed class MiniRecorderVisualSpecTests
         Assert.Equal(40, MiniRecorderVisualSpec.ControlBarHeight);
         Assert.Equal(20, MiniRecorderVisualSpec.CompactCornerRadius);
         Assert.Equal(14, MiniRecorderVisualSpec.ExpandedCornerRadius);
-        Assert.Equal(56, MiniRecorderVisualSpec.LiveTranscriptPanelHeight);
+        Assert.Equal(300, MiniRecorderVisualSpec.LiveTranscriptOverlayWidth);
+        Assert.Equal(44, MiniRecorderVisualSpec.LiveTranscriptOverlayHeight);
+        Assert.Equal(12, MiniRecorderVisualSpec.LiveTranscriptOverlayGap);
     }
 
     [Fact]
@@ -59,6 +61,15 @@ public sealed class MiniRecorderVisualSpecTests
         Assert.Equal(0.58, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(1, 2), precision: 6);
         Assert.Equal(0.34, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(0, 2), precision: 6);
         Assert.Equal(0.22, MiniRecorderVisualSpec.CalculateProcessingDotOpacity(4, 2), precision: 6);
+    }
+
+    [Fact]
+    public void ProcessingDotsUseTrailingCascadeScale()
+    {
+        Assert.Equal(1.35, MiniRecorderVisualSpec.CalculateProcessingDotScale(2, 2), precision: 6);
+        Assert.Equal(1.16, MiniRecorderVisualSpec.CalculateProcessingDotScale(1, 2), precision: 6);
+        Assert.Equal(1.04, MiniRecorderVisualSpec.CalculateProcessingDotScale(0, 2), precision: 6);
+        Assert.Equal(0.92, MiniRecorderVisualSpec.CalculateProcessingDotScale(4, 2), precision: 6);
     }
 
     [Fact]
@@ -142,10 +153,10 @@ public sealed class MiniRecorderVisualSpecTests
     [Fact]
     public void WindowEntranceAndExitUseShortReferenceStyleMotion()
     {
-        Assert.Equal(140, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
-        Assert.Equal(120, MiniRecorderVisualSpec.WindowExitMilliseconds);
-        Assert.Equal(120, MiniRecorderVisualSpec.StateFadeMilliseconds);
-        Assert.Equal(220, MiniRecorderVisualSpec.ExpansionMilliseconds);
+        Assert.Equal(120, MiniRecorderVisualSpec.WindowEntranceMilliseconds);
+        Assert.Equal(95, MiniRecorderVisualSpec.WindowExitMilliseconds);
+        Assert.Equal(90, MiniRecorderVisualSpec.StateFadeMilliseconds);
+        Assert.Equal(140, MiniRecorderVisualSpec.PreviewOverlayFadeMilliseconds);
         Assert.Equal(16, MiniRecorderVisualSpec.RenderFrameThrottleMilliseconds);
         Assert.Equal(0.985, MiniRecorderVisualSpec.WindowEntranceStartScale, precision: 6);
         Assert.Equal(5, MiniRecorderVisualSpec.WindowEntranceTranslateY);
@@ -158,8 +169,8 @@ public sealed class MiniRecorderVisualSpecTests
         var rise = MiniRecorderVisualSpec.SmoothAudioLevel(0.1, 0.9, hasAudioSample: true);
         var drop = MiniRecorderVisualSpec.SmoothAudioLevel(0.9, 0.1, hasAudioSample: true);
 
-        Assert.True(rise > 0.6);
-        Assert.True(drop > 0.7);
+        Assert.True(rise > 0.65);
+        Assert.True(drop > 0.65);
         Assert.True(drop < 0.9);
     }
 

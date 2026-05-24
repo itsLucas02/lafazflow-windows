@@ -20,6 +20,28 @@
                           Color="#000000" />
     </Window.Resources>
     <Grid>
+        <Border x:Name="LiveTranscriptOverlay"
+                Width="{x:Static ui:MiniRecorderVisualSpec.LiveTranscriptOverlayWidth}"
+                Height="{x:Static ui:MiniRecorderVisualSpec.LiveTranscriptOverlayHeight}"
+                Padding="14,6"
+                Background="#E6000000"
+                BorderBrush="#18FFFFFF"
+                BorderThickness="0.5"
+                CornerRadius="12"
+                Effect="{StaticResource RecorderShadow}"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,52"
+                Opacity="0"
+                IsHitTestVisible="False">
+            <TextBlock Text="{Binding PartialTranscript}"
+                       Foreground="#CCFFFFFF"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis"
+                       MaxHeight="32" />
+        </Border>
+
         <Border x:Name="RecorderShell"
                 Width="{x:Static ui:MiniRecorderVisualSpec.BalancedCompactWidth}"
                 MinWidth="{x:Static ui:MiniRecorderVisualSpec.CompactWidth}"
@@ -35,27 +57,7 @@
                 MouseLeftButtonDown="RecorderShell_OnMouseLeftButtonDown"
                 MouseRightButtonUp="RecorderShell_OnMouseRightButtonUp">
             <Grid ClipToBounds="True">
-                <Grid.RowDefinitions>
-                    <RowDefinition x:Name="TranscriptRow" Height="0" />
-                    <RowDefinition Height="40" />
-                </Grid.RowDefinitions>
-
-                <Border Grid.Row="0"
-                        x:Name="LiveTranscriptPanel"
-                        Padding="16,6"
-                        BorderBrush="#26FFFFFF"
-                        BorderThickness="0,0,0,0.5"
-                        Opacity="0">
-                    <TextBlock Text="{Binding PartialTranscript}"
-                               Foreground="#CCFFFFFF"
-                               FontSize="12"
-                               TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis"
-                               MaxHeight="44" />
-                </Border>
-
-                <Grid Grid.Row="1"
-                      Margin="16,0">
+                <Grid Margin="16,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" MinWidth="92" />
