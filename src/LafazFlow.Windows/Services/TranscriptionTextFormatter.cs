@@ -39,6 +39,7 @@ public static partial class TranscriptionTextFormatter
         normalized = OrphanPunctuationRegex().Replace(normalized, "").Trim();
         normalized = WaitQuestionLeadInRegex().Replace(normalized, "wait, $1");
         normalized = AndContinuationBreakRegex().Replace(normalized, ", and ");
+        normalized = RepairCommandReminderQuestions(normalized);
 
         if (normalized.Length == 0)
         {
@@ -74,6 +75,11 @@ public static partial class TranscriptionTextFormatter
         }
 
         candidate = candidate.TrimEnd('.', '!', '?').Trim();
+        if (StartsWithCommandReminder(candidate))
+        {
+            return false;
+        }
+
         if (candidate.StartsWith("Wait, ", StringComparison.OrdinalIgnoreCase))
         {
             candidate = candidate["Wait, ".Length..].TrimStart();
@@ -99,6 +105,33 @@ public static partial class TranscriptionTextFormatter
         return false;
     }
 
+    private static string RepairCommandReminderQuestions(string text)
+    {
+        return QuestionSentenceSegmentRegex().Replace(text, match =>
+        {
+            var sentence = match.Groups["sentence"].Value;
+            if (!StartsWithCommandReminder(sentence))
+            {
+                return match.Value;
+            }
+
+            return match.Groups["prefix"].Value + sentence.TrimEnd('?') + ".";
+        });
+    }
+
+    private static bool StartsWithCommandReminder(string sentence)
+    {
+        var trimmed = sentence.TrimStart();
+        return trimmed.StartsWith("Also don't forget to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Don't forget to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Do not forget to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Please remember", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Remember to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Make sure to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Please make sure to ", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("Ensure that ", StringComparison.OrdinalIgnoreCase);
+    }
+
     [GeneratedRegex(@"\[[0-9:.]+\s*-->\s*[0-9:.]+\]")]
     private static partial Regex TimestampLineRegex();
 
@@ -119,4 +152,7 @@ public static partial class TranscriptionTextFormatter
 
     [GeneratedRegex(@"\.\s+And\s+(?=(?:then|there|once|maybe|therefore|it|they|we|you)\b)")]
     private static partial Regex AndContinuationBreakRegex();
+
+    [GeneratedRegex(@"(?<prefix>^|(?<=[.!?])\s+)(?<sentence>[^.!?]+\?)")]
+    private static partial Regex QuestionSentenceSegmentRegex();
 }

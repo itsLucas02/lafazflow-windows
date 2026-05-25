@@ -215,3 +215,7 @@
 ## Tune one sound cue at a time
 - Pattern: Global cue loudness changes can regress cues that already feel right while leaving a specific cue too quiet.
 - Rule: When the owner reports one cue is too subtle, adjust only that cue gain and keep the other cue gains covered by tests.
+
+## Do not let question heuristics override commands
+- Pattern: ASR can add a question mark to imperative reminders such as `Don't forget to commit and push`, and generic question-starter rules can misread `Do not...` as a question.
+- Rule: Before adding or preserving question punctuation, guard high-confidence command/reminder lead-ins and keep them declarative unless they are explicitly phrased as a real question.

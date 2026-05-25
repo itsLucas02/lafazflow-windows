@@ -1128,3 +1128,21 @@
 - Full `dotnet test` passes, 381 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.11.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Command Sentence Question-Mark Repair v0.10.12
+- [x] Add failing formatter regressions for command/reminder sentences that incorrectly end with `?`.
+- [x] Preserve real questions in mixed paragraphs.
+- [x] Add a conservative sentence-level punctuation repair for command/reminder lead-ins.
+- [x] Guard the question-starter heuristic so `Do not forget to...` stays declarative.
+- [x] Bump LafazFlow to `0.10.12`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Command Sentence Question-Mark Repair v0.10.12
+- Fixed formatter handling for command/reminder sentences such as `Also don't forget to commit and push... ?`, converting them to declarative periods.
+- Preserved actual questions such as `How do you plan to verify it?` and `Can you make sure to verify it?`.
+- Added a guard so the existing `do` question-starter heuristic does not turn `Do not forget to...` back into a question.
+- Added a lesson for keeping command/reminder punctuation separate from question heuristics.
+- Bumped LafazFlow to `0.10.12`.
+- Focused formatter tests pass, 46 tests; full `dotnet test` passes, 393 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.12.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

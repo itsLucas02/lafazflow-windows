@@ -166,4 +166,42 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal(expected, formatted);
     }
+
+    [Fact]
+    public void FormatRepairsCommandSentenceQuestionMarkInMixedQuestionAndReminderParagraph()
+    {
+        var formatted = TranscriptionTextFormatter.Format(
+            "Alright, that's a great plan. But how do you plan to verify whether it works from the front end afterwards? Also don't forget to commit and push those changes accordingly once you are done implementing them successfully? Please remember, throughout this session, don't ever forget to verify what you did, what you implemented and what you changed from the front end as well.");
+
+        Assert.Equal(
+            "Alright, that's a great plan. But how do you plan to verify whether it works from the front end afterwards? Also don't forget to commit and push those changes accordingly once you are done implementing them successfully. Please remember, throughout this session, don't ever forget to verify what you did, what you implemented and what you changed from the front end as well.",
+            formatted);
+    }
+
+    [Theory]
+    [InlineData("Also don't forget to commit and push those changes?", "Also don't forget to commit and push those changes.")]
+    [InlineData("Don't forget to verify the front end?", "Don't forget to verify the front end.")]
+    [InlineData("Do not forget to run the tests?", "Do not forget to run the tests.")]
+    [InlineData("Please remember to publish the stable build?", "Please remember to publish the stable build.")]
+    [InlineData("Remember to check the logs?", "Remember to check the logs.")]
+    [InlineData("Make sure to validate the UI?", "Make sure to validate the UI.")]
+    [InlineData("Please make sure to commit and push?", "Please make sure to commit and push.")]
+    [InlineData("Ensure that the release is clean?", "Ensure that the release is clean.")]
+    public void FormatRepairsCommandReminderSentencesThatEndWithQuestionMark(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData("Can you make sure to verify it?", "Can you make sure to verify it?")]
+    [InlineData("Should we commit and push after this?", "Should we commit and push after this?")]
+    [InlineData("How do you plan to verify it?", "How do you plan to verify it?")]
+    public void FormatKeepsRealQuestionMarksForActualQuestions(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
 }
