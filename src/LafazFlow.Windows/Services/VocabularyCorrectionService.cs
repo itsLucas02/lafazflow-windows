@@ -58,6 +58,7 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("tailwind css"), "Tailwind CSS"),
         (PhraseRegex("field group"), "FieldGroup"),
         (PhraseRegex("input group"), "InputGroup"),
+        (PhraseRegex("sentry"), "Sentry"),
         (PhraseRegex("github"), "GitHub"),
         (PhraseRegex("power shell"), "PowerShell"),
         (PhraseRegex("powershell"), "PowerShell"),
@@ -84,6 +85,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixStaleDocumentDictationContext(corrected);
         corrected = FixStripeDictationInPaymentContext(corrected);
         corrected = FixBestBangForBuckDictationContext(corrected);
+        corrected = FixBetterStackErrorsDictationContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -263,6 +265,11 @@ public static partial class VocabularyCorrectionService
             $"{match.Groups[1].Value}best bang for buck{match.Groups[2].Value}");
     }
 
+    private static string FixBetterStackErrorsDictationContext(string text)
+    {
+        return BetterStackErrorsContextRegex().Replace(text, "Better Stack Errors");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -338,8 +345,11 @@ public static partial class VocabularyCorrectionService
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:strike|stripe)\s+(checkout|billing|payment|payments|webhook|webhooks|api|sdk|dashboard|integration|customer|customers|subscription|subscriptions)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex StripeProductContextRegex();
 
-    [GeneratedRegex(@"(?<![\p{L}\p{N}])(\b(?:a\s+|the\s+)?)(?:best\s+)?(?:bank|bang)\s+for\s+(?:bug|buck)(\s+(?:option|choice|tool|tools|service|services|stack|stacks|platform|platforms|between|for)\b)?", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(\b(?:a\s+|the\s+)?)(?:best\s+)?(?:bank|bang)\s+for\s+(?:bug|buck|bulk)(\s+(?:option|choice|tool|tools|service|services|stack|stacks|platform|platforms|between|for)\b)?", RegexOptions.IgnoreCase)]
     private static partial Regex BestBangForBuckContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:batter\s+stack\s+errors|battle\s+stack\s+errors|better\s+stack\s+eros)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex BetterStackErrorsContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

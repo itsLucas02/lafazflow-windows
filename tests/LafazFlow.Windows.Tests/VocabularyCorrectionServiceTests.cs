@@ -328,6 +328,15 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData(
         "Find the best bank for buck option.",
         "Find the best bang for buck option.")]
+    [InlineData(
+        "I want the best bank for bulk option between batter stack errors and sentry.",
+        "I want the best bang for buck option between Better Stack Errors and Sentry.")]
+    [InlineData(
+        "I want the best bank for bulk option between battle stack errors and sentry.",
+        "I want the best bang for buck option between Better Stack Errors and Sentry.")]
+    [InlineData(
+        "I want the best bang for buck option between Better Stack Eros and Sentry.",
+        "I want the best bang for buck option between Better Stack Errors and Sentry.")]
     public void ApplyDefaultsFixesBestBangForBuckHomophones(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);
@@ -339,6 +348,8 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("The best bank for business accounts is local.")]
     [InlineData("Please file the bug option under diagnostics.")]
     [InlineData("The bank found a bug in their mobile app.")]
+    [InlineData("The warehouse needs a bulk option.")]
+    [InlineData("The battery stack errors came from the hardware test.")]
     public void ApplyDefaultsPreservesNormalBankAndBugSentences(string input)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);

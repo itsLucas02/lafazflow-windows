@@ -1162,3 +1162,21 @@
 - Focused vocabulary tests pass, 114 tests; full `dotnet test` passes, 399 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.13.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Better Stack Comparison Vocabulary Hotfix v0.10.14
+- [x] Add failing regressions from the owner's repeated `best bang for buck` comparison tests.
+- [x] Extend the idiom repair to cover `best bank for bulk`.
+- [x] Add context-bound repairs for `batter stack errors`, `battle stack errors`, and `Better Stack Eros`.
+- [x] Add product casing for `Sentry`.
+- [x] Preserve normal `bank`, `bug`, `bulk`, and unrelated hardware stack sentences.
+- [x] Bump LafazFlow to `0.10.14`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Better Stack Comparison Vocabulary Hotfix v0.10.14
+- Repaired the latest observed comparison outputs to `best bang for buck option between Better Stack Errors and Sentry`.
+- Added `bulk` as an observed `buck` homophone only inside the `best bang for buck` idiom.
+- Added phrase-level Better Stack Errors repairs without touching unrelated `battery stack errors` style text.
+- Bumped LafazFlow to `0.10.14`.
+- Focused vocabulary tests pass, 119 tests; full `dotnet test` passes, 404 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.14.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
