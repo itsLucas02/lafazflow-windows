@@ -219,3 +219,7 @@
 ## Do not let question heuristics override commands
 - Pattern: ASR can add a question mark to imperative reminders such as `Don't forget to commit and push`, and generic question-starter rules can misread `Do not...` as a question.
 - Rule: Before adding or preserving question punctuation, guard high-confidence command/reminder lead-ins and keep them declarative unless they are explicitly phrased as a real question.
+
+## Repair idioms as complete phrases
+- Pattern: ASR can break idioms into individually plausible words, such as `best bang for buck` becoming `best bank for bug`.
+- Rule: Repair observed idiom failures as complete phrase patterns with nearby context, never as broad single-word homophone rewrites.

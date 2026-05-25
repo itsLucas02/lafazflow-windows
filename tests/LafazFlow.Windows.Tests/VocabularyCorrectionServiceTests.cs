@@ -318,6 +318,34 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(input, corrected);
     }
 
+    [Theory]
+    [InlineData(
+        "I want a best bank for bug option. Which one is it? Is it gonna be Better Stack Errors or Sentry?",
+        "I want a best bang for buck option. Which one is it? Is it gonna be Better Stack Errors or Sentry?")]
+    [InlineData(
+        "Which one is the best bank for bug between Better Stack Errors and Sentry?",
+        "Which one is the best bang for buck between Better Stack Errors and Sentry?")]
+    [InlineData(
+        "Find the best bank for buck option.",
+        "Find the best bang for buck option.")]
+    public void ApplyDefaultsFixesBestBangForBuckHomophones(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
+    [Theory]
+    [InlineData("The best bank for business accounts is local.")]
+    [InlineData("Please file the bug option under diagnostics.")]
+    [InlineData("The bank found a bug in their mobile app.")]
+    public void ApplyDefaultsPreservesNormalBankAndBugSentences(string input)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(input, corrected);
+    }
+
     [Fact]
     public void ApplyDefaultsPreservesUnrelatedText()
     {

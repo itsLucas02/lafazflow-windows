@@ -1146,3 +1146,19 @@
 - Focused formatter tests pass, 46 tests; full `dotnet test` passes, 393 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.12.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Best Bang For Buck Vocabulary Hotfix v0.10.13
+- [x] Add failing vocabulary regressions for `best bank for bug` and `best bank for buck`.
+- [x] Preserve normal `bank` and `bug` sentences.
+- [x] Add a narrow idiom-level correction for `best bang for buck` in option/comparison contexts.
+- [x] Bump LafazFlow to `0.10.13`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Best Bang For Buck Vocabulary Hotfix v0.10.13
+- Added offline correction for observed `best bank for bug` / `best bank for buck` homophones to `best bang for buck`.
+- Kept the repair phrase-level and context-bound so ordinary `bank` and `bug` sentences are not rewritten.
+- Added a lesson to repair idioms as complete phrases instead of broad single-word homophone swaps.
+- Bumped LafazFlow to `0.10.13`.
+- Focused vocabulary tests pass, 114 tests; full `dotnet test` passes, 399 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.13.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
