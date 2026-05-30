@@ -1213,3 +1213,20 @@
 - Focused storage question tests pass, 6 tests; full `dotnet test` passes, 410 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.16.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Revert Unsafe Storage Question Rewrite v0.10.17
+- [x] Add a failing guard proving `How much storage would it be?` is preserved.
+- [x] Preserve `How much storage would it take?` without needing post-processing.
+- [x] Remove the unsafe `would it be` to `would it take` storage rewrite.
+- [x] Update lessons to ban deterministic intent rewrites when both phrases are valid.
+- [x] Bump LafazFlow to `0.10.17`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Revert Unsafe Storage Question Rewrite v0.10.17
+- Root cause: v0.10.16 made a text-only post-processing guess between two valid phrases, so it could not distinguish an intended `would it be` from an intended `would it take`.
+- Removed the unsafe storage `would it be` to `would it take` default correction.
+- Added regression coverage proving `How much storage/disk space/space would it be?` and `How much storage/disk space/space would it take?` are all preserved.
+- Updated the lesson to avoid deterministic intent rewrites when both phrases are valid and there is no audio confidence signal.
+- Bumped LafazFlow to `0.10.17`.
+- Focused storage verb-choice tests pass, 9 tests; full `dotnet test` passes, 413 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

@@ -226,4 +226,4 @@
 
 ## Keep semantic verb repairs domain-bound
 - Pattern: ASR can substitute a plausible helper verb in domain questions, such as `How much storage would it take?` becoming `How much storage would it be?`.
-- Rule: Repair semantic verb drift only when the surrounding noun phrase proves the intended domain, and keep negative tests for valid general wording like `How much would it be?`.
+- Rule: Do not deterministically rewrite between two valid phrases such as `would it be` and `would it take` in the default post-processor; without audio confidence or explicit user rules, preserve the model's wording.

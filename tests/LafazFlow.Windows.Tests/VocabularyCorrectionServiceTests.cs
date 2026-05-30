@@ -345,17 +345,6 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
-    [InlineData("How much storage would it be?", "How much storage would it take?")]
-    [InlineData("How much disk space would it be?", "How much disk space would it take?")]
-    [InlineData("How much space would it be?", "How much space would it take?")]
-    public void ApplyDefaultsFixesStorageWouldItBeAsTake(string input, string expected)
-    {
-        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
-
-        Assert.Equal(expected, corrected);
-    }
-
-    [Theory]
     [InlineData("The best bank for business accounts is local.")]
     [InlineData("Please file the bug option under diagnostics.")]
     [InlineData("The bank found a bug in their mobile app.")]
@@ -369,10 +358,16 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("How much storage would it be?")]
+    [InlineData("How much disk space would it be?")]
+    [InlineData("How much space would it be?")]
+    [InlineData("How much storage would it take?")]
+    [InlineData("How much disk space would it take?")]
+    [InlineData("How much space would it take?")]
     [InlineData("How much would it be?")]
     [InlineData("How much money would it be?")]
     [InlineData("How much storage would it be worth?")]
-    public void ApplyDefaultsPreservesNormalWouldItBeQuestions(string input)
+    public void ApplyDefaultsPreservesStorageQuestionVerbChoice(string input)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);
 
