@@ -89,6 +89,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixStripeDictationInPaymentContext(corrected);
         corrected = FixBestBangForBuckDictationContext(corrected);
         corrected = FixBetterStackErrorsDictationContext(corrected);
+        corrected = FixStorageQuestionWouldItTakeContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -273,6 +274,12 @@ public static partial class VocabularyCorrectionService
         return BetterStackErrorsContextRegex().Replace(text, "Better Stack Errors");
     }
 
+    private static string FixStorageQuestionWouldItTakeContext(string text)
+    {
+        return StorageQuestionWouldItBeRegex().Replace(text, match =>
+            $"{match.Groups[1].Value}would it take{match.Groups[2].Value}");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -353,6 +360,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:batter\s+stack\s+errors|battle\s+stack\s+errors|better\s+stack\s+eros)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex BetterStackErrorsContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(how\s+much\s+(?:storage|disk\s+space|space)\s+)would\s+it\s+be(\?)", RegexOptions.IgnoreCase)]
+    private static partial Regex StorageQuestionWouldItBeRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

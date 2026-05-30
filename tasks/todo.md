@@ -1196,3 +1196,20 @@
 - Focused vocabulary/settings tests pass, 20 tests; full `dotnet test` passes, 404 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.15.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Storage Question Vocabulary Hotfix v0.10.16
+- [x] Add failing regressions for `How much storage/space would it be?` drifting from `take`.
+- [x] Preserve normal `How much would it be?` pricing/estimation questions.
+- [x] Add a narrow storage/space-only correction for `would it be` to `would it take`.
+- [x] Bump LafazFlow to `0.10.16`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Storage Question Vocabulary Hotfix v0.10.16
+- Added storage/space-only correction coverage for `How much storage would it be?` to `How much storage would it take?`.
+- Also covered `disk space` and `space` variants.
+- Preserved normal pricing/estimation wording such as `How much would it be?` and `How much money would it be?`.
+- Added a lesson for keeping semantic verb repairs domain-bound.
+- Bumped LafazFlow to `0.10.16`.
+- Focused storage question tests pass, 6 tests; full `dotnet test` passes, 410 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.16.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

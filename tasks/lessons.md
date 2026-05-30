@@ -223,3 +223,7 @@
 ## Repair idioms as complete phrases
 - Pattern: ASR can break idioms into individually plausible words, such as `best bang for buck` becoming `best bank for bug`.
 - Rule: Repair observed idiom failures as complete phrase patterns with nearby context, never as broad single-word homophone rewrites.
+
+## Keep semantic verb repairs domain-bound
+- Pattern: ASR can substitute a plausible helper verb in domain questions, such as `How much storage would it take?` becoming `How much storage would it be?`.
+- Rule: Repair semantic verb drift only when the surrounding noun phrase proves the intended domain, and keep negative tests for valid general wording like `How much would it be?`.
