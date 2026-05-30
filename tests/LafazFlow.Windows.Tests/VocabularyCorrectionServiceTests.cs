@@ -8,9 +8,9 @@ public sealed class VocabularyCorrectionServiceTests
     public void ApplyDefaultsFixesTechnicalTerms()
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(
-            "Testing Super B's, superbiz, Supabaes, Supabease, Vircell, Tail, skill, netlify, mintlify, and Maddy Breath.");
+            "Testing Super B's, superbiz, Supabaes, Supabeas, Supabease, Vircell, Tail, skill, netlify, mintlify, inventabo, and Maddy Breath.");
 
-        Assert.Equal("Testing Supabase, Supabase, Supabase, Supabase, Vercel, Tailscale, Netlify, Mintlify, and MediBrave.", corrected);
+        Assert.Equal("Testing Supabase, Supabase, Supabase, Supabase, Supabase, Vercel, Tailscale, Netlify, Mintlify, Contabo, and MediBrave.", corrected);
     }
 
     [Theory]

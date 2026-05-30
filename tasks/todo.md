@@ -1180,3 +1180,19 @@
 - Focused vocabulary tests pass, 119 tests; full `dotnet test` passes, 404 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.14.0`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Supabase Contabo Vocabulary Hotfix v0.10.15
+- [x] Verify the running app, model, and recent latency logs before changing code.
+- [x] Add focused vocabulary regressions for observed `Supabeas` and `Inventabo` drift.
+- [x] Add narrow offline corrections to `Supabase` and `Contabo`.
+- [x] Bump LafazFlow to `0.10.15`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Supabase Contabo Vocabulary Hotfix v0.10.15
+- Runtime audit showed the current app is `v0.10.14` using `ggml-large-v3-turbo-q5_0.bin` through the CUDA quality profile.
+- The regression was vocabulary coverage, not a model/profile switch.
+- Added exact observed correction coverage for `Supabeas` to `Supabase` and `Inventabo` to `Contabo`.
+- Bumped LafazFlow to `0.10.15`.
+- Focused vocabulary/settings tests pass, 20 tests; full `dotnet test` passes, 404 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Stable publish/launch smoke passed from `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe`, reporting file version `0.10.15.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
