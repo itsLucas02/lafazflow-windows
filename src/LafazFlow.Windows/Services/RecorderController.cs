@@ -269,6 +269,13 @@ public sealed class RecorderController
         Exception? capturedError = null;
         try
         {
+            var signal = AudioSignalAnalyzer.AnalyzeWav(job.AudioPath);
+            if (signal.IsEffectivelySilent)
+            {
+                throw new InvalidOperationException(
+                    "Microphone input was silent. Check the Windows input device, mic mute, and input volume.");
+            }
+
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
             var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
@@ -281,6 +288,11 @@ public sealed class RecorderController
                 runtime.DecodeOptions,
                 cancellationToken);
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperFinished);
+            if (string.IsNullOrWhiteSpace(transcript))
+            {
+                throw new InvalidOperationException(
+                    "No speech was transcribed. Check the microphone input and try again.");
+            }
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingStarted);
             if (job.Settings.EnableVocabularyCorrections)

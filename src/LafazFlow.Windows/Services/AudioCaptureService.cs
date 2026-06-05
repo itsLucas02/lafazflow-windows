@@ -19,6 +19,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
         _waveIn = new WaveInEvent
         {
+            DeviceNumber = -1,
             WaveFormat = new WaveFormat(16000, 16, 1),
             BufferMilliseconds = 50
         };

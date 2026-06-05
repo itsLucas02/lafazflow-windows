@@ -227,3 +227,7 @@
 ## Keep semantic verb repairs domain-bound
 - Pattern: ASR can substitute a plausible helper verb in domain questions, such as `How much storage would it take?` becoming `How much storage would it be?`.
 - Rule: Do not deterministically rewrite between two valid phrases such as `would it be` and `would it take` in the default post-processor; without audio confidence or explicit user rules, preserve the model's wording.
+
+## Treat near-silent captures as microphone failures
+- Pattern: A dictation can record a valid WAV container with near-zero signal, causing VAD to produce an empty transcript while the app still reports a completed paste.
+- Rule: Analyze captured audio before transcription, block effectively silent recordings with a microphone error, and never paste whitespace-only transcripts.

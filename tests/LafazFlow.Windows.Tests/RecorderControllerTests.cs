@@ -348,6 +348,42 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task SilentRecordingShowsMicrophoneErrorAndDoesNotPaste()
+    {
+        var silentAudioPath = WritePcm16Wav(Enumerable.Repeat((short)2, 16000));
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService(silentAudioPath);
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var paste = new FakeClipboardPasteService();
+        var transcriptionCalled = false;
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ =>
+            {
+                transcriptionCalled = true;
+                return Task.FromResult("should not happen");
+            }),
+            paste,
+            CreateSettingsStore(),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.False(transcriptionCalled);
+        Assert.Empty(paste.Texts);
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.Contains("microphone", viewModel.StatusDetail, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(soundPlayer.PlayedPaths, path => path.EndsWith("esc.wav"));
+        Assert.DoesNotContain(soundPlayer.PlayedPaths, path => path.EndsWith("pastess.mp3"));
+    }
+
+    [Fact]
     public async Task ToggleDuringStopHandoffDoesNotStartNewRecording()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -631,6 +667,36 @@ public sealed class RecorderControllerTests
         File.WriteAllBytes(Path.Combine(root, "pastess.mp3"), [1]);
         File.WriteAllBytes(Path.Combine(root, "esc.wav"), [1]);
         return new SoundCueService(root, player);
+    }
+
+    private static string WritePcm16Wav(IEnumerable<short> samples)
+    {
+        var sampleArray = samples.ToArray();
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.wav");
+        using var stream = File.Create(path);
+        using var writer = new BinaryWriter(stream);
+        var dataLength = sampleArray.Length * sizeof(short);
+
+        writer.Write("RIFF"u8);
+        writer.Write(36 + dataLength);
+        writer.Write("WAVE"u8);
+        writer.Write("fmt "u8);
+        writer.Write(16);
+        writer.Write((short)1);
+        writer.Write((short)1);
+        writer.Write(16000);
+        writer.Write(16000 * sizeof(short));
+        writer.Write((short)sizeof(short));
+        writer.Write((short)16);
+        writer.Write("data"u8);
+        writer.Write(dataLength);
+
+        foreach (var sample in sampleArray)
+        {
+            writer.Write(sample);
+        }
+
+        return path;
     }
 
     private sealed class FakeMiniRecorderWindow : IMiniRecorderWindow

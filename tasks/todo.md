@@ -1230,3 +1230,22 @@
 - Bumped LafazFlow to `0.10.17`.
 - Focused storage verb-choice tests pass, 9 tests; full `dotnet test` passes, 413 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Silent Microphone Capture Hotfix v0.10.18
+- [x] Verify today's recordings and logs to separate paste failure from empty transcription.
+- [x] Add tests for detecting effectively silent WAV recordings.
+- [x] Add a controller guard so silent recordings show an error and never paste an empty transcript.
+- [x] Use the Windows wave mapper/default recording device instead of hard-coding input device `0`.
+- [x] Bump LafazFlow to `0.10.18`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Silent Microphone Capture Hotfix v0.10.18
+- Root cause: today's recordings were valid WAV files but had near-zero signal (`-80 dB` to `-90 dB` peak), so VAD produced no speech segments and LafazFlow attempted to paste an empty transcript.
+- Confirmed this was not primarily a Cursor paste failure: logs showed successful paste attempts, while paired transcript files were `0` bytes.
+- Added `AudioSignalAnalyzer` to detect effectively silent 16-bit PCM WAV recordings.
+- Added a controller guard that fails with a microphone-input error before Whisper or paste when the captured WAV is effectively silent.
+- Added a second guard so whitespace-only transcription output cannot be pasted.
+- Switched `WaveInEvent` to `DeviceNumber = -1` so Windows selects the wave mapper/default recording input instead of assuming device `0`.
+- Bumped LafazFlow to `0.10.18`.
+- Focused silent-audio tests pass, 3 tests; full `dotnet test` passes, 416 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
