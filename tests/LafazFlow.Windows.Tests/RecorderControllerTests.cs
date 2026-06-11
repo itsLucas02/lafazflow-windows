@@ -384,6 +384,39 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task NoSpeechErrorAutoDismissesAndHidesRecorderShell()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("   ")),
+            paste,
+            CreateSettingsStore(),
+            CreateSoundCueService(new RecordingSoundCuePlayer()),
+            () => (IntPtr)111,
+            transientErrorDismissDelay: TimeSpan.FromMilliseconds(10));
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.Equal("No speech", viewModel.StatusText);
+        Assert.Empty(paste.Texts);
+
+        await Task.Delay(100);
+
+        Assert.Equal(RecordingState.Idle, viewModel.State);
+        Assert.Equal("", viewModel.StatusText);
+        Assert.Equal(1, window.HideCount);
+    }
+
+    [Fact]
     public async Task ToggleDuringStopHandoffDoesNotStartNewRecording()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -703,12 +736,15 @@ public sealed class RecorderControllerTests
     {
         public bool IsInsideInvokeAsync { get; private set; }
 
+        public int HideCount { get; private set; }
+
         public void ShowBottomCenter()
         {
         }
 
         public void Hide()
         {
+            HideCount++;
         }
 
         public Task InvokeAsync(Action action)

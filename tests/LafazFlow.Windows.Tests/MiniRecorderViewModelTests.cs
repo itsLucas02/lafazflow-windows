@@ -141,6 +141,30 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
+    public void SetErrorSummarizesNoSpeechForCompactBoard()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.SetError("No speech was transcribed. Check the microphone input and try again.");
+
+        Assert.Equal("No speech", viewModel.StatusText);
+        Assert.Equal("No speech was transcribed. Check the microphone input and try again.", viewModel.StatusDetail);
+    }
+
+    [Fact]
+    public void SetErrorSummarizesSilentMicrophoneForCompactBoard()
+    {
+        var viewModel = new MiniRecorderViewModel();
+
+        viewModel.SetError("Microphone input was silent. Check the Windows input device, mic mute, and input volume.");
+
+        Assert.Equal("Mic silent", viewModel.StatusText);
+        Assert.Equal(
+            "Microphone input was silent. Check the Windows input device, mic mute, and input volume.",
+            viewModel.StatusDetail);
+    }
+
+    [Fact]
     public void AppVersionUsesCompactMajorMinorPatchFormat()
     {
         var viewModel = new MiniRecorderViewModel();

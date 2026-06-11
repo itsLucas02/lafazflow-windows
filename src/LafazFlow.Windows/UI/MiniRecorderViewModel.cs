@@ -208,6 +208,16 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
 
     private static string SummarizeError(string message)
     {
+        if (message.Contains("No speech", StringComparison.OrdinalIgnoreCase))
+        {
+            return "No speech";
+        }
+
+        if (message.Contains("Microphone input was silent", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Mic silent";
+        }
+
         if (message.Contains("clipboard", StringComparison.OrdinalIgnoreCase))
         {
             return "Clipboard error";

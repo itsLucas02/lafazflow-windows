@@ -1249,3 +1249,20 @@
 - Bumped LafazFlow to `0.10.18`.
 - Focused silent-audio tests pass, 3 tests; full `dotnet test` passes, 416 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Transient No-Speech Error Auto-Dismiss v0.10.19
+- [x] Reproduce the UX issue from the error path: failed queued jobs stay in `RecordingState.Error` with no hide/reset path.
+- [x] Summarize no-speech and silent-mic errors for the compact recorder shell.
+- [x] Keep the full error message in `StatusDetail` for tooltip/log surfaces.
+- [x] Auto-dismiss transient queued-dictation errors only if the same error is still active.
+- [x] Bump LafazFlow to `0.10.19`.
+- [x] Verify focused tests, full tests, build, safety scans, and stable publish/relaunch.
+
+## Review: Transient No-Speech Error Auto-Dismiss v0.10.19
+- Root cause: queued dictation failures called `SetError` but had no timed hide/reset path, so the mini recorder shell stayed pinned in `RecordingState.Error`.
+- Added compact shell labels for no-speech and silent-microphone errors: `No speech` and `Mic silent`.
+- Preserved the full error message in `StatusDetail` for tooltip/detail surfaces.
+- Added guarded auto-dismiss for transient queued-dictation errors; it hides only if the same error is still active, so a newer recording is not hidden by an old timer.
+- Bumped LafazFlow to `0.10.19`.
+- Focused no-speech/silent-mic tests pass, 3 tests; full `dotnet test` passes, 419 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

@@ -231,3 +231,7 @@
 ## Treat near-silent captures as microphone failures
 - Pattern: A dictation can record a valid WAV container with near-zero signal, causing VAD to produce an empty transcript while the app still reports a completed paste.
 - Rule: Analyze captured audio before transcription, block effectively silent recordings with a microphone error, and never paste whitespace-only transcripts.
+
+## Keep transient dictation errors compact and dismissible
+- Pattern: A full error sentence such as `No speech was transcribed...` cannot fit in the mini recorder shell and can pin the black bar on screen if the error state has no recovery path.
+- Rule: Show a short compact error label, preserve full detail separately, and auto-dismiss transient queued-dictation errors when no newer recorder state has replaced them.

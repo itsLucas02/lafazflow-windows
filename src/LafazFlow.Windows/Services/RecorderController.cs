@@ -19,6 +19,7 @@ public sealed class RecorderController
     private readonly ILatencyReporter _latencyReporter;
     private readonly ITargetTextContextService _targetTextContext;
     private readonly Func<IntPtr> _getForegroundWindow;
+    private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
     private string? _currentAudioPath;
     private LatencyTrace? _currentLatencyTrace;
@@ -37,7 +38,8 @@ public sealed class RecorderController
         Func<IntPtr>? getForegroundWindow = null,
         ILiveTranscriptPreviewService? livePreview = null,
         ILatencyReporter? latencyReporter = null,
-        ITargetTextContextService? targetTextContext = null)
+        ITargetTextContextService? targetTextContext = null,
+        TimeSpan? transientErrorDismissDelay = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -50,6 +52,7 @@ public sealed class RecorderController
         _latencyReporter = latencyReporter ?? new FileLatencyReporter();
         _targetTextContext = targetTextContext ?? new FocusedTargetTextContextService();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
+        _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
@@ -339,6 +342,7 @@ public sealed class RecorderController
             capturedError = error;
             var message = ShortError(error);
             await _window.InvokeAsync(() => _viewModel.SetError(message));
+            ScheduleTransientErrorDismiss(message);
             _soundCues.PlayError(SoundCueOptions.FromSettings(job.Settings));
             LogError(error.ToString());
         }
@@ -382,6 +386,28 @@ public sealed class RecorderController
         return string.IsNullOrWhiteSpace(error.Message)
             ? error.GetType().Name
             : error.Message;
+    }
+
+    private void ScheduleTransientErrorDismiss(string message)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(_transientErrorDismissDelay);
+                await _window.InvokeAsync(() =>
+                {
+                    if (_viewModel.State == RecordingState.Error && _viewModel.StatusDetail == message)
+                    {
+                        _viewModel.State = RecordingState.Idle;
+                        _window.Hide();
+                    }
+                });
+            }
+            catch
+            {
+            }
+        });
     }
 
     private static void LogError(string message)
