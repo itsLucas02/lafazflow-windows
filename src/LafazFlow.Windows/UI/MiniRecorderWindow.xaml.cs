@@ -62,9 +62,9 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2;
         Top = workArea.Bottom - Height - 24;
-        var wasVisible = IsVisible && !_isHiding;
+        var needsEntrance = !IsVisible || _isHiding || Opacity < 0.05;
         CancelWindowAnimations();
-        if (!wasVisible)
+        if (needsEntrance)
         {
             Opacity = 0;
             _shellScale.ScaleX = MiniRecorderVisualSpec.WindowEntranceStartScale;
@@ -74,7 +74,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
 
         Show();
         _isHiding = false;
-        if (!wasVisible)
+        if (needsEntrance)
         {
             FadeElement(this, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
             AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
@@ -87,6 +87,8 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     {
         if (!IsVisible)
         {
+            _isHiding = false;
+            Opacity = 0;
             return;
         }
 

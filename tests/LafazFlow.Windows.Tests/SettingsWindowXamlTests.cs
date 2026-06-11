@@ -152,6 +152,19 @@ public sealed class SettingsWindowXamlTests
         Assert.DoesNotContain("AnimateDouble(RecorderShell, HeightProperty", codeBehind);
     }
 
+    [Fact]
+    public void MiniRecorderShowSelfHealsInvisibleVisibleWindowState()
+    {
+        var repoRoot = FindRepoRoot();
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "MiniRecorderWindow.xaml.cs");
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
+
+        Assert.Contains("var needsEntrance = !IsVisible || _isHiding || Opacity < 0.05;", codeBehind);
+        Assert.Contains("if (needsEntrance)", codeBehind);
+        Assert.Contains("_isHiding = false;", codeBehind);
+        Assert.Contains("Opacity = 0;", codeBehind);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

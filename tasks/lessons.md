@@ -235,3 +235,7 @@
 ## Keep transient dictation errors compact and dismissible
 - Pattern: A full error sentence such as `No speech was transcribed...` cannot fit in the mini recorder shell and can pin the black bar on screen if the error state has no recovery path.
 - Rule: Show a short compact error label, preserve full detail separately, and auto-dismiss transient queued-dictation errors when no newer recorder state has replaced them.
+
+## Treat opacity-zero recorder windows as hidden
+- Pattern: WPF can leave a recorder window technically visible while its opacity is near zero after overlapping show/hide animations or transient error dismissal.
+- Rule: The mini recorder show path must treat `IsVisible == true` with near-zero opacity as hidden and replay the entrance animation.

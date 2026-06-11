@@ -1287,3 +1287,21 @@
 - Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
 - Stable launch smoke reports product version `0.10.20+10487b9d4f2018d17db7fc1482db252adb2211fd`.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Invisible Shell After No-Speech Hotfix v0.10.21
+- [x] Audit recent logs and confirm hotkeys/transcription continue while the shell can become visually absent.
+- [x] Make the mini recorder entrance path self-heal when the window is technically visible but opacity is near zero.
+- [x] Reset stale hide state when `Hide()` is called while already hidden.
+- [x] Add source regression coverage for the self-healing show guard.
+- [x] Update lessons with the WPF animation-state failure pattern.
+- [x] Bump LafazFlow to `0.10.21`.
+
+## Review: Invisible Shell After No-Speech Hotfix v0.10.21
+- Root cause: the recorder window could be technically visible while opacity was near zero after overlapping hide/show or transient error dismissal, causing later recordings to run without a visible shell.
+- Changed ShowBottomCenter to replay entrance animation when IsVisible is false, the hide flag is active, or opacity is below 0.05.
+- Changed Hide to clear stale hide state when it is called while already hidden.
+- Added source regression coverage for the invisible-visible self-healing guard.
+- Bumped LafazFlow to 0.10.21.
+- Full dotnet test passes, 421 tests; full dotnet build passes with 0 warnings; git diff --check passes.
+- Republished artifacts\\stable-single\\LafazFlow.Windows\\LafazFlow.Windows.exe and artifacts\\stable-cuda-quality\\LafazFlow.Windows\\LafazFlow.Windows.exe, then relaunched the pinned stable-single app.
+- Stable launch smoke reports product version 0.10.21+d9ed0ff53252da0bb6e4857b150099bdb478e193.
