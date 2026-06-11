@@ -1266,3 +1266,24 @@
 - Bumped LafazFlow to `0.10.19`.
 - Focused no-speech/silent-mic tests pass, 3 tests; full `dotnet test` passes, 419 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
+## Plan: Fast Paste Dismiss And Exit Animation Polish v0.10.20
+- [x] Separate visible paste completion from clipboard restore wait.
+- [x] Restore clipboard asynchronously while logging restore success or failure.
+- [x] Hide the mini recorder immediately after paste gesture success.
+- [x] Guard mini recorder show/hide animation overlap for rapid dictation cycles.
+- [x] Add regression coverage for hiding before clipboard restore completion.
+- [x] Bump LafazFlow to `0.10.20`.
+- [x] Verify tests, build, stable publish, launch smoke, and safety scans.
+
+## Review: Fast Paste Dismiss And Exit Animation Polish v0.10.20
+- Root cause: `ClipboardPasteService.PasteAsync` waited at least `1500ms` to restore the previous clipboard before returning, so the UI kept showing processing dots even though the text had already pasted.
+- Changed paste completion to mean the paste gesture has been dispatched; clipboard restore now continues in the background and logs independently.
+- Kept the delayed clipboard restore on the WPF UI context so the non-blocking restore path still uses the clipboard safely.
+- Added a `ClipboardPasteResult` so paste logging can report target, gesture, restore scheduling, and restore delay without blocking UI dismissal.
+- Hardened the mini recorder entrance/exit path so a new show cancels stale hide animations and resets opacity/scale/translation cleanly.
+- Bumped LafazFlow to `0.10.20`.
+- Full `dotnet test` passes, 420 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
+- Stable launch smoke reports product version `0.10.20+10487b9d4f2018d17db7fc1482db252adb2211fd`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.

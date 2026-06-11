@@ -2,7 +2,7 @@ namespace LafazFlow.Windows.Services;
 
 public interface IClipboardPasteService
 {
-    Task PasteAsync(
+    Task<ClipboardPasteResult> PasteAsync(
         string text,
         bool restoreClipboard,
         int restoreDelayMs,

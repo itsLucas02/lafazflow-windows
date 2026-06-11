@@ -16,7 +16,7 @@ public sealed class ClipboardPasteService : IClipboardPasteService
     private const uint KeyEventKeyUp = 0x0002;
     private const int PasteRetryDelayMs = 90;
 
-    public async Task PasteAsync(
+    public async Task<ClipboardPasteResult> PasteAsync(
         string text,
         bool restoreClipboard,
         int restoreDelayMs,
@@ -41,10 +41,35 @@ public sealed class ClipboardPasteService : IClipboardPasteService
 
         await SendPasteGestureWithRetryAsync(profile, cancellationToken);
 
+        var effectiveRestoreDelayMs = Math.Max(restoreDelayMs, 1500);
         if (profile.ShouldRestoreClipboard && previousClipboard is not null)
         {
-            await Task.Delay(Math.Max(restoreDelayMs, 1500), cancellationToken);
-            await SetClipboardDataWithRetryAsync(previousClipboard, cancellationToken);
+            ScheduleClipboardRestore(previousClipboard, effectiveRestoreDelayMs);
+        }
+
+        return new ClipboardPasteResult(
+            profile.ShouldRestoreClipboard && previousClipboard is not null,
+            effectiveRestoreDelayMs,
+            profile.Gesture,
+            SafeProcessName(profile.ProcessName));
+    }
+
+    private static void ScheduleClipboardRestore(System.Windows.IDataObject previousClipboard, int restoreDelayMs)
+    {
+        _ = RestoreClipboardLaterAsync(previousClipboard, restoreDelayMs);
+    }
+
+    private static async Task RestoreClipboardLaterAsync(System.Windows.IDataObject previousClipboard, int restoreDelayMs)
+    {
+        try
+        {
+            await Task.Delay(restoreDelayMs);
+            await SetClipboardDataWithRetryAsync(previousClipboard, CancellationToken.None);
+            Log($"Clipboard restore completed after {restoreDelayMs}ms.");
+        }
+        catch (Exception error)
+        {
+            Log($"Clipboard restore failed after paste: {error.GetType().Name}.");
         }
     }
 

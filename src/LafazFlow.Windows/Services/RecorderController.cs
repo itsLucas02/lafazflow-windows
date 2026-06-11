@@ -317,12 +317,20 @@ public sealed class RecorderController
             job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateFinished);
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.PasteStarted);
-            await _window.InvokeAsync(() => _clipboardPaste.PasteAsync(
+            ClipboardPasteResult? pasteResult = null;
+            await _window.InvokeAsync(async () =>
+            {
+                pasteResult = await _clipboardPaste.PasteAsync(
                     transcript,
                     job.Settings.RestoreClipboardAfterPaste,
                     job.Settings.ClipboardRestoreDelayMs,
                     job.TargetWindow,
-                    cancellationToken));
+                    cancellationToken);
+            });
+            if (pasteResult is not null)
+            {
+                LogPasteResult(pasteResult);
+            }
             job.LatencyTrace?.Mark(LatencyCheckpoint.PasteFinished);
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.UiHideStarted);
@@ -411,6 +419,17 @@ public sealed class RecorderController
     }
 
     private static void LogError(string message)
+    {
+        LogInfo(message);
+    }
+
+    private static void LogPasteResult(ClipboardPasteResult result)
+    {
+        LogInfo(
+            $"Paste completed target={result.TargetProcessName}, gesture={result.Gesture}, restoreScheduled={result.RestoreScheduled}, restoreDelayMs={result.RestoreDelayMs}.");
+    }
+
+    private static void LogInfo(string message)
     {
         var logRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

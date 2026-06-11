@@ -23,6 +23,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
     private bool _lastHasStatusText;
     private bool _lastHasLiveTranscript;
     private int _lastProcessingPulseBucket = -1;
+    private bool _isHiding;
 
     public MiniRecorderWindow(MiniRecorderViewModel viewModel)
     {
@@ -61,7 +62,8 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Left + (workArea.Width - Width) / 2;
         Top = workArea.Bottom - Height - 24;
-        var wasVisible = IsVisible;
+        var wasVisible = IsVisible && !_isHiding;
+        CancelWindowAnimations();
         if (!wasVisible)
         {
             Opacity = 0;
@@ -71,6 +73,7 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         }
 
         Show();
+        _isHiding = false;
         if (!wasVisible)
         {
             FadeElement(this, 1, MiniRecorderVisualSpec.WindowEntranceMilliseconds, EntranceEase());
@@ -87,17 +90,34 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
             return;
         }
 
+        _isHiding = true;
+        CancelWindowAnimations();
         var fade = new DoubleAnimation
         {
             To = 0,
             Duration = TimeSpan.FromMilliseconds(MiniRecorderVisualSpec.WindowExitMilliseconds),
             EasingFunction = ExitEase()
         };
-        fade.Completed += (_, _) => base.Hide();
+        fade.Completed += (_, _) =>
+        {
+            if (_isHiding)
+            {
+                base.Hide();
+                _isHiding = false;
+            }
+        };
         BeginAnimation(OpacityProperty, fade);
         AnimateDouble(_shellScale, ScaleTransform.ScaleXProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
         AnimateDouble(_shellScale, ScaleTransform.ScaleYProperty, MiniRecorderVisualSpec.WindowEntranceStartScale, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
         AnimateDouble(_shellTranslate, TranslateTransform.YProperty, MiniRecorderVisualSpec.WindowExitTranslateY, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
+    }
+
+    private void CancelWindowAnimations()
+    {
+        BeginAnimation(OpacityProperty, null);
+        _shellScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        _shellScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        _shellTranslate.BeginAnimation(TranslateTransform.YProperty, null);
     }
 
     public Task InvokeAsync(Action action)

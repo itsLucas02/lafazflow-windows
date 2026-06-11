@@ -532,6 +532,43 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task CompletedDictationHidesImmediatelyAfterPasteGestureBeforeClipboardRestore()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var pasteGestureSent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseRestore = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var paste = new FakeClipboardPasteService(
+            onPaste: () => pasteGestureSent.SetResult(),
+            restoreGate: releaseRestore.Task);
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await pasteGestureSent.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+        await Task.Delay(50);
+
+        Assert.Equal(1, window.HideCount);
+        Assert.False(paste.RestoreCompleted);
+
+        releaseRestore.SetResult();
+        await paste.RestoreCompletedTask.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.True(paste.RestoreCompleted);
+    }
+
+    [Fact]
     public async Task CompletedDictationUsesTargetTextContextForContinuationCasing()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -840,11 +877,16 @@ public sealed class RecorderControllerTests
     {
         private readonly Func<bool>? _isInsideWindowDispatcher;
         private readonly Action? _onPaste;
+        private readonly Task? _restoreGate;
 
-        public FakeClipboardPasteService(Func<bool>? isInsideWindowDispatcher = null, Action? onPaste = null)
+        public FakeClipboardPasteService(
+            Func<bool>? isInsideWindowDispatcher = null,
+            Action? onPaste = null,
+            Task? restoreGate = null)
         {
             _isInsideWindowDispatcher = isInsideWindowDispatcher;
             _onPaste = onPaste;
+            _restoreGate = restoreGate;
         }
 
         public List<string> Texts { get; } = [];
@@ -853,7 +895,12 @@ public sealed class RecorderControllerTests
 
         public bool WasPastedInsideWindowDispatcher { get; private set; }
 
-        public Task PasteAsync(
+        public bool RestoreCompleted { get; private set; }
+
+        public TaskCompletionSource RestoreCompletedTask { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ClipboardPasteResult> PasteAsync(
             string text,
             bool restoreClipboard,
             int restoreDelayMs,
@@ -864,7 +911,21 @@ public sealed class RecorderControllerTests
             WasPastedInsideWindowDispatcher = _isInsideWindowDispatcher?.Invoke() ?? false;
             Texts.Add(text);
             TargetWindows.Add(targetWindow);
-            return Task.CompletedTask;
+            if (_restoreGate is not null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    await _restoreGate;
+                    RestoreCompleted = true;
+                    RestoreCompletedTask.SetResult();
+                }, CancellationToken.None);
+            }
+
+            return Task.FromResult(new ClipboardPasteResult(
+                restoreClipboard,
+                restoreDelayMs,
+                PasteKeyGesture.ControlV,
+                "test"));
         }
     }
 
