@@ -3,6 +3,26 @@ namespace LafazFlow.Windows.Tests;
 public sealed class SettingsWindowXamlTests
 {
     [Fact]
+    public void SettingsWindowUsesSidebarNavigationShell()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Width=\"860\"", xaml);
+        Assert.Contains("ItemsSource=\"{Binding SettingsSections}\"", xaml);
+        Assert.Contains("SelectedItem=\"{Binding SelectedSection}\"", xaml);
+        Assert.Contains("local:SettingsSection.Overview", xaml);
+        Assert.Contains("local:SettingsSection.Dictation", xaml);
+        Assert.Contains("local:SettingsSection.Models", xaml);
+        Assert.Contains("local:SettingsSection.Vocabulary", xaml);
+        Assert.Contains("local:SettingsSection.Sound", xaml);
+        Assert.Contains("local:SettingsSection.Clipboard", xaml);
+        Assert.Contains("local:SettingsSection.Diagnostics", xaml);
+        Assert.Contains("local:SettingsSection.About", xaml);
+    }
+
+    [Fact]
     public void ReadOnlyFolderTextBoxesUseOneWayBinding()
     {
         var repoRoot = FindRepoRoot();
@@ -110,6 +130,18 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Click=\"TestMicrophone_OnClick\"", xaml);
         Assert.Contains("Click=\"TestTranscription_OnClick\"", xaml);
         Assert.Contains("Click=\"ResetSettings_OnClick\"", xaml);
+    }
+
+    [Fact]
+    public void SettingsWindowDoesNotModifyMiniRecorderShell()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.DoesNotContain("MiniRecorderWindow", xaml);
+        Assert.DoesNotContain("RecorderShell", xaml);
+        Assert.DoesNotContain("Visualizer", xaml);
     }
 
     [Fact]

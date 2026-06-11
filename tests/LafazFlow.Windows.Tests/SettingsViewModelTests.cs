@@ -7,6 +7,32 @@ namespace LafazFlow.Windows.Tests;
 public sealed class SettingsViewModelTests
 {
     [Fact]
+    public void SelectedSectionDefaultsToOverviewAndExposesAllSections()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        var viewModel = SettingsViewModel.Load(store);
+
+        Assert.Equal(SettingsSection.Overview, viewModel.SelectedSection);
+        Assert.Equal(Enum.GetValues<SettingsSection>(), viewModel.SettingsSections);
+    }
+
+    [Fact]
+    public void SelectedSectionRaisesPropertyChanged()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        var viewModel = SettingsViewModel.Load(store);
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+
+        viewModel.SelectedSection = SettingsSection.Sound;
+
+        Assert.Equal(SettingsSection.Sound, viewModel.SelectedSection);
+        Assert.Contains(nameof(SettingsViewModel.SelectedSection), changed);
+    }
+
+    [Fact]
     public void LoadCopiesPersistedSettingsIntoEditableProperties()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

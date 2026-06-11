@@ -42,6 +42,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _runtimeDiagnosticsMessage = "";
     private string _latencyDiagnosticsMessage = "";
     private string _latestLatencySummary = "";
+    private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
         SettingsStore settingsStore,
@@ -291,6 +292,15 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     }
 
     public bool HasValidationMessage => !string.IsNullOrWhiteSpace(ValidationMessage);
+
+    public IReadOnlyList<SettingsSection> SettingsSections { get; } =
+        Enum.GetValues<SettingsSection>();
+
+    public SettingsSection SelectedSection
+    {
+        get => _selectedSection;
+        set => SetProperty(ref _selectedSection, value);
+    }
 
     public static SettingsViewModel Load(
         SettingsStore settingsStore,

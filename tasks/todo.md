@@ -1305,3 +1305,23 @@
 - Full dotnet test passes, 421 tests; full dotnet build passes with 0 warnings; git diff --check passes.
 - Republished artifacts\\stable-single\\LafazFlow.Windows\\LafazFlow.Windows.exe and artifacts\\stable-cuda-quality\\LafazFlow.Windows\\LafazFlow.Windows.exe, then relaunched the pinned stable-single app.
 - Stable launch smoke reports product version 0.10.21+d9ed0ff53252da0bb6e4857b150099bdb478e193.
+
+## Plan: Settings UI Redesign v0.10.22
+- [x] Keep the black recorder shell out of scope.
+- [x] Add Settings section navigation state to the view model.
+- [x] Replace the raw single-scroll Settings window with a two-pane sidebar shell.
+- [x] Regroup existing controls into Overview, Dictation, Models, Vocabulary, Sound, Clipboard, Diagnostics, and About.
+- [x] Preserve existing bindings, browse handlers, diagnostics handlers, sound test handlers, Save, Cancel, and validation.
+- [x] Add tests for sidebar navigation, selected section state, and recorder-shell non-involvement.
+- [x] Bump LafazFlow to 0.10.22.
+
+## Review: Settings UI Redesign v0.10.22
+- Reworked only SettingsWindow.xaml; no mini recorder shell files were changed for this redesign.
+- Added SettingsSection and SelectedSection so Settings opens on Overview and switches sections through the left sidebar.
+- Moved technical runtime/model/VAD controls under Models, vocabulary textareas under Vocabulary, sound controls under Sound, clipboard behavior under Clipboard, diagnostics tables under Diagnostics, and folders/reset under About.
+- Kept all existing settings persistence, validation, dialogs, browse actions, diagnostics actions, sound cue test buttons, and Save/Cancel behavior intact.
+- Bumped LafazFlow to 0.10.22.
+- Full dotnet test passes, 425 tests; full dotnet build passes with 0 warnings; git diff --check passes.
+- Republished artifacts\\stable-single\\LafazFlow.Windows\\LafazFlow.Windows.exe and artifacts\\stable-cuda-quality\\LafazFlow.Windows\\LafazFlow.Windows.exe, then relaunched the pinned stable-single app.
+- Stable launch smoke reports product version 0.10.22+c2f311a32b6331317bad37312040cddef4a18f8e and the second-launch Settings signal keeps the app responsive.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
