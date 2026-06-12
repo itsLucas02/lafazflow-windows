@@ -94,6 +94,7 @@ public sealed class LocalModelLibraryService
         return Directory
             .EnumerateFiles(ModelDirectory, "*.bin", SearchOption.TopDirectoryOnly)
             .Where(path => !knownFiles.Contains(Path.GetFileName(path)))
+            .Where(path => IsLikelyTranscriptionModelFile(Path.GetFileName(path)))
             .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .Select(path =>
             {
@@ -190,6 +191,12 @@ public sealed class LocalModelLibraryService
         var root = ModelDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             + Path.DirectorySeparatorChar;
         return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsLikelyTranscriptionModelFile(string fileName)
+    {
+        return !fileName.Contains("silero", StringComparison.OrdinalIgnoreCase)
+            && !fileName.Contains("vad", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatBytes(long bytes)

@@ -31,6 +31,21 @@ public sealed class LocalModelLibraryServiceTests
     }
 
     [Fact]
+    public void DoesNotListAuxiliaryVadModelsAsImportedTranscriptionModels()
+    {
+        var root = CreateRoot();
+        File.WriteAllText(Path.Combine(root, "ggml-silero-v5.1.2.bin"), "vad");
+        File.WriteAllText(Path.Combine(root, "custom-vad-helper.bin"), "vad");
+        File.WriteAllText(Path.Combine(root, "custom-medical.bin"), "model");
+        var service = new LocalModelLibraryService(root);
+
+        var imported = service.GetImportedModels();
+
+        var model = Assert.Single(imported);
+        Assert.Equal("custom-medical", model.DisplayName);
+    }
+
+    [Fact]
     public void ImportCopiesOnlyBinFilesIntoModelDirectory()
     {
         var root = CreateRoot();

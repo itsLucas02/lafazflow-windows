@@ -465,6 +465,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal("Active", baseCard.StatusLabel);
         Assert.Equal("142 MB model", baseCard.ModelFileLabel);
         Assert.Equal("Memory ~500 MB", baseCard.MemoryLabel);
+        Assert.Equal("", baseCard.DownloadProgressLabel);
         Assert.Equal("●●●●●", baseCard.SpeedDots);
         Assert.False(string.IsNullOrWhiteSpace(baseCard.StatusBackground));
         Assert.False(string.IsNullOrWhiteSpace(baseCard.StatusBorder));
@@ -473,6 +474,22 @@ public sealed class SettingsViewModelTests
         Assert.Contains(viewModel.ModelCards, card => card.Id == "ggml-large-v3-turbo-q5_0" && !card.IsInstalled);
 
         File.Delete(cliPath);
+    }
+
+    [Fact]
+    public void DownloadProgressLabelOnlyShowsWhileDownloading()
+    {
+        var card = new ModelCardViewModel(
+            LocalModelCatalog.Models.First(),
+            @"C:\Models\whisper\ggml-base.en.bin",
+            isInstalled: false,
+            isActive: false);
+
+        Assert.Equal("", card.DownloadProgressLabel);
+
+        card.MarkDownloading(0.42);
+
+        Assert.Equal("Downloading 42%", card.DownloadProgressLabel);
     }
 
     [Fact]

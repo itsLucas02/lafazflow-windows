@@ -255,3 +255,11 @@
 ## Make model cards readable before decorative
 - Pattern: A model-card UI can be technically functional but still fail if titles inherit poor contrast, status badges are not state-coded, and file size is mixed with RAM usage without labels.
 - Rule: Model cards must use explicit title foregrounds, color-coded status badges, clearly labeled file/memory metadata, and compact score indicators instead of generic progress bars.
+
+## Hide inactive progress labels
+- Pattern: Showing 0% when no download is active makes users wonder what failed or what the percentage means.
+- Rule: Progress labels should include an action word and appear only while that action is happening.
+
+## Keep auxiliary models out of transcription pickers
+- Pattern: VAD files such as ggml-silero-v5.1.2.bin are model files but not transcription models, so listing them beside Whisper transcription models is misleading.
+- Rule: Filter auxiliary VAD/Silero files out of the local transcription model library and keep them only in advanced VAD settings.

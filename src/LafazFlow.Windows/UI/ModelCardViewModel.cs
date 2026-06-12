@@ -105,7 +105,9 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
 
     public double DownloadProgressPercent => Math.Round(DownloadProgress * 100);
 
-    public string DownloadProgressLabel => $"{DownloadProgressPercent:0}%";
+    public string DownloadProgressLabel => IsDownloading
+        ? $"Downloading {DownloadProgressPercent:0}%"
+        : "";
 
     public string StatusLabel
     {

@@ -152,6 +152,8 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Background=\"{Binding StatusBackground}\"", xaml);
         Assert.Contains("BorderBrush=\"{Binding StatusBorder}\"", xaml);
         Assert.Contains("Foreground=\"{Binding StatusForeground}\"", xaml);
+        Assert.Contains("CornerRadius=\"6\"", xaml);
+        Assert.Contains("CornerRadius=\"5\"", xaml);
         Assert.Contains("Foreground=\"{StaticResource TextPrimaryBrush}\"", xaml);
         Assert.Contains("Content=\"{Binding PrimaryActionLabel}\"", xaml);
         Assert.Contains("Click=\"PrimaryModelAction_OnClick\"", xaml);
@@ -177,6 +179,16 @@ public sealed class SettingsWindowXamlTests
         Assert.DoesNotContain("Value=\"{Binding SpeedPercent}\"", xaml);
         Assert.DoesNotContain("Value=\"{Binding AccuracyPercent}\"", xaml);
         Assert.DoesNotContain("Value=\"{Binding DownloadProgressPercent}\"", xaml);
+    }
+
+    [Fact]
+    public void SettingsWindowShowsOwnerCreditInAbout()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Made by Aizzul Luqman, 2026", xaml);
     }
 
     [Fact]

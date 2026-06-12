@@ -1,5 +1,28 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Model Library Clarity Hotfix v0.11.3
+- [x] Hide idle download 0% labels.
+- [x] Change model badges from pill ovals to rounded rectangles.
+- [x] Exclude auxiliary Silero/VAD files from transcription model cards.
+- [x] Add About credit: Made by Aizzul Luqman, 2026.
+- [x] Add regression tests for the above behavior.
+- [x] Bump app version to v0.11.3.
+- [x] Run verification, publish, safety scan, commit, and push.
+
+## Review: Model Library Clarity Hotfix v0.11.3
+- Clarified model-card labels, removed misleading auxiliary VAD entries from the transcription picker, and added the requested About credit.
+- Idle download progress labels are hidden; active downloads show action text such as Downloading 42%.
+- Status and metadata badges now use rounded rectangles instead of pill ovals.
+- Auxiliary Silero/VAD files are filtered out of imported transcription model cards.
+- About now includes Made by Aizzul Luqman, 2026.
+- Focused Settings/model tests passed: 48 tests.
+- Full dotnet test passed: 445 tests.
+- dotnet build passed with 0 warnings and 0 errors.
+- git diff --check passed.
+- Published stable-single and stable-cuda-quality artifacts.
+- Relaunched stable-single; Settings opens as LafazFlow Settings - v0.11.3.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
 ## Plan: Model Library Card Polish v0.11.2
 - [x] Audit the v0.11.1 model-card design complaint.
 - [x] Fix model title contrast with explicit primary foreground.
