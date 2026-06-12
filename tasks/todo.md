@@ -9,7 +9,7 @@
 - [x] Run full test/build/publish verification.
 - [x] Relaunch the stable Windows app for owner review.
 - [x] Run public repo safety scan.
-- [ ] Commit and push the contrast hotfix.
+- [x] Commit and push the contrast hotfix.
 
 ## Review: Settings Contrast Hotfix v0.10.23
 - Native WPF control chrome now uses explicit dark Settings styles instead of leaking light defaults.
@@ -22,6 +22,7 @@
 - Published artifacts/stable-single/LafazFlow.Windows and artifacts/stable-cuda-quality/LafazFlow.Windows.
 - Relaunched stable-single; process is responding with LafazFlow Settings - v0.10.23.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+- Committed and pushed as `7fb843d fix: improve settings contrast`.
 
 ## Plan
 - [x] Review current Windows repo instructions and lessons.
