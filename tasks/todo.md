@@ -1,5 +1,24 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Model Library Crash Hotfix v0.11.1
+- [x] Investigate crash logs and Windows Application event logs.
+- [x] Identify root cause: ProgressBar read-only bindings were loaded as TwoWay.
+- [x] Patch model-card ProgressBar bindings to Mode=OneWay.
+- [x] Add XAML regression coverage for read-only model progress bindings.
+- [x] Bump app version to v0.11.1.
+- [x] Run full verification, publish, safety scan, commit, and push.
+
+## Review: Model Library Crash Hotfix v0.11.1
+- Crash root cause: Settings > Models loaded ProgressBar bindings for SpeedPercent, AccuracyPercent, and DownloadProgressPercent without Mode=OneWay, causing WPF to throw a XamlParseException for read-only properties.
+- Fixed the bindings and added a regression test.
+- Focused SettingsWindowXamlTests passed: 15 tests.
+- Full dotnet test passed: 442 tests.
+- dotnet build passed with 0 warnings and 0 errors.
+- git diff --check passed.
+- Published stable-single and stable-cuda-quality artifacts.
+- Relaunched stable-single; Settings opens as LafazFlow Settings - v0.11.1.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
 ## Plan: Model Library UI v0.11.0
 - [x] Audit the macOS reference workflow's model management structure.
 - [x] Compare it with LafazFlow Windows Settings > Models.

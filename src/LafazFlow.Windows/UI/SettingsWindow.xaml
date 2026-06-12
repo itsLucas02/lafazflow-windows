@@ -483,16 +483,16 @@
                                                 </Grid.ColumnDefinitions>
                                                 <StackPanel Grid.Column="0">
                                                     <TextBlock Text="Speed" Style="{StaticResource HelperTextStyle}" Margin="0,0,0,4" />
-                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding SpeedPercent}" />
+                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding SpeedPercent, Mode=OneWay}" />
                                                     <TextBlock Text="{Binding SpeedLabel}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,4,0,0" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2">
                                                     <TextBlock Text="Accuracy" Style="{StaticResource HelperTextStyle}" Margin="0,0,0,4" />
-                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding AccuracyPercent}" />
+                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding AccuracyPercent, Mode=OneWay}" />
                                                     <TextBlock Text="{Binding AccuracyLabel}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,4,0,0" />
                                                 </StackPanel>
                                             </Grid>
-                                            <ProgressBar Minimum="0" Maximum="100" Height="6" Margin="0,12,0,0" Value="{Binding DownloadProgressPercent}" />
+                                            <ProgressBar Minimum="0" Maximum="100" Height="6" Margin="0,12,0,0" Value="{Binding DownloadProgressPercent, Mode=OneWay}" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Top">
                                             <Button Content="{Binding PrimaryActionLabel}" Width="150" IsEnabled="{Binding CanPrimaryAction}" Click="PrimaryModelAction_OnClick" />

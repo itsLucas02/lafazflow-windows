@@ -247,3 +247,7 @@
 ## Prefer user-facing model libraries over raw paths
 - Pattern: Exposing raw model paths first makes local transcription settings feel like a developer debug panel instead of a polished app.
 - Rule: Put recommended model cards, install state, speed/accuracy metadata, and clear actions before advanced runtime paths.
+
+## Mark read-only WPF control bindings one-way
+- Pattern: Some WPF controls, such as ProgressBar.Value, bind TwoWay by default and can crash when pointed at read-only view-model properties.
+- Rule: For computed/read-only view-model properties in editable controls, explicitly set Mode=OneWay and add a XAML regression test.

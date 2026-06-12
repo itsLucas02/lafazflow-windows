@@ -160,6 +160,21 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowUsesOneWayBindingsForReadOnlyModelProgressValues()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Value=\"{Binding SpeedPercent, Mode=OneWay}\"", xaml);
+        Assert.Contains("Value=\"{Binding AccuracyPercent, Mode=OneWay}\"", xaml);
+        Assert.Contains("Value=\"{Binding DownloadProgressPercent, Mode=OneWay}\"", xaml);
+        Assert.DoesNotContain("Value=\"{Binding SpeedPercent}\"", xaml);
+        Assert.DoesNotContain("Value=\"{Binding AccuracyPercent}\"", xaml);
+        Assert.DoesNotContain("Value=\"{Binding DownloadProgressPercent}\"", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowDoesNotModifyMiniRecorderShell()
     {
         var repoRoot = FindRepoRoot();
