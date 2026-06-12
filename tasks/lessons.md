@@ -251,3 +251,7 @@
 ## Mark read-only WPF control bindings one-way
 - Pattern: Some WPF controls, such as ProgressBar.Value, bind TwoWay by default and can crash when pointed at read-only view-model properties.
 - Rule: For computed/read-only view-model properties in editable controls, explicitly set Mode=OneWay and add a XAML regression test.
+
+## Make model cards readable before decorative
+- Pattern: A model-card UI can be technically functional but still fail if titles inherit poor contrast, status badges are not state-coded, and file size is mixed with RAM usage without labels.
+- Rule: Model cards must use explicit title foregrounds, color-coded status badges, clearly labeled file/memory metadata, and compact score indicators instead of generic progress bars.

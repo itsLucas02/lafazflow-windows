@@ -35,9 +35,13 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
 
     public string SizeLabel => Definition.SizeLabel;
 
+    public string ModelFileLabel => $"{SizeLabel} model";
+
     public string LanguageLabel => Definition.LanguageLabel;
 
     public string RamLabel => Definition.RamLabel;
+
+    public string MemoryLabel => $"Memory {RamLabel}";
 
     public double SpeedScore => Definition.SpeedScore;
 
@@ -50,6 +54,14 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
     public string SpeedLabel => $"{SpeedPercent}%";
 
     public string AccuracyLabel => $"{AccuracyPercent}%";
+
+    public string SpeedScoreLabel => $"{SpeedScore * 10:0.0}";
+
+    public string AccuracyScoreLabel => $"{AccuracyScore * 10:0.0}";
+
+    public string SpeedDots => BuildDotScore(SpeedScore);
+
+    public string AccuracyDots => BuildDotScore(AccuracyScore);
 
     public string InstallPath { get; }
 
@@ -113,6 +125,60 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
         }
     }
 
+    public string StatusBackground
+    {
+        get
+        {
+            if (IsDownloading)
+            {
+                return "#14233F";
+            }
+
+            if (IsActive)
+            {
+                return "#0E3B2E";
+            }
+
+            return IsInstalled ? "#123B3D" : "#3A2D12";
+        }
+    }
+
+    public string StatusBorder
+    {
+        get
+        {
+            if (IsDownloading)
+            {
+                return "#2C6FE3";
+            }
+
+            if (IsActive)
+            {
+                return "#28C76F";
+            }
+
+            return IsInstalled ? "#3DCCC7" : "#D99A22";
+        }
+    }
+
+    public string StatusForeground
+    {
+        get
+        {
+            if (IsDownloading)
+            {
+                return "#9FC1FF";
+            }
+
+            if (IsActive)
+            {
+                return "#9DF2BE";
+            }
+
+            return IsInstalled ? "#9CEAEF" : "#F8D08A";
+        }
+    }
+
     public string PrimaryActionLabel
     {
         get
@@ -164,6 +230,9 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsInstalled));
         OnPropertyChanged(nameof(IsActive));
         OnPropertyChanged(nameof(StatusLabel));
+        OnPropertyChanged(nameof(StatusBackground));
+        OnPropertyChanged(nameof(StatusBorder));
+        OnPropertyChanged(nameof(StatusForeground));
         OnPropertyChanged(nameof(PrimaryActionLabel));
         OnPropertyChanged(nameof(CanDownload));
         OnPropertyChanged(nameof(CanUse));
@@ -175,5 +244,11 @@ public sealed class ModelCardViewModel : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    private static string BuildDotScore(double score)
+    {
+        var filled = Math.Clamp((int)Math.Round(score * 5), 0, 5);
+        return new string('●', filled) + new string('○', 5 - filled);
     }
 }

@@ -1,5 +1,29 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Model Library Card Polish v0.11.2
+- [x] Audit the v0.11.1 model-card design complaint.
+- [x] Fix model title contrast with explicit primary foreground.
+- [x] Replace one-color status badge with state-coded badge colors.
+- [x] Clarify model file size vs memory usage labels.
+- [x] Replace generic speed/accuracy progress bars with compact score/dot meters.
+- [x] Add regression coverage for card readability bindings.
+- [x] Bump app version to v0.11.2.
+- [x] Run verification, publish, safety scan, commit, and push.
+
+## Review: Model Library Card Polish v0.11.2
+- Card visual hierarchy, badge semantics, and metric presentation were upgraded while preserving the existing model-library actions and runtime behavior.
+- Model names now explicitly use the primary text color for dark-background legibility.
+- Status badges are state-coded for Active, Installed, Missing, and Downloading.
+- Model file size and memory usage are labeled separately.
+- Speed and accuracy now use compact score/dot meters instead of generic progress bars.
+- Focused Settings tests passed: 38 tests.
+- Full dotnet test passed: 442 tests.
+- dotnet build passed with 0 warnings and 0 errors.
+- git diff --check passed.
+- Published stable-single and stable-cuda-quality artifacts.
+- Relaunched stable-single; Settings opens as LafazFlow Settings - v0.11.2.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
 ## Plan: Model Library Crash Hotfix v0.11.1
 - [x] Investigate crash logs and Windows Application event logs.
 - [x] Identify root cause: ProgressBar read-only bindings were loaded as TwoWay.

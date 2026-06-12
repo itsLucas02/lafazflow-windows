@@ -145,6 +145,14 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Text=\"{Binding CurrentModelSummary}\"", xaml);
         Assert.Contains("Text=\"Speed\"", xaml);
         Assert.Contains("Text=\"Accuracy\"", xaml);
+        Assert.Contains("Text=\"{Binding SpeedDots}\"", xaml);
+        Assert.Contains("Text=\"{Binding AccuracyDots}\"", xaml);
+        Assert.Contains("Text=\"{Binding ModelFileLabel}\"", xaml);
+        Assert.Contains("Text=\"{Binding MemoryLabel}\"", xaml);
+        Assert.Contains("Background=\"{Binding StatusBackground}\"", xaml);
+        Assert.Contains("BorderBrush=\"{Binding StatusBorder}\"", xaml);
+        Assert.Contains("Foreground=\"{Binding StatusForeground}\"", xaml);
+        Assert.Contains("Foreground=\"{StaticResource TextPrimaryBrush}\"", xaml);
         Assert.Contains("Content=\"{Binding PrimaryActionLabel}\"", xaml);
         Assert.Contains("Click=\"PrimaryModelAction_OnClick\"", xaml);
         Assert.Contains("Click=\"DeleteModel_OnClick\"", xaml);
@@ -166,9 +174,6 @@ public sealed class SettingsWindowXamlTests
         var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
         var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
 
-        Assert.Contains("Value=\"{Binding SpeedPercent, Mode=OneWay}\"", xaml);
-        Assert.Contains("Value=\"{Binding AccuracyPercent, Mode=OneWay}\"", xaml);
-        Assert.Contains("Value=\"{Binding DownloadProgressPercent, Mode=OneWay}\"", xaml);
         Assert.DoesNotContain("Value=\"{Binding SpeedPercent}\"", xaml);
         Assert.DoesNotContain("Value=\"{Binding AccuracyPercent}\"", xaml);
         Assert.DoesNotContain("Value=\"{Binding DownloadProgressPercent}\"", xaml);

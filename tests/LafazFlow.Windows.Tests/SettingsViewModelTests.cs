@@ -463,6 +463,12 @@ public sealed class SettingsViewModelTests
         Assert.True(baseCard.IsInstalled);
         Assert.True(baseCard.IsActive);
         Assert.Equal("Active", baseCard.StatusLabel);
+        Assert.Equal("142 MB model", baseCard.ModelFileLabel);
+        Assert.Equal("Memory ~500 MB", baseCard.MemoryLabel);
+        Assert.Equal("●●●●●", baseCard.SpeedDots);
+        Assert.False(string.IsNullOrWhiteSpace(baseCard.StatusBackground));
+        Assert.False(string.IsNullOrWhiteSpace(baseCard.StatusBorder));
+        Assert.False(string.IsNullOrWhiteSpace(baseCard.StatusForeground));
         Assert.Contains("Base English", viewModel.CurrentModelSummary);
         Assert.Contains(viewModel.ModelCards, card => card.Id == "ggml-large-v3-turbo-q5_0" && !card.IsInstalled);
 
