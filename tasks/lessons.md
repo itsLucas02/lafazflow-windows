@@ -239,3 +239,7 @@
 ## Treat opacity-zero recorder windows as hidden
 - Pattern: WPF can leave a recorder window technically visible while its opacity is near zero after overlapping show/hide animations or transient error dismissal.
 - Rule: The mini recorder show path must treat `IsVisible == true` with near-zero opacity as hidden and replay the entrance animation.
+
+## Explicitly dark-style native WPF controls
+- Pattern: A dark settings shell can still show unreadable native light control chrome in ComboBox, Button, and DataGrid controls.
+- Rule: Do not rely on simple Background and Foreground setters for WPF native controls; add explicit templates/styles and XAML regression checks for dark Settings UI contrast.

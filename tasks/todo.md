@@ -1,5 +1,28 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Settings Contrast Hotfix v0.10.23
+- [x] Audit owner screenshots for unreadable Settings controls.
+- [x] Keep the mini recorder shell out of scope for this fix.
+- [x] Add explicit dark styles/templates for Settings ComboBox, Button, and DataGrid controls.
+- [x] Add XAML regression checks for native dark-control styling.
+- [x] Bump the patch version to v0.10.23.
+- [x] Run full test/build/publish verification.
+- [x] Relaunch the stable Windows app for owner review.
+- [x] Run public repo safety scan.
+- [ ] Commit and push the contrast hotfix.
+
+## Review: Settings Contrast Hotfix v0.10.23
+- Native WPF control chrome now uses explicit dark Settings styles instead of leaking light defaults.
+- ComboBox closed fields/dropdowns, Settings buttons, and Diagnostics DataGrid headers/cells/rows received dark contrast styles.
+- Regression coverage added in SettingsWindowXamlTests.
+- Focused Settings XAML tests passed: 13 tests.
+- Full dotnet test passed: 426 tests.
+- dotnet build passed with 0 warnings and 0 errors.
+- git diff --check passed.
+- Published artifacts/stable-single/LafazFlow.Windows and artifacts/stable-cuda-quality/LafazFlow.Windows.
+- Relaunched stable-single; process is responding with LafazFlow Settings - v0.10.23.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
 ## Plan
 - [x] Review current Windows repo instructions and lessons.
 - [x] Inspect macOS reference behavior for recorder UI, state, hotkeys, and paste flow.

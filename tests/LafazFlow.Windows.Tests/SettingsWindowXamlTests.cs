@@ -156,6 +156,26 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowStylesNativeControlsForDarkTheme()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("x:Key=\"DarkComboBoxItemStyle\"", xaml);
+        Assert.Contains("ItemContainerStyle\" Value=\"{StaticResource DarkComboBoxItemStyle}\"", xaml);
+        Assert.Contains("Content=\"{TemplateBinding SelectionBoxItem}\"", xaml);
+        Assert.Contains("x:Key=\"DarkDataGridColumnHeaderStyle\"", xaml);
+        Assert.Contains("ColumnHeaderStyle\" Value=\"{StaticResource DarkDataGridColumnHeaderStyle}\"", xaml);
+        Assert.Contains("x:Key=\"DarkDataGridCellStyle\"", xaml);
+        Assert.Contains("CellStyle\" Value=\"{StaticResource DarkDataGridCellStyle}\"", xaml);
+        Assert.Contains("x:Key=\"DarkDataGridRowStyle\"", xaml);
+        Assert.Contains("RowStyle\" Value=\"{StaticResource DarkDataGridRowStyle}\"", xaml);
+        Assert.Contains("ControlTemplate TargetType=\"Button\"", xaml);
+        Assert.Contains("Foreground\" Value=\"{StaticResource TextPrimaryBrush}\"", xaml);
+    }
+
+    [Fact]
     public void MiniRecorderWindowStaysOutOfTaskbar()
     {
         var repoRoot = FindRepoRoot();
