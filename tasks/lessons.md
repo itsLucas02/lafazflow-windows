@@ -243,3 +243,7 @@
 ## Explicitly dark-style native WPF controls
 - Pattern: A dark settings shell can still show unreadable native light control chrome in ComboBox, Button, and DataGrid controls.
 - Rule: Do not rely on simple Background and Foreground setters for WPF native controls; add explicit templates/styles and XAML regression checks for dark Settings UI contrast.
+
+## Prefer user-facing model libraries over raw paths
+- Pattern: Exposing raw model paths first makes local transcription settings feel like a developer debug panel instead of a polished app.
+- Rule: Put recommended model cards, install state, speed/accuracy metadata, and clear actions before advanced runtime paths.

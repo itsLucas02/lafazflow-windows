@@ -440,10 +440,76 @@
                 </ScrollViewer.Style>
                 <StackPanel>
                     <TextBlock Text="Models" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Text="Local transcription runtime, model files, and advanced decode controls." Style="{StaticResource SectionSubtitleStyle}" />
+                    <TextBlock Text="Choose the local Whisper model LafazFlow uses for offline dictation." Style="{StaticResource SectionSubtitleStyle}" />
 
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
+                            <TextBlock Text="Current Model" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="{Binding CurrentModelSummary}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <WrapPanel>
+                                <Button Content="Import Local Model" Width="132" Click="ImportLocalModel_OnClick" />
+                                <Button Content="Open Model Folder" Width="136" Click="OpenModelDirectory_OnClick" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding ModelCards}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource CardStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="190" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock Text="{Binding DisplayName}" DockPanel.Dock="Left" FontSize="15" FontWeight="SemiBold" />
+                                                <Border DockPanel.Dock="Right" Background="{StaticResource AccentDarkBrush}" BorderBrush="#21666A" BorderThickness="1" CornerRadius="999" Padding="8,3">
+                                                    <TextBlock Text="{Binding StatusLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" FontSize="11" />
+                                                </Border>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,10" />
+                                            <WrapPanel Margin="0,0,0,8">
+                                                <TextBlock Text="{Binding LanguageLabel}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,14,0" />
+                                                <TextBlock Text="{Binding SizeLabel}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,14,0" />
+                                                <TextBlock Text="{Binding RamLabel}" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </WrapPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="16" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Speed" Style="{StaticResource HelperTextStyle}" Margin="0,0,0,4" />
+                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding SpeedPercent}" />
+                                                    <TextBlock Text="{Binding SpeedLabel}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,4,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Accuracy" Style="{StaticResource HelperTextStyle}" Margin="0,0,0,4" />
+                                                    <ProgressBar Minimum="0" Maximum="100" Height="6" Value="{Binding AccuracyPercent}" />
+                                                    <TextBlock Text="{Binding AccuracyLabel}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,4,0,0" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <ProgressBar Minimum="0" Maximum="100" Height="6" Margin="0,12,0,0" Value="{Binding DownloadProgressPercent}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Top">
+                                            <Button Content="{Binding PrimaryActionLabel}" Width="150" IsEnabled="{Binding CanPrimaryAction}" Click="PrimaryModelAction_OnClick" />
+                                            <TextBlock Text="{Binding DownloadProgressLabel}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,8,8" />
+                                            <Button Content="Open Folder" Width="150" IsEnabled="{Binding CanOpenFolder}" Click="OpenModelFolder_OnClick" />
+                                            <Button Content="Delete" Width="150" IsEnabled="{Binding CanDelete}" Click="DeleteModel_OnClick" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Advanced Runtime Paths" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="Power-user paths for the local runtime. The model library above should handle normal model selection." Style="{StaticResource HelperTextStyle}" />
                             <TextBlock Text="Runtime Mode" Style="{StaticResource FieldLabelStyle}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -462,13 +528,6 @@
                             </Grid>
                             <TextBlock Text="Whisper Threads" Style="{StaticResource FieldLabelStyle}" />
                             <TextBox Text="{Binding WhisperThreads, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Runtime Paths" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="These are advanced local paths. Change them only when replacing the local runtime or model files." Style="{StaticResource HelperTextStyle}" />
                             <TextBlock Text="Whisper CLI" Style="{StaticResource FieldLabelStyle}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -487,7 +546,7 @@
                                 <TextBox Grid.Column="0" Text="{Binding CudaWhisperCliPath, UpdateSourceTrigger=PropertyChanged}" />
                                 <Button Grid.Column="1" Content="Browse" Click="BrowseCudaWhisperCli_OnClick" />
                             </Grid>
-                            <TextBlock Text="Model" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="Fast Model Path" Style="{StaticResource FieldLabelStyle}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -496,7 +555,7 @@
                                 <TextBox Grid.Column="0" Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}" />
                                 <Button Grid.Column="1" Content="Browse" Click="BrowseModel_OnClick" />
                             </Grid>
-                            <TextBlock Text="Quality Model" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="Quality Model Path" Style="{StaticResource FieldLabelStyle}" />
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />

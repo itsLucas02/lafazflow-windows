@@ -49,6 +49,11 @@ public partial class SettingsWindow : Window
         BrowseModel("Select VAD model", path => _viewModel.VadModelPath = path);
     }
 
+    private void ImportLocalModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        BrowseModel("Import local Whisper model", _viewModel.ImportModel);
+    }
+
     private void BrowseExecutable(string title, Action<string> applyPath)
     {
         var dialog = new WpfOpenFileDialog
@@ -92,6 +97,54 @@ public partial class SettingsWindow : Window
     private void OpenRecordingsFolder_OnClick(object sender, RoutedEventArgs e)
     {
         OpenFolder(_viewModel.RecordingsFolder);
+    }
+
+    private void OpenModelDirectory_OnClick(object sender, RoutedEventArgs e)
+    {
+        OpenFolder(_viewModel.ModelDirectory);
+    }
+
+    private async void PrimaryModelAction_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ModelCardViewModel card })
+        {
+            return;
+        }
+
+        if (card.CanDownload)
+        {
+            await _viewModel.DownloadModelAsync(card, CancellationToken.None);
+            return;
+        }
+
+        _viewModel.UseModel(card);
+    }
+
+    private void DeleteModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: ModelCardViewModel card })
+        {
+            return;
+        }
+
+        var result = System.Windows.MessageBox.Show(
+            this,
+            $"Delete {card.DisplayName} from the local model folder?",
+            "Delete Model",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+        {
+            _viewModel.DeleteModel(card);
+        }
+    }
+
+    private void OpenModelFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ModelCardViewModel card })
+        {
+            OpenFolder(Path.GetDirectoryName(card.InstallPath) ?? _viewModel.ModelDirectory);
+        }
     }
 
     private void RefreshRuntimeDiagnostics_OnClick(object sender, RoutedEventArgs e)

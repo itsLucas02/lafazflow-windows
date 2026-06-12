@@ -133,6 +133,33 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsLocalModelLibraryCards()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml.cs");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
+
+        Assert.Contains("ItemsSource=\"{Binding ModelCards}\"", xaml);
+        Assert.Contains("Text=\"{Binding CurrentModelSummary}\"", xaml);
+        Assert.Contains("Text=\"Speed\"", xaml);
+        Assert.Contains("Text=\"Accuracy\"", xaml);
+        Assert.Contains("Content=\"{Binding PrimaryActionLabel}\"", xaml);
+        Assert.Contains("Click=\"PrimaryModelAction_OnClick\"", xaml);
+        Assert.Contains("Click=\"DeleteModel_OnClick\"", xaml);
+        Assert.Contains("Click=\"OpenModelFolder_OnClick\"", xaml);
+        Assert.Contains("Click=\"ImportLocalModel_OnClick\"", xaml);
+        Assert.Contains("Text=\"Advanced Runtime Paths\"", xaml);
+        Assert.Contains("Fast Model Path", xaml);
+        Assert.Contains("Quality Model Path", xaml);
+        Assert.Contains("_viewModel.DownloadModelAsync(card, CancellationToken.None)", codeBehind);
+        Assert.Contains("_viewModel.UseModel(card)", codeBehind);
+        Assert.Contains("_viewModel.DeleteModel(card)", codeBehind);
+        Assert.Contains("_viewModel.ImportModel", codeBehind);
+    }
+
+    [Fact]
     public void SettingsWindowDoesNotModifyMiniRecorderShell()
     {
         var repoRoot = FindRepoRoot();

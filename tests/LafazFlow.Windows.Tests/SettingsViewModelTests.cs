@@ -441,6 +441,112 @@ public sealed class SettingsViewModelTests
         File.Delete(modelPath);
     }
 
+    [Fact]
+    public void LoadExposesModelCardsWithInstalledAndActiveState()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
+        var modelPath = Path.Combine(modelRoot, "ggml-base.en.bin");
+        File.WriteAllText(modelPath, "model");
+        var cliPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath, defaultModelDirectory: modelRoot);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = cliPath,
+            ModelPath = modelPath,
+            TranscriptionProfile = TranscriptionProfile.Fast
+        });
+
+        var viewModel = SettingsViewModel.Load(store, modelLibrary: new LocalModelLibraryService(modelRoot));
+
+        var baseCard = viewModel.ModelCards.First(card => card.Id == "ggml-base.en");
+        Assert.True(baseCard.IsInstalled);
+        Assert.True(baseCard.IsActive);
+        Assert.Equal("Active", baseCard.StatusLabel);
+        Assert.Contains("Base English", viewModel.CurrentModelSummary);
+        Assert.Contains(viewModel.ModelCards, card => card.Id == "ggml-large-v3-turbo-q5_0" && !card.IsInstalled);
+
+        File.Delete(cliPath);
+    }
+
+    [Fact]
+    public void UseModelMapsFastCardToFastProfileAndModelPath()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
+        var modelPath = Path.Combine(modelRoot, "ggml-small.en.bin");
+        File.WriteAllText(modelPath, "model");
+        var cliPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath, defaultModelDirectory: modelRoot);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = cliPath,
+            ModelPath = Path.Combine(modelRoot, "missing.bin"),
+            QualityModelPath = modelPath,
+            TranscriptionProfile = TranscriptionProfile.Quality
+        });
+        var viewModel = SettingsViewModel.Load(store, modelLibrary: new LocalModelLibraryService(modelRoot));
+        var smallCard = viewModel.ModelCards.First(card => card.Id == "ggml-small.en");
+
+        viewModel.UseModel(smallCard);
+
+        Assert.Equal(TranscriptionProfile.Fast, viewModel.TranscriptionProfile);
+        Assert.Equal(modelPath, viewModel.ModelPath);
+        Assert.True(viewModel.ModelCards.First(card => card.Id == "ggml-small.en").IsActive);
+
+        File.Delete(cliPath);
+    }
+
+    [Fact]
+    public void UseModelMapsQualityCardToQualityProfileAndQualityModelPath()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
+        var qualityPath = Path.Combine(modelRoot, "ggml-large-v3-turbo-q5_0.bin");
+        File.WriteAllText(qualityPath, "model");
+        var cliPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, qualityPath, defaultModelDirectory: modelRoot);
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = cliPath,
+            ModelPath = qualityPath,
+            QualityModelPath = Path.Combine(modelRoot, "missing-quality.bin"),
+            WhisperBackend = WhisperBackend.Cuda,
+            TranscriptionProfile = TranscriptionProfile.Fast
+        });
+        var viewModel = SettingsViewModel.Load(store, modelLibrary: new LocalModelLibraryService(modelRoot));
+        var qualityCard = viewModel.ModelCards.First(card => card.Id == "ggml-large-v3-turbo-q5_0");
+
+        viewModel.UseModel(qualityCard);
+
+        Assert.Equal(TranscriptionProfile.Quality, viewModel.TranscriptionProfile);
+        Assert.Equal(WhisperBackend.Cuda, viewModel.WhisperBackend);
+        Assert.Equal(qualityPath, viewModel.QualityModelPath);
+
+        File.Delete(cliPath);
+    }
+
+    [Fact]
+    public async Task DownloadModelRefreshesCardState()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var modelRoot = Directory.CreateDirectory(Path.Combine(root, "models")).FullName;
+        var cliPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, defaultModelDirectory: modelRoot);
+        var viewModel = SettingsViewModel.Load(
+            store,
+            modelLibrary: new LocalModelLibraryService(modelRoot, new FakeModelDownloadClient("model")));
+        var card = viewModel.ModelCards.First(model => model.Id == "ggml-base.en");
+
+        await viewModel.DownloadModelAsync(card, CancellationToken.None);
+
+        var refreshed = viewModel.ModelCards.First(model => model.Id == "ggml-base.en");
+        Assert.True(refreshed.IsInstalled);
+        Assert.Equal("Use Model", refreshed.PrimaryActionLabel);
+
+        File.Delete(cliPath);
+    }
+
     private static string CreateLatencyLog(string content)
     {
         var logPath = Path.Combine(
@@ -469,6 +575,27 @@ public sealed class SettingsViewModelTests
             CancellationToken cancellationToken)
         {
             return Task.FromResult(SmokeResult);
+        }
+    }
+
+    private sealed class FakeModelDownloadClient : IModelDownloadClient
+    {
+        private readonly string _content;
+
+        public FakeModelDownloadClient(string content)
+        {
+            _content = content;
+        }
+
+        public Task DownloadAsync(
+            Uri source,
+            string destinationPath,
+            IProgress<double> progress,
+            CancellationToken cancellationToken)
+        {
+            progress.Report(1);
+            File.WriteAllText(destinationPath, _content);
+            return Task.CompletedTask;
         }
     }
 }

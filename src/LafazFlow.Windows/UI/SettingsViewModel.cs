@@ -12,6 +12,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly SettingsStore _settingsStore;
     private readonly LatencyDiagnosticLogStore _latencyDiagnostics;
     private readonly RuntimeDiagnosticsService _runtimeDiagnostics;
+    private readonly LocalModelLibraryService _modelLibrary;
     private readonly string? _logsFolderOverride;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
@@ -49,11 +50,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         AppSettings settings,
         LatencyDiagnosticLogStore latencyDiagnostics,
         RuntimeDiagnosticsService runtimeDiagnostics,
+        LocalModelLibraryService modelLibrary,
         string? logsFolderOverride)
     {
         _settingsStore = settingsStore;
         _latencyDiagnostics = latencyDiagnostics;
         _runtimeDiagnostics = runtimeDiagnostics;
+        _modelLibrary = modelLibrary;
         _logsFolderOverride = logsFolderOverride;
         _sourceSettings = settings;
         WhisperCliPath = settings.WhisperCliPath;
@@ -79,6 +82,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
         SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
+        RefreshModelCards();
         RefreshLatencyDiagnostics();
         RefreshRuntimeDiagnostics();
     }
@@ -100,13 +104,25 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public string ModelPath
     {
         get => _modelPath;
-        set => SetProperty(ref _modelPath, value);
+        set
+        {
+            if (SetProperty(ref _modelPath, value))
+            {
+                RefreshModelCards();
+            }
+        }
     }
 
     public string QualityModelPath
     {
         get => _qualityModelPath;
-        set => SetProperty(ref _qualityModelPath, value);
+        set
+        {
+            if (SetProperty(ref _qualityModelPath, value))
+            {
+                RefreshModelCards();
+            }
+        }
     }
 
     public int WhisperThreads
@@ -118,13 +134,25 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public TranscriptionProfile TranscriptionProfile
     {
         get => _transcriptionProfile;
-        set => SetProperty(ref _transcriptionProfile, value);
+        set
+        {
+            if (SetProperty(ref _transcriptionProfile, value))
+            {
+                RefreshModelCards();
+            }
+        }
     }
 
     public WhisperBackend WhisperBackend
     {
         get => _whisperBackend;
-        set => SetProperty(ref _whisperBackend, value);
+        set
+        {
+            if (SetProperty(ref _whisperBackend, value))
+            {
+                OnPropertyChanged(nameof(CurrentModelSummary));
+            }
+        }
     }
 
     public bool EnableVad
@@ -233,6 +261,21 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public ObservableCollection<RuntimeDiagnosticRow> RuntimeDiagnosticRows { get; } = [];
 
+    public ObservableCollection<ModelCardViewModel> ModelCards { get; } = [];
+
+    public string ModelDirectory => _modelLibrary.ModelDirectory;
+
+    public string CurrentModelSummary
+    {
+        get
+        {
+            var active = ModelCards.FirstOrDefault(card => card.IsActive);
+            return active is null
+                ? "No local model selected"
+                : $"{active.DisplayName} / {TranscriptionProfile} / {WhisperBackend}";
+        }
+    }
+
     public string RuntimeProfileStatus
     {
         get => _runtimeProfileStatus;
@@ -306,6 +349,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SettingsStore settingsStore,
         LatencyDiagnosticLogStore? latencyDiagnostics = null,
         RuntimeDiagnosticsService? runtimeDiagnostics = null,
+        LocalModelLibraryService? modelLibrary = null,
         string? logsFolderOverride = null)
     {
         return new SettingsViewModel(
@@ -313,7 +357,77 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             settingsStore.Load(),
             latencyDiagnostics ?? new LatencyDiagnosticLogStore(),
             runtimeDiagnostics ?? new RuntimeDiagnosticsService(),
+            modelLibrary ?? new LocalModelLibraryService(),
             logsFolderOverride);
+    }
+
+    public async Task DownloadModelAsync(ModelCardViewModel card, CancellationToken cancellationToken)
+    {
+        if (!card.CanDownload)
+        {
+            return;
+        }
+
+        try
+        {
+            var progress = new Progress<double>(value => card.MarkDownloading(value));
+            card.MarkDownloading(0);
+            await _modelLibrary.DownloadAsync(card.Definition, progress, cancellationToken);
+            ValidationMessage = "";
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            ValidationMessage = $"Could not download {card.DisplayName}: {ex.Message}";
+        }
+        finally
+        {
+            RefreshModelCards();
+        }
+    }
+
+    public void UseModel(ModelCardViewModel card)
+    {
+        if (!card.CanUse)
+        {
+            return;
+        }
+
+        if (card.Definition.IsQualityProfile)
+        {
+            QualityModelPath = card.InstallPath;
+            TranscriptionProfile = TranscriptionProfile.Quality;
+        }
+        else
+        {
+            ModelPath = card.InstallPath;
+            TranscriptionProfile = TranscriptionProfile.Fast;
+        }
+
+        ValidationMessage = "";
+        RefreshModelCards();
+        RefreshRuntimeDiagnostics();
+    }
+
+    public void DeleteModel(ModelCardViewModel card)
+    {
+        if (!card.CanDelete)
+        {
+            return;
+        }
+
+        _modelLibrary.DeleteModel(card.InstallPath);
+        RefreshModelCards();
+        RefreshRuntimeDiagnostics();
+    }
+
+    public void ImportModel(string sourcePath)
+    {
+        var importedPath = _modelLibrary.ImportModel(sourcePath);
+        ModelPath = importedPath;
+        TranscriptionProfile = TranscriptionProfile.Fast;
+        ValidationMessage = "";
+        RefreshModelCards();
+        RefreshRuntimeDiagnostics();
     }
 
     public void RefreshRuntimeDiagnostics()
@@ -401,6 +515,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _settingsStore.Save(settings);
         ApplySettings(settings);
         ValidationMessage = "";
+        RefreshModelCards();
         RefreshRuntimeDiagnostics();
         return SettingsSaveResult.Ok;
     }
@@ -463,6 +578,33 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
         SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
+        RefreshModelCards();
+    }
+
+    private void RefreshModelCards()
+    {
+        ModelCards.Clear();
+        foreach (var definition in _modelLibrary.Catalog.Concat(_modelLibrary.GetImportedModels()))
+        {
+            var installPath = _modelLibrary.GetModelPath(definition);
+            var isInstalled = File.Exists(installPath);
+            var isActive = definition.IsQualityProfile
+                ? TranscriptionProfile == TranscriptionProfile.Quality && PathsEqual(installPath, QualityModelPath)
+                : TranscriptionProfile == TranscriptionProfile.Fast && PathsEqual(installPath, ModelPath);
+            ModelCards.Add(new ModelCardViewModel(definition, installPath, isInstalled, isActive));
+        }
+
+        OnPropertyChanged(nameof(CurrentModelSummary));
+    }
+
+    private static bool PathsEqual(string left, string right)
+    {
+        return !string.IsNullOrWhiteSpace(left)
+            && !string.IsNullOrWhiteSpace(right)
+            && string.Equals(
+                Path.GetFullPath(left),
+                Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private void ReplaceRuntimeDiagnostic(RuntimeDiagnosticRow row)
@@ -521,14 +663,15 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
         {
-            return;
+            return false;
         }
 
         field = value;
         OnPropertyChanged(propertyName);
+        return true;
     }
 }

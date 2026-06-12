@@ -1,5 +1,28 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Model Library UI v0.11.0
+- [x] Audit the macOS reference workflow's model management structure.
+- [x] Compare it with LafazFlow Windows Settings > Models.
+- [x] Write implementation plan for model catalog, install state, cards, actions, and advanced paths.
+- [x] Implement model catalog and install-state service.
+- [x] Redesign Settings > Models around model cards.
+- [x] Add in-app model download/import/use/delete actions.
+- [x] Verify, publish, safety scan, commit, and push.
+
+## Review: Model Library UI v0.11.0
+- Planning doc written at docs/superpowers/plans/2026-06-12-model-library-ui.md.
+- Current gap: LafazFlow Windows exposes raw runtime/model paths first, while the target UX needs a user-facing local model library with model cards, speed/accuracy/size metadata, install state, and direct actions.
+- Added Whisper-only local model catalog for Base English, Small English, Medium English, and Large v3 Turbo Quantized.
+- Added local model library service for install detection, import, safe delete, and download-with-temp-file behavior.
+- Redesigned Settings > Models around model cards and moved raw path controls into Advanced Runtime Paths.
+- Bumped app version to v0.11.0.
+- Full dotnet test passed: 441 tests.
+- dotnet build passed with 0 warnings and 0 errors.
+- git diff --check passed.
+- Published stable-single and stable-cuda-quality artifacts.
+- Relaunched stable-single; Settings opens as LafazFlow Settings - v0.11.0.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
 ## Plan: Settings Contrast Hotfix v0.10.23
 - [x] Audit owner screenshots for unreadable Settings controls.
 - [x] Keep the mini recorder shell out of scope for this fix.

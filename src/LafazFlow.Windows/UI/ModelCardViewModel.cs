@@ -1,0 +1,179 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using LafazFlow.Windows.Core;
+
+namespace LafazFlow.Windows.UI;
+
+public sealed class ModelCardViewModel : INotifyPropertyChanged
+{
+    private bool _isDownloading;
+    private double _downloadProgress;
+
+    public ModelCardViewModel(
+        LocalModelDefinition definition,
+        string installPath,
+        bool isInstalled,
+        bool isActive)
+    {
+        Definition = definition;
+        InstallPath = installPath;
+        IsInstalled = isInstalled;
+        IsActive = isActive;
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public LocalModelDefinition Definition { get; }
+
+    public string Id => Definition.Id;
+
+    public string DisplayName => Definition.DisplayName;
+
+    public string FileName => Definition.FileName;
+
+    public string Description => Definition.Description;
+
+    public string SizeLabel => Definition.SizeLabel;
+
+    public string LanguageLabel => Definition.LanguageLabel;
+
+    public string RamLabel => Definition.RamLabel;
+
+    public double SpeedScore => Definition.SpeedScore;
+
+    public double AccuracyScore => Definition.AccuracyScore;
+
+    public int SpeedPercent => (int)Math.Round(SpeedScore * 100);
+
+    public int AccuracyPercent => (int)Math.Round(AccuracyScore * 100);
+
+    public string SpeedLabel => $"{SpeedPercent}%";
+
+    public string AccuracyLabel => $"{AccuracyPercent}%";
+
+    public string InstallPath { get; }
+
+    public bool IsInstalled { get; private set; }
+
+    public bool IsActive { get; private set; }
+
+    public bool IsImported => Definition.IsImported;
+
+    public bool IsDownloading
+    {
+        get => _isDownloading;
+        private set
+        {
+            if (_isDownloading == value)
+            {
+                return;
+            }
+
+            _isDownloading = value;
+            NotifyStateChanged();
+        }
+    }
+
+    public double DownloadProgress
+    {
+        get => _downloadProgress;
+        private set
+        {
+            if (Math.Abs(_downloadProgress - value) < 0.001)
+            {
+                return;
+            }
+
+            _downloadProgress = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DownloadProgressPercent));
+            OnPropertyChanged(nameof(DownloadProgressLabel));
+        }
+    }
+
+    public double DownloadProgressPercent => Math.Round(DownloadProgress * 100);
+
+    public string DownloadProgressLabel => $"{DownloadProgressPercent:0}%";
+
+    public string StatusLabel
+    {
+        get
+        {
+            if (IsDownloading)
+            {
+                return "Downloading";
+            }
+
+            if (IsActive)
+            {
+                return "Active";
+            }
+
+            return IsInstalled ? "Installed" : "Missing";
+        }
+    }
+
+    public string PrimaryActionLabel
+    {
+        get
+        {
+            if (IsDownloading)
+            {
+                return "Downloading";
+            }
+
+            return IsInstalled ? "Use Model" : "Download";
+        }
+    }
+
+    public bool CanDownload => !Definition.IsImported && !IsInstalled && !IsDownloading;
+
+    public bool CanUse => IsInstalled && !IsActive && !IsDownloading;
+
+    public bool CanPrimaryAction => CanDownload || CanUse;
+
+    public bool CanDelete => IsInstalled && !IsActive && !IsDownloading;
+
+    public bool CanOpenFolder => IsInstalled;
+
+    public void MarkDownloading(double progress)
+    {
+        IsDownloading = true;
+        DownloadProgress = Math.Clamp(progress, 0, 1);
+    }
+
+    public void MarkInstalled(bool active)
+    {
+        IsInstalled = true;
+        IsActive = active;
+        IsDownloading = false;
+        DownloadProgress = 0;
+        NotifyStateChanged();
+    }
+
+    public void MarkIdle()
+    {
+        IsDownloading = false;
+        DownloadProgress = 0;
+        NotifyStateChanged();
+    }
+
+    private void NotifyStateChanged()
+    {
+        OnPropertyChanged(nameof(IsDownloading));
+        OnPropertyChanged(nameof(IsInstalled));
+        OnPropertyChanged(nameof(IsActive));
+        OnPropertyChanged(nameof(StatusLabel));
+        OnPropertyChanged(nameof(PrimaryActionLabel));
+        OnPropertyChanged(nameof(CanDownload));
+        OnPropertyChanged(nameof(CanUse));
+        OnPropertyChanged(nameof(CanPrimaryAction));
+        OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(CanOpenFolder));
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+}
