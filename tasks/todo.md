@@ -1,5 +1,26 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Hotkey Responsiveness Hotfix v0.11.4
+- [x] Confirm the delayed black shell and ignored stop gesture from logs and code flow.
+- [x] Add regression coverage proving recorder startup does not wait for live preview startup.
+- [x] Show the recorder shell before live preview work and start preview asynchronously.
+- [x] Make live preview session replacement non-blocking so stale preview cleanup cannot freeze the UI dispatcher.
+- [x] Update lessons from the owner-reported hotkey regression.
+- [x] Bump LafazFlow to v0.11.4.
+- [x] Verify focused tests, full tests, build, publish stable artifacts, safety scan, commit, and push.
+
+## Review: Hotkey Responsiveness Hotfix v0.11.4
+- Root cause: `StartRecording` started live preview before showing the mini recorder shell, and live preview startup synchronously waited for previous preview cleanup. If a stale preview Whisper process was slow to cancel, the UI dispatcher could delay shell visibility and queued double Shift stop handling.
+- The recorder now starts capture, plays the start cue, shows the shell, and marks the shell visible before starting live preview.
+- Live preview startup now runs asynchronously with logged failures, so final dictation control stays responsive.
+- Rolling live preview session replacement now cancels old sessions without blocking the caller.
+- Focused hotkey/controller tests pass, 29 tests.
+- Full `dotnet test` passes, 446 tests.
+- Full `dotnet build` passes with 0 warnings and 0 errors.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Relaunched the pinned stable-single app; it is responding and reports file version `0.11.4.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
 ## Plan: Model Library Clarity Hotfix v0.11.3
 - [x] Hide idle download 0% labels.
 - [x] Change model badges from pill ovals to rounded rectangles.

@@ -125,10 +125,10 @@ public sealed class RecorderController
         _currentAudioPath = _audioCapture.Start(recordingsRoot);
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
-        StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
         _soundCues.PlayRecordingStarted(SoundCueOptions.FromSettings(settings));
         _window.ShowBottomCenter();
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
+        StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
     }
 
     public Task StopAndTranscribeAsync(long? hotkeyTimestamp = null, long? toggleHandlingTimestamp = null)
@@ -222,18 +222,31 @@ public sealed class RecorderController
         try
         {
             latencyTrace?.Mark(LatencyCheckpoint.PreviewStartRequested);
-            _livePreview.StartAsync(
-                settings,
-                partialTranscript =>
-                    _ = _window.InvokeAsync(() =>
-                    {
-                        if (_viewModel.IsRecording)
-                        {
-                            _viewModel.PartialTranscript = partialTranscript;
-                        }
-                    }),
-                cancellationToken).GetAwaiter().GetResult();
-            latencyTrace?.Mark(LatencyCheckpoint.PreviewStarted);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _livePreview.StartAsync(
+                        settings,
+                        partialTranscript =>
+                            _ = _window.InvokeAsync(() =>
+                            {
+                                if (_viewModel.IsRecording)
+                                {
+                                    _viewModel.PartialTranscript = partialTranscript;
+                                }
+                            }),
+                        cancellationToken);
+                    latencyTrace?.Mark(LatencyCheckpoint.PreviewStarted);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception error)
+                {
+                    LogError($"Live preview failed to start: {error}");
+                }
+            }, CancellationToken.None);
         }
         catch (Exception error)
         {

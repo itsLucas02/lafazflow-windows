@@ -51,7 +51,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         Action<string> onPartialTranscript,
         CancellationToken cancellationToken)
     {
-        StopAsync().GetAwaiter().GetResult();
+        var previousCancellation = _sessionCancellation;
+        var previousLoop = _previewLoop;
+        var previousStats = _stats;
 
         _settings = settings with
         {
@@ -70,6 +72,11 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 
         _sessionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _previewLoop = Task.Run(() => RunPreviewLoopAsync(_sessionCancellation.Token), CancellationToken.None);
+        if (previousCancellation is not null)
+        {
+            _ = StopSessionAsync(previousCancellation, previousLoop, previousStats);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -111,6 +118,14 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             _audioBuffer.Clear();
         }
 
+        await StopSessionAsync(cancellation, loop, stats);
+    }
+
+    private async Task StopSessionAsync(
+        CancellationTokenSource? cancellation,
+        Task? loop,
+        PreviewSessionStats stats)
+    {
         if (cancellation is null)
         {
             return;

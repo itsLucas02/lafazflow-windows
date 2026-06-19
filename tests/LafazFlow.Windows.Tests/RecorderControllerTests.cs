@@ -72,6 +72,7 @@ public sealed class RecorderControllerTests
             preview);
 
         controller.StartRecording();
+        await preview.StartedTask.WaitAsync(TimeSpan.FromSeconds(1));
         audio.EmitAudioChunk([1, 2, 3, 4]);
         preview.EmitPartial("Testing one two.");
 
@@ -83,6 +84,39 @@ public sealed class RecorderControllerTests
         await controller.WaitForPendingTranscriptionsAsync();
 
         Assert.True(preview.Stopped);
+    }
+
+    [Fact]
+    public async Task RecordingStartupDoesNotWaitForLivePreviewStartup()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var previewCanStart = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var preview = new FakeLiveTranscriptPreviewService { StartGate = previewCanStart.Task };
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("final")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)123,
+            preview);
+
+        var startTask = Task.Run(() => controller.StartRecording());
+        await Task.Delay(100);
+
+        Assert.True(startTask.IsCompleted);
+        Assert.Equal(RecordingState.Recording, viewModel.State);
+        Assert.Equal(1, window.ShowCount);
+        Assert.Equal("first.wav", audio.CurrentPath);
+
+        previewCanStart.SetResult();
+        await preview.StartedTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
     }
 
     [Fact]
@@ -775,8 +809,11 @@ public sealed class RecorderControllerTests
 
         public int HideCount { get; private set; }
 
+        public int ShowCount { get; private set; }
+
         public void ShowBottomCenter()
         {
+            ShowCount++;
         }
 
         public void Hide()
@@ -963,21 +1000,26 @@ public sealed class RecorderControllerTests
     private sealed class FakeLiveTranscriptPreviewService : ILiveTranscriptPreviewService
     {
         private Action<string>? _onPartialTranscript;
+        private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _stopped = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool Started { get; private set; }
 
         public bool Stopped { get; private set; }
 
+        public Task StartedTask => _started.Task;
+
         public Task StoppedTask => _stopped.Task;
 
         public bool ThrowOnStart { get; init; }
+
+        public Task? StartGate { get; init; }
 
         public Task? StopGate { get; init; }
 
         public List<byte[]> Chunks { get; } = [];
 
-        public Task StartAsync(
+        public async Task StartAsync(
             AppSettings settings,
             Action<string> onPartialTranscript,
             CancellationToken cancellationToken)
@@ -987,9 +1029,14 @@ public sealed class RecorderControllerTests
                 throw new InvalidOperationException("preview failed");
             }
 
+            if (StartGate is not null)
+            {
+                await StartGate;
+            }
+
             Started = true;
             _onPartialTranscript = onPartialTranscript;
-            return Task.CompletedTask;
+            _started.TrySetResult();
         }
 
         public void AcceptAudioChunk(byte[] audioChunk)

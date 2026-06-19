@@ -263,3 +263,7 @@
 ## Keep auxiliary models out of transcription pickers
 - Pattern: VAD files such as ggml-silero-v5.1.2.bin are model files but not transcription models, so listing them beside Whisper transcription models is misleading.
 - Rule: Filter auxiliary VAD/Silero files out of the local transcription model library and keep them only in advanced VAD settings.
+
+## Keep live preview off the hotkey path
+- Pattern: Starting the recorder can feel like the double Shift hotkey is broken if live preview cleanup or startup blocks the UI dispatcher before the mini recorder shell is shown.
+- Rule: Show the recorder shell and return from the hotkey path before starting best-effort live preview work; stale preview cleanup must never block start/stop control.
