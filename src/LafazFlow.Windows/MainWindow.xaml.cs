@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
@@ -10,7 +11,8 @@ public partial class MainWindow : Window
     private readonly MiniRecorderViewModel _miniRecorderViewModel = new();
     private readonly MiniRecorderWindow _miniRecorderWindow;
     private readonly AudioCaptureService _audioCaptureService = new();
-    private readonly DoubleShiftHotkeyService _hotkeyService = new();
+    private readonly FileHotkeyDiagnostics _hotkeyDiagnostics = new();
+    private readonly DoubleShiftHotkeyService _hotkeyService;
     private readonly SettingsStore _settingsStore = new();
     private readonly RecorderController _recorderController;
     private readonly TrayIconService _trayIcon;
@@ -19,6 +21,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _hotkeyService = new DoubleShiftHotkeyService(_hotkeyDiagnostics);
         _miniRecorderWindow = new MiniRecorderWindow(_miniRecorderViewModel);
         _recorderController = new RecorderController(
             _miniRecorderViewModel,
@@ -27,7 +30,10 @@ public partial class MainWindow : Window
             new WhisperCliTranscriptionService(),
             new ClipboardPasteService(),
             _settingsStore,
-            livePreview: new RollingWhisperLiveTranscriptPreviewService());
+            livePreview: new RollingWhisperLiveTranscriptPreviewService(
+                new RollingWhisperLiveTranscriptPreviewOptions(),
+                hotkeyDiagnostics: _hotkeyDiagnostics),
+            hotkeyDiagnostics: _hotkeyDiagnostics);
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,
@@ -59,7 +65,26 @@ public partial class MainWindow : Window
 
     private void OnDoubleShiftPressed(long hotkeyTimestamp)
     {
-        _ = Dispatcher.BeginInvoke(async () => await _recorderController.ToggleAsync(hotkeyTimestamp));
+        _ = Dispatcher.BeginInvoke(async () =>
+        {
+            var dispatchMs = ElapsedMilliseconds(hotkeyTimestamp, Stopwatch.GetTimestamp());
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "dispatched",
+                Accepted: "true",
+                DispatchMs: dispatchMs.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Reason: "begin_invoke"));
+            await _recorderController.ToggleAsync(hotkeyTimestamp);
+        });
+    }
+
+    private static long ElapsedMilliseconds(long startTimestamp, long endTimestamp)
+    {
+        if (endTimestamp < startTimestamp)
+        {
+            return 0;
+        }
+
+        return (endTimestamp - startTimestamp) * 1000 / Stopwatch.Frequency;
     }
 
     private void OnSettingsRequested()

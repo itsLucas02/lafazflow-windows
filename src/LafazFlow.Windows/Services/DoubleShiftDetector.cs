@@ -1,5 +1,7 @@
 namespace LafazFlow.Windows.Services;
 
+public sealed record DoubleShiftDetectionResult(bool Triggered, string Reason);
+
 public sealed class DoubleShiftDetector
 {
     private static readonly TimeSpan DefaultStaleDownTimeout = TimeSpan.FromMilliseconds(1000);
@@ -18,15 +20,25 @@ public sealed class DoubleShiftDetector
 
     public bool RegisterKeyDown(DateTimeOffset now, bool isRepeat)
     {
+        return RegisterKeyDownWithReason(now, isRepeat).Triggered;
+    }
+
+    public DoubleShiftDetectionResult RegisterKeyDownWithReason(DateTimeOffset now, bool isRepeat)
+    {
         if (_isDown && _currentShiftDownAt is not null && now - _currentShiftDownAt > _staleDownTimeout)
         {
             _isDown = false;
             _currentShiftDownAt = null;
         }
 
-        if (isRepeat || _isDown)
+        if (isRepeat)
         {
-            return false;
+            return new DoubleShiftDetectionResult(false, "repeat");
+        }
+
+        if (_isDown)
+        {
+            return new DoubleShiftDetectionResult(false, "already_down");
         }
 
         _isDown = true;
@@ -34,11 +46,11 @@ public sealed class DoubleShiftDetector
         if (_lastShiftDownAt is not null && now - _lastShiftDownAt <= _window)
         {
             _lastShiftDownAt = null;
-            return true;
+            return new DoubleShiftDetectionResult(true, "second_shift");
         }
 
         _lastShiftDownAt = now;
-        return false;
+        return new DoubleShiftDetectionResult(false, "first_shift");
     }
 
     public void RegisterKeyUp()

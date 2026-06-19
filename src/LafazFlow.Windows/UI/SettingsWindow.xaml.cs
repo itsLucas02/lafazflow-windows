@@ -186,6 +186,16 @@ public partial class SettingsWindow : Window
         _viewModel.ClearLatencyDiagnostics();
     }
 
+    private void RefreshHotkey_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshHotkeyDiagnostics();
+    }
+
+    private void ClearHotkey_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ClearHotkeyDiagnostics();
+    }
+
     private void TestStartSoundCue_OnClick(object sender, RoutedEventArgs e)
     {
         _soundCues.PlayRecordingStarted(BuildEditedSoundCueOptions());

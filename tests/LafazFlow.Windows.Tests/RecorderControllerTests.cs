@@ -120,6 +120,71 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task ToggleLogsHotkeyDiagnosticStateDecisions()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var diagnostics = new RecordingHotkeyDiagnostics();
+        var releaseAudioStop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        audio.StopGate = releaseAudioStop.Task;
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("final")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)123,
+            hotkeyDiagnostics: diagnostics);
+
+        await controller.ToggleAsync();
+        var stopTask = controller.ToggleAsync();
+        await audio.StopStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.ToggleAsync();
+
+        releaseAudioStop.SetResult();
+        await stopTask.WaitAsync(TimeSpan.FromSeconds(1));
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "toggle_start" && entry.State == "Idle");
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "toggle_stop" && entry.State == "Recording");
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "toggle_ignored" && entry.State == "Transcribing");
+    }
+
+    [Fact]
+    public void StartRecordingValidationErrorLogsHotkeyDiagnostic()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var diagnostics = new RecordingHotkeyDiagnostics();
+        var store = new SettingsStore(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        store.Save(AppSettings.Default with
+        {
+            WhisperCliPath = @"C:\missing\whisper-cli.exe",
+            ModelPath = @"C:\missing\model.bin"
+        });
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            new FakeAudioCaptureService("first.wav"),
+            new FakeTranscriptionService(_ => Task.FromResult("final")),
+            new FakeClipboardPasteService(),
+            store,
+            new SoundCueService(),
+            () => (IntPtr)123,
+            hotkeyDiagnostics: diagnostics);
+
+        controller.StartRecording();
+
+        Assert.Contains(diagnostics.Events, entry =>
+            entry.Event == "toggle_ignored"
+            && entry.Accepted == "false"
+            && entry.Reason == "validation_error");
+    }
+
+    [Fact]
     public async Task LivePreviewFailureDoesNotBlockFinalTranscription()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -858,7 +923,7 @@ public sealed class RecorderControllerTests
 
         public int StartCount { get; private set; }
 
-        public Task? StopGate { get; init; }
+        public Task? StopGate { get; set; }
 
         public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -973,6 +1038,16 @@ public sealed class RecorderControllerTests
         public void Report(LatencyTrace trace)
         {
             Traces.Add(trace);
+        }
+    }
+
+    private sealed class RecordingHotkeyDiagnostics : IHotkeyDiagnostics
+    {
+        public List<HotkeyDiagnosticWrite> Events { get; } = [];
+
+        public void Log(HotkeyDiagnosticWrite entry)
+        {
+            Events.Add(entry);
         }
     }
 

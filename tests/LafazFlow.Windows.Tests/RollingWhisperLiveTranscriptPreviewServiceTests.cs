@@ -168,6 +168,25 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
         Assert.Equal(["Open Supabase database."], received);
     }
 
+    [Fact]
+    public async Task LogsPreviewLifecycleEvents()
+    {
+        var diagnostics = new RecordingHotkeyDiagnostics();
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            (_, _, _, _) => Task.FromResult("Testing one two."),
+            _ => { },
+            diagnostics);
+
+        await service.StartAsync(AppSettings.Default, _ => { }, CancellationToken.None);
+        await service.StopAsync();
+
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "preview_start" && entry.Reason == "start_requested");
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "preview_started" && entry.Reason == "loop_started");
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "preview_stop" && entry.Reason == "stop_requested");
+        Assert.Contains(diagnostics.Events, entry => entry.Event == "preview_stopped" && entry.Reason == "stop_completed");
+    }
+
 
     private static RollingWhisperLiveTranscriptPreviewService CreateService(
         IReadOnlyCollection<string> previews,
@@ -210,5 +229,15 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
         }
 
         throw new TimeoutException("Condition was not met in time.");
+    }
+
+    private sealed class RecordingHotkeyDiagnostics : IHotkeyDiagnostics
+    {
+        public List<HotkeyDiagnosticWrite> Events { get; } = [];
+
+        public void Log(HotkeyDiagnosticWrite entry)
+        {
+            Events.Add(entry);
+        }
     }
 }

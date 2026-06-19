@@ -797,6 +797,34 @@
                                 <Button Content="Open Logs" Width="92" Click="OpenLogsFolder_OnClick" />
                                 <Button Content="Clear Latency" Width="106" Click="ClearLatency_OnClick" />
                             </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Recent Hotkey Events" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="{Binding HotkeyDiagnosticsMessage}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding LatestHotkeySummary}" Foreground="{StaticResource AccentBrush}" Margin="0,0,0,6" />
+                            <DataGrid ItemsSource="{Binding RecentHotkeyRows}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserDeleteRows="False"
+                                      CanUserReorderColumns="False"
+                                      CanUserResizeRows="False"
+                                      Height="150">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Event" Binding="{Binding Event}" Width="110" />
+                                    <DataGridTextColumn Header="State" Binding="{Binding State}" Width="90" />
+                                    <DataGridTextColumn Header="Dispatch" Binding="{Binding DispatchMs}" Width="72" />
+                                    <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="140" />
+                                    <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <WrapPanel>
+                                <Button Content="Refresh Hotkey" Width="116" Click="RefreshHotkey_OnClick" />
+                                <Button Content="Clear Hotkey" Width="106" Click="ClearHotkey_OnClick" />
+                            </WrapPanel>
                             <CheckBox Content="Keep recordings for diagnostics" IsChecked="{Binding KeepRecordingsForDiagnostics}" />
                         </StackPanel>
                     </Border>

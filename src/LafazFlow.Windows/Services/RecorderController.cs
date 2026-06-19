@@ -18,6 +18,7 @@ public sealed class RecorderController
     private readonly ILiveTranscriptPreviewService _livePreview;
     private readonly ILatencyReporter _latencyReporter;
     private readonly ITargetTextContextService _targetTextContext;
+    private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
@@ -39,6 +40,7 @@ public sealed class RecorderController
         ILiveTranscriptPreviewService? livePreview = null,
         ILatencyReporter? latencyReporter = null,
         ITargetTextContextService? targetTextContext = null,
+        IHotkeyDiagnostics? hotkeyDiagnostics = null,
         TimeSpan? transientErrorDismissDelay = null)
     {
         _viewModel = viewModel;
@@ -51,6 +53,7 @@ public sealed class RecorderController
         _livePreview = livePreview ?? new NullLiveTranscriptPreviewService();
         _latencyReporter = latencyReporter ?? new FileLatencyReporter();
         _targetTextContext = targetTextContext ?? new FocusedTargetTextContextService();
+        _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
         _queue = new DictationQueueProcessor(ProcessJobAsync);
@@ -67,6 +70,11 @@ public sealed class RecorderController
         var toggleHandlingTimestamp = Stopwatch.GetTimestamp();
         if (_viewModel.State == RecordingState.Recording)
         {
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "toggle_stop",
+                Accepted: "true",
+                State: _viewModel.State.ToString(),
+                Reason: "recording"));
             await StopAndTranscribeAsync(hotkeyTimestamp, toggleHandlingTimestamp);
             return;
         }
@@ -76,9 +84,19 @@ public sealed class RecorderController
             or RecordingState.Enhancing
             or RecordingState.Busy)
         {
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "toggle_ignored",
+                Accepted: "false",
+                State: _viewModel.State.ToString(),
+                Reason: "busy_state"));
             return;
         }
 
+        _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "toggle_start",
+            Accepted: "true",
+            State: _viewModel.State.ToString(),
+            Reason: "idle"));
         StartRecording(hotkeyTimestamp, toggleHandlingTimestamp);
     }
 
@@ -92,6 +110,11 @@ public sealed class RecorderController
             runtime.DecodeOptions);
         if (validationError is not null)
         {
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "toggle_ignored",
+                Accepted: "false",
+                State: _viewModel.State.ToString(),
+                Reason: "validation_error"));
             _viewModel.SetError(validationError);
             LogError(validationError);
             _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
@@ -100,12 +123,19 @@ public sealed class RecorderController
         }
 
         _targetWindow = _getForegroundWindow();
+        var targetProcessName = GetProcessName(_targetWindow);
         _currentLatencyTrace = new LatencyTrace
         {
             ModelPath = runtime.ModelPath,
             Threads = settings.WhisperThreads,
-            TargetProcessName = GetProcessName(_targetWindow)
+            TargetProcessName = targetProcessName
         };
+        _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "toggle_start",
+            Accepted: "true",
+            State: RecordingState.Recording.ToString(),
+            Reason: "capture_started",
+            Target: targetProcessName ?? "na"));
         if (hotkeyTimestamp.HasValue)
         {
             _currentLatencyTrace.Mark(LatencyCheckpoint.HotkeyReceived, hotkeyTimestamp.Value);
@@ -222,6 +252,11 @@ public sealed class RecorderController
         try
         {
             latencyTrace?.Mark(LatencyCheckpoint.PreviewStartRequested);
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "preview_start",
+                Accepted: "true",
+                State: _viewModel.State.ToString(),
+                Reason: "start_requested"));
             _ = Task.Run(async () =>
             {
                 try

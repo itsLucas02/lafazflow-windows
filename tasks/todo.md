@@ -1,5 +1,27 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Hotkey Diagnostics v0.11.5
+- [x] Add a separate privacy-safe `HOTKEY` diagnostic event stream beside existing `LATENCY` rows.
+- [x] Log double Shift detection/rejection, dispatcher delay, recorder toggle decisions, and live preview lifecycle.
+- [x] Show recent hotkey events in Settings > Diagnostics with refresh and clear actions.
+- [x] Keep logs free of transcript text, audio paths, clipboard contents, user paths, typed characters, and full window titles.
+- [x] Bump LafazFlow to v0.11.5.
+- [x] Verify focused tests, full tests, build, publish stable artifacts, safety scan, commit, and push.
+
+## Review: Hotkey Diagnostics v0.11.5
+- Planning complete at `docs/superpowers/plans/2026-06-19-hotkey-diagnostics.md`.
+- Added a separate local `HOTKEY` diagnostics stream and Settings > Diagnostics viewer.
+- Instrumented double Shift detection/rejection, UI dispatcher receipt, recorder toggle state decisions, and live preview lifecycle.
+- Hotkey diagnostic fields are compact and sanitized: event, gesture, accepted, state, dispatch_ms, reason, and target only.
+- Path-shaped diagnostic values are defensively redacted before writing.
+- Focused diagnostics/settings/hotkey tests pass, 92 tests.
+- Full `dotnet test` passes, 462 tests.
+- Full `dotnet build` passes with 0 warnings and 0 errors.
+- `git diff --check` passes.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`.
+- Relaunched the pinned stable-single app; it is responding and reports file version `0.11.5.0`.
+- Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as `token`.
+
 ## Plan: Hotkey Responsiveness Hotfix v0.11.4
 - [x] Confirm the delayed black shell and ignored stop gesture from logs and code flow.
 - [x] Add regression coverage proving recorder startup does not wait for live preview startup.

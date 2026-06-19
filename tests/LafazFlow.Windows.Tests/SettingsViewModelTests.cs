@@ -259,6 +259,21 @@ public sealed class SettingsViewModelTests
         Assert.Equal("Latest: total 50 ms, whisper 20 ms, paste 30 ms, queue 0 ms, hotkey na ms.", viewModel.LatestLatencySummary);
     }
 
+    [Fact]
+    public void LoadPopulatesRecentHotkeyRows()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var logPath = CreateLatencyLog("[2026-06-19T18:42:10.1234567+08:00] HOTKEY event=toggle_stop gesture=DoubleShift accepted=true state=Recording dispatch_ms=12 reason=second_shift target=Cursor");
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            hotkeyDiagnostics: new HotkeyDiagnosticLogStore(logPath));
+
+        Assert.Single(viewModel.RecentHotkeyRows);
+        Assert.Equal("toggle_stop", viewModel.RecentHotkeyRows[0].Event);
+        Assert.Equal("Showing latest 1 hotkey event.", viewModel.HotkeyDiagnosticsMessage);
+        Assert.Equal("Latest: toggle_stop, state Recording, dispatch 12 ms, reason second_shift.", viewModel.LatestHotkeySummary);
+    }
+
     [Theory]
     [InlineData(-20, 0)]
     [InlineData(140, 1)]
@@ -350,17 +365,45 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void ClearHotkeyDiagnosticsRemovesHotkeyRowsAndPreservesOtherLogs()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var otherLog = "[2026-06-19T18:42:09.0000000+08:00] Ordinary log.";
+        var latencyLog = "[2026-06-19T18:42:10.0000000+08:00] LATENCY id=abc status=completed";
+        var logPath = CreateLatencyLog(
+            $"""
+            {otherLog}
+            {latencyLog}
+            [2026-06-19T18:42:10.1234567+08:00] HOTKEY event=toggle_stop gesture=DoubleShift accepted=true state=Recording dispatch_ms=12 reason=second_shift target=Cursor
+            """);
+        var viewModel = SettingsViewModel.Load(
+            new SettingsStore(root),
+            hotkeyDiagnostics: new HotkeyDiagnosticLogStore(logPath));
+
+        viewModel.ClearHotkeyDiagnostics();
+
+        Assert.Empty(viewModel.RecentHotkeyRows);
+        Assert.Equal("Cleared 1 hotkey event.", viewModel.HotkeyDiagnosticsMessage);
+        Assert.Equal("No hotkey summary yet.", viewModel.LatestHotkeySummary);
+        Assert.Equal([otherLog, latencyLog], File.ReadAllLines(logPath));
+    }
+
+    [Fact]
     public void LoadShowsNoLatencySummaryWhenLogIsEmpty()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var logPath = CreateLatencyLog("");
         var viewModel = SettingsViewModel.Load(
             new SettingsStore(root),
-            new LatencyDiagnosticLogStore(logPath));
+            new LatencyDiagnosticLogStore(logPath),
+            hotkeyDiagnostics: new HotkeyDiagnosticLogStore(logPath));
 
         Assert.Empty(viewModel.RecentLatencyRows);
         Assert.Equal("No latency entries yet.", viewModel.LatencyDiagnosticsMessage);
         Assert.Equal("No latency summary yet.", viewModel.LatestLatencySummary);
+        Assert.Empty(viewModel.RecentHotkeyRows);
+        Assert.Equal("No hotkey events yet.", viewModel.HotkeyDiagnosticsMessage);
+        Assert.Equal("No hotkey summary yet.", viewModel.LatestHotkeySummary);
     }
 
     [Fact]

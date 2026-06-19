@@ -51,6 +51,26 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsHotkeyDiagnosticsViewer()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml.cs");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
+
+        Assert.Contains("Text=\"Recent Hotkey Events\"", xaml);
+        Assert.Contains("ItemsSource=\"{Binding RecentHotkeyRows}\"", xaml);
+        Assert.Contains("Text=\"{Binding HotkeyDiagnosticsMessage}\"", xaml);
+        Assert.Contains("Text=\"{Binding LatestHotkeySummary}\"", xaml);
+        Assert.Contains("Binding=\"{Binding DispatchMs}\"", xaml);
+        Assert.Contains("Click=\"RefreshHotkey_OnClick\"", xaml);
+        Assert.Contains("Click=\"ClearHotkey_OnClick\"", xaml);
+        Assert.Contains("_viewModel.RefreshHotkeyDiagnostics()", codeBehind);
+        Assert.Contains("_viewModel.ClearHotkeyDiagnostics()", codeBehind);
+    }
+
+    [Fact]
     public void SettingsWindowContainsSoundCueControls()
     {
         var repoRoot = FindRepoRoot();

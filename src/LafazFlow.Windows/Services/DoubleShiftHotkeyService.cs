@@ -17,12 +17,14 @@ public sealed class DoubleShiftHotkeyService : IDisposable
 
     private readonly LowLevelKeyboardProc _proc;
     private readonly DoubleShiftDetector _detector = new(DoublePressWindow);
+    private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private IntPtr _hookId;
 
     public event Action<long>? DoubleShiftPressed;
 
-    public DoubleShiftHotkeyService()
+    public DoubleShiftHotkeyService(IHotkeyDiagnostics? hotkeyDiagnostics = null)
     {
+        _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
         _proc = HookCallback;
     }
 
@@ -65,7 +67,12 @@ public sealed class DoubleShiftHotkeyService : IDisposable
             {
                 var flags = Marshal.ReadInt32(lParam, 8);
                 var isRepeat = (flags & 0x40000000) != 0;
-                if (_detector.RegisterKeyDown(DateTimeOffset.UtcNow, isRepeat))
+                var result = _detector.RegisterKeyDownWithReason(DateTimeOffset.UtcNow, isRepeat);
+                _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                    Event: result.Triggered ? "detected" : "rejected",
+                    Accepted: result.Triggered ? "true" : "false",
+                    Reason: result.Reason));
+                if (result.Triggered)
                 {
                     DoubleShiftPressed?.Invoke(Stopwatch.GetTimestamp());
                 }

@@ -16,6 +16,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private readonly RollingWhisperLiveTranscriptPreviewOptions _options;
     private readonly Func<AppSettings, byte[], int, CancellationToken, Task<string>> _transcribeSnapshotAsync;
     private readonly Action<string> _logMessage;
+    private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private readonly int _minimumBytes;
     private readonly int _rollingWindowBytes;
     private readonly int _minimumNewAudioBytes;
@@ -29,18 +30,20 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private PreviewSessionStats _stats = new();
 
     public RollingWhisperLiveTranscriptPreviewService()
-        : this(new RollingWhisperLiveTranscriptPreviewOptions(), null, null)
+        : this(new RollingWhisperLiveTranscriptPreviewOptions(), null, null, null)
     {
     }
 
     public RollingWhisperLiveTranscriptPreviewService(
         RollingWhisperLiveTranscriptPreviewOptions options,
         Func<AppSettings, byte[], int, CancellationToken, Task<string>>? transcribeSnapshotAsync = null,
-        Action<string>? logMessage = null)
+        Action<string>? logMessage = null,
+        IHotkeyDiagnostics? hotkeyDiagnostics = null)
     {
         _options = options;
         _transcribeSnapshotAsync = transcribeSnapshotAsync ?? DefaultTranscribeSnapshotAsync;
         _logMessage = logMessage ?? Log;
+        _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
         _minimumBytes = MillisecondsToPcmBytes(options.MinimumAudioMilliseconds);
         _rollingWindowBytes = MillisecondsToPcmBytes(options.RollingWindowMilliseconds);
         _minimumNewAudioBytes = MillisecondsToPcmBytes(options.MinimumNewAudioMilliseconds);
@@ -51,6 +54,10 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         Action<string> onPartialTranscript,
         CancellationToken cancellationToken)
     {
+        _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "preview_start",
+            Accepted: "true",
+            Reason: "start_requested"));
         var previousCancellation = _sessionCancellation;
         var previousLoop = _previewLoop;
         var previousStats = _stats;
@@ -70,8 +77,13 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             _audioBuffer.Clear();
         }
 
-        _sessionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _previewLoop = Task.Run(() => RunPreviewLoopAsync(_sessionCancellation.Token), CancellationToken.None);
+        var sessionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _sessionCancellation = sessionCancellation;
+        _previewLoop = Task.Run(() => RunPreviewLoopAsync(sessionCancellation.Token), CancellationToken.None);
+        _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "preview_started",
+            Accepted: "true",
+            Reason: "loop_started"));
         if (previousCancellation is not null)
         {
             _ = StopSessionAsync(previousCancellation, previousLoop, previousStats);
@@ -100,6 +112,10 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 
     public async Task StopAsync()
     {
+        _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "preview_stop",
+            Accepted: "true",
+            Reason: "stop_requested"));
         var cancellation = _sessionCancellation;
         var loop = _previewLoop;
         var stats = _stats;
@@ -141,10 +157,26 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         }
         catch (OperationCanceledException)
         {
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "preview_cancelled",
+                Accepted: "false",
+                Reason: "operation_cancelled"));
+        }
+        catch (Exception error)
+        {
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "preview_failed",
+                Accepted: "false",
+                Reason: error.GetType().Name));
+            throw;
         }
         finally
         {
             LogPreviewSummary(stats);
+            _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
+                Event: "preview_stopped",
+                Accepted: "true",
+                Reason: "stop_completed"));
             cancellation.Dispose();
         }
     }

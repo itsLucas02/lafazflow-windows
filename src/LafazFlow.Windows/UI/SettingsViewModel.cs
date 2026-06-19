@@ -11,6 +11,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly SettingsStore _settingsStore;
     private readonly LatencyDiagnosticLogStore _latencyDiagnostics;
+    private readonly HotkeyDiagnosticLogStore _hotkeyDiagnostics;
     private readonly RuntimeDiagnosticsService _runtimeDiagnostics;
     private readonly LocalModelLibraryService _modelLibrary;
     private readonly string? _logsFolderOverride;
@@ -43,18 +44,22 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _runtimeDiagnosticsMessage = "";
     private string _latencyDiagnosticsMessage = "";
     private string _latestLatencySummary = "";
+    private string _hotkeyDiagnosticsMessage = "";
+    private string _latestHotkeySummary = "";
     private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
         SettingsStore settingsStore,
         AppSettings settings,
         LatencyDiagnosticLogStore latencyDiagnostics,
+        HotkeyDiagnosticLogStore hotkeyDiagnostics,
         RuntimeDiagnosticsService runtimeDiagnostics,
         LocalModelLibraryService modelLibrary,
         string? logsFolderOverride)
     {
         _settingsStore = settingsStore;
         _latencyDiagnostics = latencyDiagnostics;
+        _hotkeyDiagnostics = hotkeyDiagnostics;
         _runtimeDiagnostics = runtimeDiagnostics;
         _modelLibrary = modelLibrary;
         _logsFolderOverride = logsFolderOverride;
@@ -84,6 +89,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
         RefreshModelCards();
         RefreshLatencyDiagnostics();
+        RefreshHotkeyDiagnostics();
         RefreshRuntimeDiagnostics();
     }
 
@@ -259,6 +265,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public ObservableCollection<LatencyDiagnosticRow> RecentLatencyRows { get; } = [];
 
+    public ObservableCollection<HotkeyDiagnosticEvent> RecentHotkeyRows { get; } = [];
+
     public ObservableCollection<RuntimeDiagnosticRow> RuntimeDiagnosticRows { get; } = [];
 
     public ObservableCollection<ModelCardViewModel> ModelCards { get; } = [];
@@ -298,6 +306,18 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _latestLatencySummary;
         private set => SetProperty(ref _latestLatencySummary, value);
+    }
+
+    public string HotkeyDiagnosticsMessage
+    {
+        get => _hotkeyDiagnosticsMessage;
+        private set => SetProperty(ref _hotkeyDiagnosticsMessage, value);
+    }
+
+    public string LatestHotkeySummary
+    {
+        get => _latestHotkeySummary;
+        private set => SetProperty(ref _latestHotkeySummary, value);
     }
 
     public string SettingsFolder => Path.Combine(
@@ -348,6 +368,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public static SettingsViewModel Load(
         SettingsStore settingsStore,
         LatencyDiagnosticLogStore? latencyDiagnostics = null,
+        HotkeyDiagnosticLogStore? hotkeyDiagnostics = null,
         RuntimeDiagnosticsService? runtimeDiagnostics = null,
         LocalModelLibraryService? modelLibrary = null,
         string? logsFolderOverride = null)
@@ -356,6 +377,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             settingsStore,
             settingsStore.Load(),
             latencyDiagnostics ?? new LatencyDiagnosticLogStore(),
+            hotkeyDiagnostics ?? new HotkeyDiagnosticLogStore(),
             runtimeDiagnostics ?? new RuntimeDiagnosticsService(),
             modelLibrary ?? new LocalModelLibraryService(),
             logsFolderOverride);
@@ -494,11 +516,45 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             : $"Cleared {removed} latency entries.";
     }
 
+    public void RefreshHotkeyDiagnostics()
+    {
+        RecentHotkeyRows.Clear();
+        foreach (var row in _hotkeyDiagnostics.LoadRecent())
+        {
+            RecentHotkeyRows.Add(row);
+        }
+
+        HotkeyDiagnosticsMessage = RecentHotkeyRows.Count == 0
+            ? "No hotkey events yet."
+            : RecentHotkeyRows.Count == 1
+                ? "Showing latest 1 hotkey event."
+                : $"Showing latest {RecentHotkeyRows.Count} hotkey events.";
+        LatestHotkeySummary = RecentHotkeyRows.Count == 0
+            ? "No hotkey summary yet."
+            : BuildLatestHotkeySummary(RecentHotkeyRows[0]);
+    }
+
+    public void ClearHotkeyDiagnostics()
+    {
+        var removed = _hotkeyDiagnostics.ClearHotkeyLines();
+        RefreshHotkeyDiagnostics();
+        HotkeyDiagnosticsMessage = removed == 0
+            ? "No hotkey events to clear."
+            : removed == 1
+                ? "Cleared 1 hotkey event."
+                : $"Cleared {removed} hotkey events.";
+    }
+
     private static string BuildLatestLatencySummary(LatencyDiagnosticRow row)
     {
         return row.Status.Equals("failed", StringComparison.OrdinalIgnoreCase)
             ? $"Latest failed: total {row.TotalStopToDoneMs} ms, whisper {row.WhisperMs} ms, paste {row.PasteMs} ms, queue {row.QueueWaitMs} ms, hotkey {row.HotkeyToVisibleMs} ms, error {row.Error}."
             : $"Latest: total {row.TotalStopToDoneMs} ms, whisper {row.WhisperMs} ms, paste {row.PasteMs} ms, queue {row.QueueWaitMs} ms, hotkey {row.HotkeyToVisibleMs} ms.";
+    }
+
+    private static string BuildLatestHotkeySummary(HotkeyDiagnosticEvent row)
+    {
+        return $"Latest: {row.Event}, state {row.State}, dispatch {row.DispatchMs} ms, reason {row.Reason}.";
     }
 
     public SettingsSaveResult Save()

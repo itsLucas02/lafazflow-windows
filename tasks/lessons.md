@@ -267,3 +267,7 @@
 ## Keep live preview off the hotkey path
 - Pattern: Starting the recorder can feel like the double Shift hotkey is broken if live preview cleanup or startup blocks the UI dispatcher before the mini recorder shell is shown.
 - Rule: Show the recorder shell and return from the hotkey path before starting best-effort live preview work; stale preview cleanup must never block start/stop control.
+
+## Keep hotkey diagnostics separate from latency summaries
+- Pattern: Latency rows explain completed dictation timing, but hotkey bugs need accepted/rejected gesture events and dispatcher state.
+- Rule: Log privacy-safe hotkey events as a separate local stream with compact state/reason fields and no transcript, clipboard, audio, or path data.
