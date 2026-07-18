@@ -40,6 +40,7 @@ public static partial class TranscriptionTextFormatter
         normalized = WaitQuestionLeadInRegex().Replace(normalized, "wait, $1");
         normalized = AndContinuationBreakRegex().Replace(normalized, ", and ");
         normalized = RepairCommandReminderQuestions(normalized);
+        normalized = RepairDeclarativeQuestionMarks(normalized);
 
         if (normalized.Length == 0)
         {
@@ -55,6 +56,10 @@ public static partial class TranscriptionTextFormatter
         else if (normalized.EndsWith('.') && ShouldEndAsQuestion(normalized))
         {
             normalized = normalized[..^1] + "?";
+        }
+        else if (normalized.EndsWith('?') && !ShouldKeepQuestionMark(normalized))
+        {
+            normalized = normalized[..^1] + ".";
         }
 
         return normalized;
@@ -119,6 +124,52 @@ public static partial class TranscriptionTextFormatter
         });
     }
 
+    private static string RepairDeclarativeQuestionMarks(string text)
+    {
+        return QuestionSentenceSegmentRegex().Replace(text, match =>
+        {
+            var sentence = match.Groups["sentence"].Value;
+            if (ShouldKeepQuestionMark(sentence))
+            {
+                return match.Value;
+            }
+
+            return match.Groups["prefix"].Value + sentence.TrimEnd('?') + ".";
+        });
+    }
+
+    private static bool ShouldKeepQuestionMark(string sentence)
+    {
+        var candidate = sentence.Trim();
+        if (ShouldEndAsQuestion(candidate))
+        {
+            return true;
+        }
+
+        candidate = candidate.TrimEnd('?').Trim();
+        if (IsShortTagQuestion(candidate))
+        {
+            return true;
+        }
+
+        return !LooksDeclarative(candidate);
+    }
+
+    private static bool IsShortTagQuestion(string sentence)
+    {
+        var normalized = sentence.ToLowerInvariant();
+        return normalized is "right" or "correct" or "okay" or "ok" or "yeah" or "yes" or "no"
+            || normalized is "isn't it" or "is it" or "does it" or "you know";
+    }
+
+    private static bool LooksDeclarative(string sentence)
+    {
+        var trimmed = sentence.TrimStart();
+        return DeclarativeLeadInRegex().IsMatch(trimmed)
+            || DeclarativeSubjectRegex().IsMatch(trimmed)
+            || DeclarativeFragmentRegex().IsMatch(trimmed);
+    }
+
     private static bool StartsWithCommandReminder(string sentence)
     {
         var trimmed = sentence.TrimStart();
@@ -155,4 +206,13 @@ public static partial class TranscriptionTextFormatter
 
     [GeneratedRegex(@"(?<prefix>^|(?<=[.!?])\s+)(?<sentence>[^.!?]+\?)")]
     private static partial Regex QuestionSentenceSegmentRegex();
+
+    [GeneratedRegex(@"^(?:currently|basically|actually|honestly|technically|literally|probably|maybe|perhaps|for your information|of course|by the way)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DeclarativeLeadInRegex();
+
+    [GeneratedRegex(@"^(?:i|i'm|i am|we|we're|we are|this|that|it|it's|it is|there|there's|there is|the|my|your|our|all of this|everything)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DeclarativeSubjectRegex();
+
+    [GeneratedRegex(@"^(?:of course|basically|for sure|definitely|probably|maybe|perhaps)$", RegexOptions.IgnoreCase)]
+    private static partial Regex DeclarativeFragmentRegex();
 }

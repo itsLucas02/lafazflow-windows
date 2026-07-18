@@ -204,4 +204,27 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal(expected, formatted);
     }
+
+    [Theory]
+    [InlineData("currently I'm still using 0.11.5?", "Currently I'm still using 0.11.5.")]
+    [InlineData("of course?", "Of course.")]
+    [InlineData("basically it does not belong there?", "Basically it does not belong there.")]
+    [InlineData("this is okay but for long term it's not the best approach of course?", "This is okay but for long term it's not the best approach of course.")]
+    public void FormatRepairsDeclarativeSentencesThatEndWithQuestionMark(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData("right?", "Right?")]
+    [InlineData("you know?", "You know?")]
+    [InlineData("does it make sense?", "Does it make sense?")]
+    public void FormatKeepsShortTagAndActualQuestionMarks(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
 }

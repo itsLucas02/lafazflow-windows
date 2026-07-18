@@ -81,6 +81,23 @@
 - Log retention now trims oversized `lafazflow.log` files to recent timestamped entries, with a tail fallback if recent logs are still too large.
 - Focused hotkey/log/crash tests pass, 16 tests; full `dotnet test` passes, 465 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 
+## Plan: Declarative Question Mark Cleanup And Rebuild v0.11.6
+- [x] Inspect punctuation formatter and current Whisper argument/model path.
+- [x] Add a general cleanup for model-emitted question marks on declarative dictation.
+- [x] Keep real question starters and short tag questions intact.
+- [x] Bump LafazFlow from `0.11.5` to `0.11.6`.
+- [x] Run focused/full tests and build.
+- [x] Rebuild stable artifacts and relaunch the updated app.
+- [x] Commit and push the verified implementation.
+
+## Review: Declarative Question Mark Cleanup And Rebuild v0.11.6
+- Root cause: the formatter only added question marks for clear question starters; it preserved question marks that the local Whisper model already emitted on declarative statements.
+- Added a general declarative-question cleanup that converts statement-like sentence-final `?` to `.`, including examples like `currently I'm still using 0.11.5?` and `of course?`.
+- Kept real question starters and short tag questions such as `right?` and `you know?`.
+- Bumped LafazFlow to `0.11.6`.
+- Focused formatter tests pass, 53 tests; full `dotnet test` passes, 472 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
+
 ## Plan: Model Library Card Polish v0.11.2
 - [x] Audit the v0.11.1 model-card design complaint.
 - [x] Fix model title contrast with explicit primary foreground.
