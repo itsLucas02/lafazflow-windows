@@ -48,4 +48,27 @@ public sealed class FileHotkeyDiagnosticsTests
         Assert.DoesNotContain(@"\", line);
         Assert.DoesNotContain("private", line);
     }
+
+    [Fact]
+    public void LogTrimsOversizedOldLogBeforeAppending()
+    {
+        var logPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "lafazflow.log");
+        Directory.CreateDirectory(Path.GetDirectoryName(logPath)!);
+        var oldLine = $"[{DateTimeOffset.Now.AddDays(-30):O}] HOTKEY event=rejected gesture=DoubleShift accepted=false state=na dispatch_ms=na reason=already_down target=na";
+        File.WriteAllLines(logPath, Enumerable.Repeat(oldLine, 30_000));
+        var originalLength = new FileInfo(logPath).Length;
+
+        var diagnostics = new FileHotkeyDiagnostics(logPath);
+        diagnostics.Log(new HotkeyDiagnosticWrite(
+            Event: "detected",
+            Gesture: "DoubleShift",
+            Accepted: "true",
+            Reason: "second_shift_after_missed_keyup"));
+
+        var trimmedLog = File.ReadAllText(logPath);
+        Assert.True(new FileInfo(logPath).Length < originalLength);
+        Assert.Contains("LOG_RETENTION trimmed=true", trimmedLog);
+        Assert.Contains("HOTKEY event=detected", trimmedLog);
+        Assert.DoesNotContain("reason=already_down", trimmedLog);
+    }
 }

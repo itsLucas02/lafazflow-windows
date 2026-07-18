@@ -12,10 +12,9 @@ public sealed class FileLatencyReporter : ILatencyReporter
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "LafazFlow",
                 "Logs");
-            Directory.CreateDirectory(logRoot);
-            File.AppendAllText(
+            BoundedLogFileWriter.AppendLine(
                 Path.Combine(logRoot, "lafazflow.log"),
-                $"[{DateTimeOffset.Now:O}] {LatencyLogFormatter.Format(trace)}{Environment.NewLine}");
+                $"[{DateTimeOffset.Now:O}] {LatencyLogFormatter.Format(trace)}");
         }
         catch
         {

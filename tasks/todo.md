@@ -66,6 +66,21 @@
 - Relaunched stable-single; Settings opens as LafazFlow Settings - v0.11.3.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
 
+## Plan: Double-Shift Reliability And Log Retention
+- [x] Inspect recent LafazFlow hotkey logs and current double-Shift detector behavior.
+- [x] Improve double-Shift reliability for natural repeated tapping patterns.
+- [x] Add log retention so `%LocalAppData%\LafazFlow\Logs\lafazflow.log` does not grow without bound.
+- [x] Add focused regression tests for hotkey detection and log trimming.
+- [x] Run focused tests and summarize the observed log evidence.
+
+## Review: Double-Shift Reliability And Log Retention
+- Root cause from the active log: `already_down` appeared 3,263 times versus 1,840 successful `second_shift` detections, meaning the detector was often stuck waiting for a key-up event instead of seeing a normal second Shift tap.
+- Changed `DoubleShiftDetector` so a non-repeat Shift-down inside the double-tap window self-heals missed key-up state and triggers as `second_shift_after_missed_keyup`.
+- Kept held-key repeat protection intact; repeat key-downs still return `repeat` and do not trigger dictation.
+- Added `BoundedLogFileWriter` and routed hotkey, latency, paste, recorder, and crash log appends through it.
+- Log retention now trims oversized `lafazflow.log` files to recent timestamped entries, with a tail fallback if recent logs are still too large.
+- Focused hotkey/log/crash tests pass, 16 tests; full `dotnet test` passes, 465 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+
 ## Plan: Model Library Card Polish v0.11.2
 - [x] Audit the v0.11.1 model-card design complaint.
 - [x] Fix model title contrast with explicit primary foreground.

@@ -67,10 +67,34 @@ public sealed class DoubleShiftDetectorTests
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
 
         detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
-        var result = detector.RegisterKeyDownWithReason(DateTimeOffset.UnixEpoch.AddMilliseconds(50), isRepeat: false);
+        var result = detector.RegisterKeyDownWithReason(DateTimeOffset.UnixEpoch.AddMilliseconds(500), isRepeat: false);
 
         Assert.False(result.Triggered);
         Assert.Equal("already_down", result.Reason);
+    }
+
+    [Fact]
+    public void MissedKeyUpInsideWindowStillTriggersSecondShift()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        var result = detector.RegisterKeyDownWithReason(DateTimeOffset.UnixEpoch.AddMilliseconds(180), isRepeat: false);
+
+        Assert.True(result.Triggered);
+        Assert.Equal("second_shift_after_missed_keyup", result.Reason);
+    }
+
+    [Fact]
+    public void HeldShiftRepeatStillDoesNotTrigger()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        var result = detector.RegisterKeyDownWithReason(DateTimeOffset.UnixEpoch.AddMilliseconds(180), isRepeat: true);
+
+        Assert.False(result.Triggered);
+        Assert.Equal("repeat", result.Reason);
     }
 
     [Fact]

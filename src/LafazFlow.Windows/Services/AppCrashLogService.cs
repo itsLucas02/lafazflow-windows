@@ -23,13 +23,7 @@ public sealed partial class AppCrashLogService : IAppCrashLogService
     {
         try
         {
-            var directory = Path.GetDirectoryName(_logPath);
-            if (!string.IsNullOrWhiteSpace(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.AppendAllText(_logPath, FormatCrashLine(source, exception, _now()) + Environment.NewLine);
+            BoundedLogFileWriter.AppendLine(_logPath, FormatCrashLine(source, exception, _now()));
         }
         catch
         {

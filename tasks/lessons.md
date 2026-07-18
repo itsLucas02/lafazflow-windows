@@ -271,3 +271,7 @@
 ## Keep hotkey diagnostics separate from latency summaries
 - Pattern: Latency rows explain completed dictation timing, but hotkey bugs need accepted/rejected gesture events and dispatcher state.
 - Rule: Log privacy-safe hotkey events as a separate local stream with compact state/reason fields and no transcript, clipboard, audio, or path data.
+
+## Avoid dismissing corrected hotkey reports as user timing
+- Pattern: When the owner reports normal repeated hotkey taps fail inconsistently, do not default to blaming slow second-press timing from `first_shift` rows alone.
+- Rule: Inspect missed key-up, stuck key-down, hook repeat flags, dispatcher delay, app busy state, and rejected reason counts before proposing timing as the cause.

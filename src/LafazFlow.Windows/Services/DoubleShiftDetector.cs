@@ -36,6 +36,14 @@ public sealed class DoubleShiftDetector
             return new DoubleShiftDetectionResult(false, "repeat");
         }
 
+        if (_isDown && _lastShiftDownAt is not null && now - _lastShiftDownAt <= _window)
+        {
+            _isDown = true;
+            _currentShiftDownAt = now;
+            _lastShiftDownAt = null;
+            return new DoubleShiftDetectionResult(true, "second_shift_after_missed_keyup");
+        }
+
         if (_isDown)
         {
             return new DoubleShiftDetectionResult(false, "already_down");

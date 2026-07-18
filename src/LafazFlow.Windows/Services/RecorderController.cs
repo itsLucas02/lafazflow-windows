@@ -483,16 +483,11 @@ public sealed class RecorderController
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",
             "Logs");
-        Directory.CreateDirectory(logRoot);
         try
         {
-            using var stream = new FileStream(
+            BoundedLogFileWriter.AppendLine(
                 Path.Combine(logRoot, "lafazflow.log"),
-                FileMode.Append,
-                FileAccess.Write,
-                FileShare.ReadWrite);
-            using var writer = new StreamWriter(stream);
-            writer.WriteLine($"[{DateTimeOffset.Now:O}] {message}");
+                $"[{DateTimeOffset.Now:O}] {message}");
         }
         catch
         {
