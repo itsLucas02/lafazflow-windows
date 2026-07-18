@@ -287,3 +287,7 @@
 ## Design dictation formatting as a pipeline
 - Pattern: Repeated punctuation and homophone complaints show that single-regex fixes turn output quality into whack-a-mole.
 - Rule: Before adding more broad formatter heuristics, compare mature dictation apps and keep LafazFlow output processing layered: raw cleanup, vocabulary repair, developer literal formatting, intent punctuation, and optional constrained AI polish.
+
+## Treat opinion clauses as declarative
+- Pattern: ASR can preserve a question mark on complaint/opinion statements such as `I don't think I can rely on...` or `It is quite dumb?`, especially when an earlier clause starts with `can you`.
+- Rule: Declarative opinion clauses must override generic question-starter preservation unless the sentence is clearly asking for information.

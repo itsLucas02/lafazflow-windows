@@ -1,5 +1,23 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Declarative Opinion Question-Mark Hotfix v0.11.9
+- [x] Add regressions for the reported `I don't think I can rely on DeepSeek... It is quite dumb?` output.
+- [x] Treat embedded declarative opinion clauses as statements even when the sentence starts with a polite `can you` request.
+- [x] Repair `deep seek`/`deepseek` casing to `DeepSeek`.
+- [x] Bump LafazFlow from `0.11.8` to `0.11.9`.
+- [x] Run focused tests, full tests, build, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Declarative Opinion Question-Mark Hotfix v0.11.9
+- Root cause: question preservation trusted a model-emitted `?` when the sentence started with polite `can you`, even if the sentence also contained declarative opinion clauses such as `I don't think...` or `It is quite...`.
+- Added declarative-opinion detection so those complaint/statement clauses end with `.` instead of `?`.
+- Added exact regressions for the reported DeepSeek example and a second `I agree, can you...` shape.
+- Added `deep seek`/`deepseek` casing repair to `DeepSeek`.
+- Bumped LafazFlow to `0.11.9`.
+- Focused formatter/vocabulary/post-processing tests pass, 201 tests.
+- Full `dotnet test` passes, 493 tests.
+- Full `dotnet build -c Release` passes with 0 warnings and 0 errors.
+- `git diff --check` passes.
+
 ## Plan: Layered Transcription Post-Processing Pipeline v0.11.8
 - [x] Add a `TranscriptionPostProcessor` boundary after raw ASR and before UI/paste.
 - [x] Move existing vocabulary correction, target-context continuation casing, and trailing separator handling behind named post-processing stages.

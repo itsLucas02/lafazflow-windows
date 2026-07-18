@@ -63,6 +63,8 @@ public static partial class VocabularyCorrectionService
         (PhraseRegex("input group"), "InputGroup"),
         (PhraseRegex("sentry"), "Sentry"),
         (PhraseRegex("github"), "GitHub"),
+        (PhraseRegex("deep seek"), "DeepSeek"),
+        (PhraseRegex("deepseek"), "DeepSeek"),
         (PhraseRegex("power shell"), "PowerShell"),
         (PhraseRegex("powershell"), "PowerShell"),
         (PhraseRegex("cursor"), "Cursor")

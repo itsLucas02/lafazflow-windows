@@ -43,6 +43,7 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Use em c p tools.", "Use MCP tools.")]
     [InlineData("Start the vite app.", "Start the Vite app.")]
     [InlineData("Open Vite JS docs.", "Open Vite docs.")]
+    [InlineData("I cannot rely on deep seek model.", "I cannot rely on DeepSeek model.")]
     public void ApplyDefaultsFixesAgentAndFrontendToolingVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);

@@ -86,6 +86,11 @@ public static partial class TranscriptionTextFormatter
             return false;
         }
 
+        if (HasDeclarativeOpinionClause(candidate))
+        {
+            return false;
+        }
+
         if (candidate.StartsWith("Wait, ", StringComparison.OrdinalIgnoreCase))
         {
             candidate = candidate["Wait, ".Length..].TrimStart();
@@ -168,7 +173,13 @@ public static partial class TranscriptionTextFormatter
         var trimmed = sentence.TrimStart();
         return DeclarativeLeadInRegex().IsMatch(trimmed)
             || DeclarativeSubjectRegex().IsMatch(trimmed)
+            || HasDeclarativeOpinionClause(trimmed)
             || DeclarativeFragmentRegex().IsMatch(trimmed);
+    }
+
+    private static bool HasDeclarativeOpinionClause(string sentence)
+    {
+        return DeclarativeOpinionClauseRegex().IsMatch(sentence);
     }
 
     private static bool StartsWithCommandReminder(string sentence)
@@ -216,6 +227,9 @@ public static partial class TranscriptionTextFormatter
 
     [GeneratedRegex(@"^(?:i|i'm|i am|we|we're|we are|this|that|it|it's|it is|there|there's|there is|the|my|your|our|all of this|everything)\b", RegexOptions.IgnoreCase)]
     private static partial Regex DeclarativeSubjectRegex();
+
+    [GeneratedRegex(@"\b(?:i\s+do\s+not\s+think|i\s+don't\s+think|i\s+dont\s+think|it\s+is\s+quite|it's\s+quite|that\s+is\s+quite|that's\s+quite)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex DeclarativeOpinionClauseRegex();
 
     [GeneratedRegex(@"^(?:of course|basically|for sure|definitely|probably|maybe|perhaps)$", RegexOptions.IgnoreCase)]
     private static partial Regex DeclarativeFragmentRegex();

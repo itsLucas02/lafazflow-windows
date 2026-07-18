@@ -210,6 +210,7 @@ public sealed class TranscriptionTextFormatterTests
     [InlineData("of course?", "Of course.")]
     [InlineData("basically it does not belong there?", "Basically it does not belong there.")]
     [InlineData("this is okay but for long term it's not the best approach of course?", "This is okay but for long term it's not the best approach of course.")]
+    [InlineData("it is quite dumb?", "It is quite dumb.")]
     public void FormatRepairsDeclarativeSentencesThatEndWithQuestionMark(string input, string expected)
     {
         var formatted = TranscriptionTextFormatter.Format(input);
@@ -251,5 +252,19 @@ public sealed class TranscriptionTextFormatterTests
         Assert.Equal(
             "Not only it wasting resources but it adds more complexity and more scenarios that we need to deal with and more problems especially in terms of edge cases.",
             formatted);
+    }
+
+    [Theory]
+    [InlineData(
+        "Can you please do that for me because I don't think I can rely on DeepSeek model. It is quite dumb?",
+        "Can you please do that for me because I don't think I can rely on DeepSeek model. It is quite dumb.")]
+    [InlineData(
+        "I agree, can you please do that for me because I don't think I can rely on DeepSeek model. It is quite dumb?",
+        "I agree, can you please do that for me because I don't think I can rely on DeepSeek model. It is quite dumb.")]
+    public void FormatRepairsDeclarativeOpinionComplaintsThatEndWithQuestionMark(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
     }
 }
