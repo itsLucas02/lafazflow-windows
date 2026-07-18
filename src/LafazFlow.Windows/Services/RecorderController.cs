@@ -19,6 +19,7 @@ public sealed class RecorderController
     private readonly ILatencyReporter _latencyReporter;
     private readonly ITargetTextContextService _targetTextContext;
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
+    private readonly TranscriptionPostProcessor _postProcessor;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
@@ -41,6 +42,7 @@ public sealed class RecorderController
         ILatencyReporter? latencyReporter = null,
         ITargetTextContextService? targetTextContext = null,
         IHotkeyDiagnostics? hotkeyDiagnostics = null,
+        TranscriptionPostProcessor? postProcessor = null,
         TimeSpan? transientErrorDismissDelay = null)
     {
         _viewModel = viewModel;
@@ -54,6 +56,7 @@ public sealed class RecorderController
         _latencyReporter = latencyReporter ?? new FileLatencyReporter();
         _targetTextContext = targetTextContext ?? new FocusedTargetTextContextService();
         _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
+        _postProcessor = postProcessor ?? new TranscriptionPostProcessor();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
         _queue = new DictationQueueProcessor(ProcessJobAsync);
@@ -346,18 +349,12 @@ public sealed class RecorderController
             }
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingStarted);
-            if (job.Settings.EnableVocabularyCorrections)
-            {
-                transcript = VocabularyCorrectionService.Apply(transcript, job.Settings.CustomCorrectionRules);
-            }
-
             var targetContext = _targetTextContext.GetTextBeforeCaret(job.TargetWindow);
-            transcript = TextContinuationFormatter.ApplyTargetContext(transcript, targetContext);
-
-            if (job.Settings.AppendTrailingSpace)
-            {
-                transcript = PasteTextFormatter.EnsureTrailingSeparator(transcript);
-            }
+            var processed = _postProcessor.Process(new TranscriptionPostProcessingRequest(
+                transcript,
+                job.Settings,
+                targetContext));
+            transcript = processed.Text;
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingFinished);
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateStarted);

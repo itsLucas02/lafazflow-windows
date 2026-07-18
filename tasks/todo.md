@@ -1,5 +1,26 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Layered Transcription Post-Processing Pipeline v0.11.8
+- [x] Add a `TranscriptionPostProcessor` boundary after raw ASR and before UI/paste.
+- [x] Move existing vocabulary correction, target-context continuation casing, and trailing separator handling behind named post-processing stages.
+- [x] Keep behavior compatible with v0.11.7 while making stage order explicit and testable.
+- [x] Add a raw cleanup stage for low-risk filler/stutter cleanup inspired by VoiceInk and Handy.
+- [x] Add tests for stage order, owner examples, filler cleanup, stutter cleanup, and disabled vocabulary behavior.
+- [x] Bump LafazFlow from `0.11.7` to `0.11.8`.
+- [x] Run focused tests, full tests, build, diff check, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Layered Transcription Post-Processing Pipeline v0.11.8
+- Added `TranscriptionPostProcessor` as the recorder-side boundary after raw ASR and before UI/paste.
+- The pipeline now records explicit stages: `raw_cleanup`, `vocabulary`, `target_context`, and `trailing_separator`.
+- Moved recorder-side vocabulary correction, target-context continuation casing, and trailing separator handling behind the new pipeline while preserving existing behavior.
+- Added low-risk raw cleanup for leading filler words such as `um`, `uh`, and `hmm`, plus repeated short-word stutters such as `wh wh wh`.
+- Kept AI polish out of this release; the boundary is ready for a later constrained/local or provider-backed polish stage.
+- Bumped LafazFlow to `0.11.8`.
+- Focused post-processing/controller/formatter/vocabulary tests pass, 223 tests.
+- Full `dotnet test` passes, 489 tests.
+- Full `dotnet build -c Release` passes with 0 warnings and 0 errors.
+- `git diff --check` passes.
+
 ## Plan: Hotkey Diagnostics v0.11.5
 - [x] Add a separate privacy-safe `HOTKEY` diagnostic event stream beside existing `LATENCY` rows.
 - [x] Log double Shift detection/rejection, dispatcher delay, recorder toggle decisions, and live preview lifecycle.

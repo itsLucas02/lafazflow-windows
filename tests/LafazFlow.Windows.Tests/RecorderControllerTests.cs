@@ -783,6 +783,32 @@ public sealed class RecorderControllerTests
         Assert.Equal(["Open superbiz. "], paste.Texts);
     }
 
+    [Fact]
+    public async Task CompletedDictationUsesPostProcessingPipelineBeforePaste()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("Um, open superbiz.")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""));
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["Open Supabase. "], paste.Texts);
+        Assert.Equal("Open Supabase.", viewModel.RecentTranscripts[0]);
+    }
+
 
     [Fact]
     public async Task FailedDictationReportsLatency()
