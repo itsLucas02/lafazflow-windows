@@ -118,12 +118,20 @@ public sealed class TranscriptionPostProcessorTests
     [Theory]
     [InlineData("slash help", "/help ")]
     [InlineData("forward slash help", "/help ")]
+    [InlineData("Slash debug.", "/debug. ")]
+    [InlineData("Slash ENV.", "/env. ")]
     [InlineData("dot env", ".env ")]
     [InlineData("components dot json", "components.json ")]
+    [InlineData("Components.json.", "Components.json. ")]
     [InlineData("at sign luqman", "@luqman ")]
     [InlineData("backtick npm run dev backtick", "`npm run dev` ")]
+    [InlineData("Backtake, NPM, RunDev, Backtake,.", "`npm run dev`. ")]
+    [InlineData("Backtick, NPM, RunDev, Backtick.", "`npm run dev`. ")]
+    [InlineData("Backtick, NPM RunDev, Backtick.", "`npm run dev`. ")]
     [InlineData("quote hello quote", "\"hello\" ")]
+    [InlineData("Quote, hello quote.", "\"hello\". ")]
     [InlineData("open paren props close paren", "(props) ")]
+    [InlineData("Open parent, props, clues parent.", "(props). ")]
     [InlineData("open bracket index close bracket", "[index] ")]
     [InlineData("open brace value close brace", "{value} ")]
     public void ProcessFormatsHighConfidenceDeveloperLiterals(string input, string expected)
@@ -154,7 +162,9 @@ public sealed class TranscriptionPostProcessorTests
     [InlineData("The dot is visible.")]
     [InlineData("Meet me at sign language class.")]
     [InlineData("Quote the documentation carefully.")]
+    [InlineData("Hello, quote.")]
     [InlineData("Open parent company profile.")]
+    [InlineData("Open bracket props close parent.")]
     public void ProcessKeepsNormalEnglishLiteralWordsUnchanged(string input)
     {
         var result = _processor.Process(new TranscriptionPostProcessingRequest(

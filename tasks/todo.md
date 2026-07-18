@@ -1,5 +1,24 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Spoken Developer Literal Polish v0.12.1
+- [x] Add regressions for the owner-dictated literal formatting failures.
+- [x] Support `slash debug` and `slash env` as bounded slash commands.
+- [x] Tolerate ASR commas, casing, `backtake`, `RunDev`, `open parent`, and `clues parent` in literal formatting.
+- [x] Bump LafazFlow from `0.12.0` to `0.12.1`.
+- [x] Run focused tests, full tests, build, diff check, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Spoken Developer Literal Polish v0.12.1
+- Added regressions from the owner-dictated formatting sample covering `/debug`, `/env`, `.env`, `components.json`, `@luqman`, quoted text, backticked `npm run dev`, and paired parentheses.
+- Expanded slash-command allow-list for `debug` and `env` without enabling broad slash rewrites.
+- Made literal markers tolerant of ASR comma insertion, marker casing, `backtake`, `RunDev`, `open parent`, and `clues parent`.
+- Guarded mismatched delimiter phrases such as `open bracket ... close parent` so they stay unchanged.
+- Bumped LafazFlow to `0.12.1`.
+- Focused post-processing/formatter/vocabulary tests pass, 227 tests.
+- Full `dotnet test` passes, 519 tests.
+- Full `dotnet build -c Release` passes with 0 warnings and 0 errors.
+- `git diff --check` passes.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
 ## Plan: Developer Literal Formatting v0.12.0
 - [x] Add a post-processing stage for high-confidence spoken developer literals.
 - [x] Convert conservative developer phrases such as `slash help`, `dot env`, `components dot json`, quoted/backticked text, and simple paired delimiters.

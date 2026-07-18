@@ -67,6 +67,8 @@ internal static partial class DeveloperLiteralFormatter
 {
     private static readonly HashSet<string> SlashCommandWords = new(StringComparer.OrdinalIgnoreCase)
     {
+        "debug",
+        "env",
         "help",
         "init",
         "login",
@@ -94,7 +96,7 @@ internal static partial class DeveloperLiteralFormatter
         }
 
         var formatted = BacktickPairRegex().Replace(text, match =>
-            $"`{TrimLiteralContent(match.Groups["content"].Value)}`");
+            $"`{NormalizeCodeLiteralContent(match.Groups["content"].Value)}`");
         formatted = QuotePairRegex().Replace(formatted, match =>
             $"\"{TrimLiteralContent(match.Groups["content"].Value)}\"");
         formatted = PairedDelimiterRegex().Replace(formatted, ReplacePairedDelimiter);
@@ -125,15 +127,31 @@ internal static partial class DeveloperLiteralFormatter
 
     private static string ReplacePairedDelimiter(Match match)
     {
-        var open = match.Groups["open"].Value.ToLowerInvariant();
+        var open = match.Groups["open"].Value.Trim().ToLowerInvariant();
+        var close = match.Groups["close"].Value.Trim().ToLowerInvariant();
         var content = TrimLiteralContent(match.Groups["content"].Value);
-
-        return open switch
+        if (CanonicalDelimiter(open) != CanonicalDelimiter(close))
         {
-            "paren" or "parenthesis" => $"({content})",
+            return match.Value;
+        }
+
+        return CanonicalDelimiter(open) switch
+        {
+            "paren" => $"({content})",
             "bracket" or "square bracket" => $"[{content}]",
             "brace" or "curly brace" => $"{{{content}}}",
             _ => match.Value
+        };
+    }
+
+    private static string CanonicalDelimiter(string delimiter)
+    {
+        return delimiter switch
+        {
+            "parent" or "parenthesis" => "paren",
+            "square bracket" => "bracket",
+            "curly brace" => "brace",
+            _ => delimiter
         };
     }
 
@@ -142,13 +160,23 @@ internal static partial class DeveloperLiteralFormatter
         return content.Trim().Trim(',', '.', ';', ':', '!', '?');
     }
 
-    [GeneratedRegex(@"\bbacktick\s+(?<content>.+?)\s+backtick\b", RegexOptions.IgnoreCase)]
+    private static string NormalizeCodeLiteralContent(string content)
+    {
+        var normalized = TrimLiteralContent(content);
+        normalized = LiteralSeparatorRegex().Replace(normalized, " ");
+        normalized = RunDevRegex().Replace(normalized, "run dev");
+        normalized = NpmRegex().Replace(normalized, "npm");
+        normalized = WhitespaceRegex().Replace(normalized, " ");
+        return normalized.Trim();
+    }
+
+    [GeneratedRegex(@"\b(?:backtick|backtake)\s*,?\s+(?<content>.+?)\s*,?\s+(?:backtick|backtake)\b\s*,?", RegexOptions.IgnoreCase)]
     private static partial Regex BacktickPairRegex();
 
-    [GeneratedRegex(@"\bquote\s+(?<content>.+?)\s+quote\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bquote\s*,?\s+(?<content>.+?)\s*,?\s+quote\b\s*,?", RegexOptions.IgnoreCase)]
     private static partial Regex QuotePairRegex();
 
-    [GeneratedRegex(@"\bopen\s+(?<open>paren|parenthesis|bracket|square bracket|brace|curly brace)\s+(?<content>.+?)\s+close\s+\k<open>\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\bopen\s+(?<open>paren|parent|parenthesis|bracket|square bracket|brace|curly brace)\s*,?\s+(?<content>.+?)\s*,?\s+(?:close|clues)\s+(?<close>paren|parent|parenthesis|bracket|square bracket|brace|curly brace)\b", RegexOptions.IgnoreCase)]
     private static partial Regex PairedDelimiterRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}.])dot\s+env(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
@@ -162,6 +190,18 @@ internal static partial class DeveloperLiteralFormatter
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}@])at\s+sign\s+(?<handle>[a-z][a-z0-9_]{1,31})(?![\p{L}\p{N}_-])", RegexOptions.IgnoreCase)]
     private static partial Regex AtSignRegex();
+
+    [GeneratedRegex(@"\s*,\s*")]
+    private static partial Regex LiteralSeparatorRegex();
+
+    [GeneratedRegex(@"\brun\s*dev\b", RegexOptions.IgnoreCase)]
+    private static partial Regex RunDevRegex();
+
+    [GeneratedRegex(@"\bnpm\b", RegexOptions.IgnoreCase)]
+    private static partial Regex NpmRegex();
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex WhitespaceRegex();
 }
 
 internal static partial class RawTranscriptionCleanup

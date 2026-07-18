@@ -295,3 +295,7 @@
 ## Keep spoken developer literals conservative
 - Pattern: Spoken punctuation words such as slash, dot, quote, and open can be real English words or instructions to emit developer syntax.
 - Rule: Convert only high-confidence bounded phrases, keep denied/normal-English cases covered by tests, and place literal formatting after vocabulary but before continuation casing.
+
+## Accept ASR marker drift for literals
+- Pattern: Literal dictation markers can drift through ASR as nearby words or comma-separated tokens, such as `backtake` for `backtick`, `RunDev` for `run dev`, and `clues parent` for `close paren`.
+- Rule: Normalize common marker drift inside explicit literal spans, but keep allow-lists and delimiter-pair checks so ordinary prose remains untouched.
