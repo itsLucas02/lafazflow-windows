@@ -291,3 +291,7 @@
 ## Treat opinion clauses as declarative
 - Pattern: ASR can preserve a question mark on complaint/opinion statements such as `I don't think I can rely on...` or `It is quite dumb?`, especially when an earlier clause starts with `can you`.
 - Rule: Declarative opinion clauses must override generic question-starter preservation unless the sentence is clearly asking for information.
+
+## Keep spoken developer literals conservative
+- Pattern: Spoken punctuation words such as slash, dot, quote, and open can be real English words or instructions to emit developer syntax.
+- Rule: Convert only high-confidence bounded phrases, keep denied/normal-English cases covered by tests, and place literal formatting after vocabulary but before continuation casing.

@@ -20,6 +20,8 @@ public sealed class TranscriptionPostProcessor
             stages.Add(new TranscriptionPostProcessingStageResult("vocabulary", Changed: false, Skipped: true));
         }
 
+        text = ApplyStage(stages, "developer_literal_formatting", text, DeveloperLiteralFormatter.Apply);
+
         text = ApplyStage(stages, "target_context", text, value =>
             TextContinuationFormatter.ApplyTargetContext(value, request.TargetTextBeforeCaret));
 
@@ -60,6 +62,107 @@ public sealed record TranscriptionPostProcessingStageResult(
     string Stage,
     bool Changed,
     bool Skipped);
+
+internal static partial class DeveloperLiteralFormatter
+{
+    private static readonly HashSet<string> SlashCommandWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "help",
+        "init",
+        "login",
+        "logout",
+        "new",
+        "settings",
+        "start",
+        "status",
+        "stop",
+        "version"
+    };
+
+    private static readonly HashSet<string> AtSignDeniedWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "class",
+        "language",
+        "school"
+    };
+
+    public static string Apply(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        var formatted = BacktickPairRegex().Replace(text, match =>
+            $"`{TrimLiteralContent(match.Groups["content"].Value)}`");
+        formatted = QuotePairRegex().Replace(formatted, match =>
+            $"\"{TrimLiteralContent(match.Groups["content"].Value)}\"");
+        formatted = PairedDelimiterRegex().Replace(formatted, ReplacePairedDelimiter);
+        formatted = DotEnvRegex().Replace(formatted, ".env");
+        formatted = FileNameDotExtensionRegex().Replace(formatted, match =>
+            $"{match.Groups["name"].Value.ToLowerInvariant()}.{match.Groups["extension"].Value.ToLowerInvariant()}");
+        formatted = SlashCommandRegex().Replace(formatted, ReplaceSlashCommand);
+        formatted = AtSignRegex().Replace(formatted, ReplaceAtSign);
+
+        return formatted;
+    }
+
+    private static string ReplaceSlashCommand(Match match)
+    {
+        var command = match.Groups["command"].Value;
+        return SlashCommandWords.Contains(command)
+            ? $"/{command.ToLowerInvariant()}"
+            : match.Value;
+    }
+
+    private static string ReplaceAtSign(Match match)
+    {
+        var handle = match.Groups["handle"].Value;
+        return AtSignDeniedWords.Contains(handle)
+            ? match.Value
+            : $"@{handle.ToLowerInvariant()}";
+    }
+
+    private static string ReplacePairedDelimiter(Match match)
+    {
+        var open = match.Groups["open"].Value.ToLowerInvariant();
+        var content = TrimLiteralContent(match.Groups["content"].Value);
+
+        return open switch
+        {
+            "paren" or "parenthesis" => $"({content})",
+            "bracket" or "square bracket" => $"[{content}]",
+            "brace" or "curly brace" => $"{{{content}}}",
+            _ => match.Value
+        };
+    }
+
+    private static string TrimLiteralContent(string content)
+    {
+        return content.Trim().Trim(',', '.', ';', ':', '!', '?');
+    }
+
+    [GeneratedRegex(@"\bbacktick\s+(?<content>.+?)\s+backtick\b", RegexOptions.IgnoreCase)]
+    private static partial Regex BacktickPairRegex();
+
+    [GeneratedRegex(@"\bquote\s+(?<content>.+?)\s+quote\b", RegexOptions.IgnoreCase)]
+    private static partial Regex QuotePairRegex();
+
+    [GeneratedRegex(@"\bopen\s+(?<open>paren|parenthesis|bracket|square bracket|brace|curly brace)\s+(?<content>.+?)\s+close\s+\k<open>\b", RegexOptions.IgnoreCase)]
+    private static partial Regex PairedDelimiterRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}.])dot\s+env(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex DotEnvRegex();
+
+    [GeneratedRegex(@"\b(?<name>[a-z][a-z0-9-]{1,63})\s+dot\s+(?<extension>json|env|ts|tsx|js|jsx|cs|rs|py|md|yml|yaml|toml|lock|config)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex FileNameDotExtensionRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}/])(?:forward\s+slash|slash)\s+(?<command>[a-z][a-z0-9-]{1,63})(?![\p{L}\p{N}-])", RegexOptions.IgnoreCase)]
+    private static partial Regex SlashCommandRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}@])at\s+sign\s+(?<handle>[a-z][a-z0-9_]{1,31})(?![\p{L}\p{N}_-])", RegexOptions.IgnoreCase)]
+    private static partial Regex AtSignRegex();
+}
 
 internal static partial class RawTranscriptionCleanup
 {

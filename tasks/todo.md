@@ -1,5 +1,23 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Developer Literal Formatting v0.12.0
+- [x] Add a post-processing stage for high-confidence spoken developer literals.
+- [x] Convert conservative developer phrases such as `slash help`, `dot env`, `components dot json`, quoted/backticked text, and simple paired delimiters.
+- [x] Add negative regressions so normal English words like slash, dot, quote, and open parent are preserved.
+- [x] Bump LafazFlow from `0.11.9` to `0.12.0`.
+- [x] Run focused tests, full tests, build, diff check, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Developer Literal Formatting v0.12.0
+- Added `developer_literal_formatting` as an explicit post-processing stage after vocabulary and before target-context casing.
+- Added conservative developer literal conversions for slash commands, `.env`, file names such as `components.json`, mentions, backticks, quotes, parentheses, brackets, and braces.
+- Guarded normal English phrases such as `Slash is...`, `The dot is...`, `Quote the...`, and `Open parent...`.
+- Bumped LafazFlow to `0.12.0`.
+- Focused post-processing/controller/formatter/vocabulary tests pass, 243 tests.
+- Full `dotnet test` passes, 509 tests.
+- Full `dotnet build -c Release` passes with 0 warnings and 0 errors.
+- `git diff --check` passes.
+- Public-readiness scan found no credentials. Matches are GPL/docs words and local code identifiers such as `token`.
+
 ## Plan: Declarative Opinion Question-Mark Hotfix v0.11.9
 - [x] Add regressions for the reported `I don't think I can rely on DeepSeek... It is quite dumb?` output.
 - [x] Treat embedded declarative opinion clauses as statements even when the sentence starts with a polite `can you` request.
