@@ -115,6 +115,19 @@
 - Focused formatter/vocabulary tests pass, 186 tests; full `dotnet test` passes, 477 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
 
+## Plan: Open Source Dictation Formatting Review
+- [x] Inspect VoiceInk's deterministic cleanup, paragraph formatting, word replacement, and AI enhancement flow.
+- [x] Inspect FluidVoice's dictation post-processing, spoken punctuation, literal developer formatting, and app-aware routing.
+- [x] Inspect Handy's custom-word fuzzy matching, raw output filtering, structured AI post-processing, and default cleanup prompt.
+- [x] Document the LafazFlow output-quality direction as a layered pipeline instead of one-off formatter patches.
+- [x] Capture a lesson from the owner's correction.
+
+## Review: Open Source Dictation Formatting Review
+- Wrote `docs/superpowers/research/2026-07-18-dictation-formatting-open-source-review.md`.
+- Key finding: VoiceInk, FluidVoice, and Handy separate raw ASR from processed output and use multiple stages, while LafazFlow's current formatter is carrying too much responsibility.
+- Recommended LafazFlow direction: introduce a `TranscriptionPostProcessor` boundary with raw cleanup, vocabulary/phonetic repair, developer literal formatting, intent punctuation repair, and optional constrained AI polish.
+- Near-term slice should create the pipeline boundary first, then move existing formatter/vocabulary logic into named stages before adding model-based polishing.
+
 ## Plan: Model Library Card Polish v0.11.2
 - [x] Audit the v0.11.1 model-card design complaint.
 - [x] Fix model title contrast with explicit primary foreground.

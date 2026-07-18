@@ -283,3 +283,7 @@
 ## Repair developer phrase homophones in context
 - Pattern: ASR can turn `edge cases` into `age cases` in developer/problem/scenario contexts.
 - Rule: Repair `age cases` only near developer context words such as scenarios, problems, tests, regressions, or `terms of`, so real age-related wording is not broadly rewritten.
+
+## Design dictation formatting as a pipeline
+- Pattern: Repeated punctuation and homophone complaints show that single-regex fixes turn output quality into whack-a-mole.
+- Rule: Before adding more broad formatter heuristics, compare mature dictation apps and keep LafazFlow output processing layered: raw cleanup, vocabulary repair, developer literal formatting, intent punctuation, and optional constrained AI polish.
