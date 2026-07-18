@@ -44,6 +44,7 @@ public sealed class SettingsViewModelTests
             WhisperThreads = 8,
             ShowLiveTranscriptPreview = false,
             EnableVocabularyCorrections = false,
+            EnableConservativeDictationPolish = true,
             AppendTrailingSpace = false,
             RestoreClipboardAfterPaste = false,
             ClipboardRestoreDelayMs = 2500,
@@ -71,6 +72,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(8, viewModel.WhisperThreads);
         Assert.False(viewModel.ShowLiveTranscriptPreview);
         Assert.False(viewModel.EnableVocabularyCorrections);
+        Assert.True(viewModel.EnableConservativeDictationPolish);
         Assert.False(viewModel.AppendTrailingSpace);
         Assert.False(viewModel.RestoreClipboardAfterPaste);
         Assert.Equal(2500, viewModel.ClipboardRestoreDelayMs);
@@ -105,6 +107,7 @@ public sealed class SettingsViewModelTests
         viewModel.WhisperThreads = 4;
         viewModel.ShowLiveTranscriptPreview = false;
         viewModel.EnableVocabularyCorrections = false;
+        viewModel.EnableConservativeDictationPolish = true;
         viewModel.AppendTrailingSpace = false;
         viewModel.RestoreClipboardAfterPaste = false;
         viewModel.ClipboardRestoreDelayMs = 2200;
@@ -131,6 +134,7 @@ public sealed class SettingsViewModelTests
         Assert.Equal(4, saved.WhisperThreads);
         Assert.False(saved.ShowLiveTranscriptPreview);
         Assert.False(saved.EnableVocabularyCorrections);
+        Assert.True(saved.EnableConservativeDictationPolish);
         Assert.False(saved.AppendTrailingSpace);
         Assert.False(saved.RestoreClipboardAfterPaste);
         Assert.Equal(2200, saved.ClipboardRestoreDelayMs);

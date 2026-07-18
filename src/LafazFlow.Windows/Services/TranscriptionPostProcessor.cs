@@ -22,6 +22,15 @@ public sealed class TranscriptionPostProcessor
 
         text = ApplyStage(stages, "developer_literal_formatting", text, DeveloperLiteralFormatter.Apply);
 
+        if (request.Settings.EnableConservativeDictationPolish)
+        {
+            text = ApplyStage(stages, "conservative_dictation_polish", text, ConservativeDictationPolisher.Apply);
+        }
+        else
+        {
+            stages.Add(new TranscriptionPostProcessingStageResult("conservative_dictation_polish", Changed: false, Skipped: true));
+        }
+
         text = ApplyStage(stages, "target_context", text, value =>
             TextContinuationFormatter.ApplyTargetContext(value, request.TargetTextBeforeCaret));
 
@@ -47,6 +56,40 @@ public sealed class TranscriptionPostProcessor
         stages.Add(new TranscriptionPostProcessingStageResult(name, output != input, Skipped: false));
         return output;
     }
+}
+
+internal static partial class ConservativeDictationPolisher
+{
+    public static string Apply(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        var result = new System.Text.StringBuilder(text.Length);
+        var position = 0;
+        foreach (Match match in ProtectedLiteralRegex().Matches(text))
+        {
+            result.Append(RejoinContinuationClauses(text[position..match.Index]));
+            result.Append(match.Value);
+            position = match.Index + match.Length;
+        }
+
+        result.Append(RejoinContinuationClauses(text[position..]));
+        return result.ToString();
+    }
+
+    private static string RejoinContinuationClauses(string text)
+    {
+        return BrokenContinuationRegex().Replace(text, ", ${connector}");
+    }
+
+    [GeneratedRegex("`[^`]*`|\\\"[^\\\"]*\\\"|\\([^)]*\\)|\\[[^\\]]*\\]|\\{[^}]*\\}")]
+    private static partial Regex ProtectedLiteralRegex();
+
+    [GeneratedRegex(@"[.]\s+(?<connector>because|which means|so that|and then|while)\b")]
+    private static partial Regex BrokenContinuationRegex();
 }
 
 public sealed record TranscriptionPostProcessingRequest(

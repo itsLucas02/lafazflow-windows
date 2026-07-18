@@ -32,6 +32,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _customVocabularyTerms = "";
     private string _customCorrectionRules = "";
     private bool _enableVocabularyCorrections;
+    private bool _enableConservativeDictationPolish;
     private bool _enableSoundCues;
     private double _soundCueVolumePercent;
     private double _soundCueRecordingStartedVolumePercent;
@@ -80,6 +81,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         CustomVocabularyTerms = settings.CustomVocabularyTerms;
         CustomCorrectionRules = settings.CustomCorrectionRules;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
+        EnableConservativeDictationPolish = settings.EnableConservativeDictationPolish;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
         SoundCueRecordingStartedVolumePercent = settings.SoundCueRecordingStartedVolume * 100;
@@ -219,6 +221,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _enableVocabularyCorrections;
         set => SetProperty(ref _enableVocabularyCorrections, value);
+    }
+
+    public bool EnableConservativeDictationPolish
+    {
+        get => _enableConservativeDictationPolish;
+        set => SetProperty(ref _enableConservativeDictationPolish, value);
     }
 
     public bool EnableSoundCues
@@ -598,6 +606,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             CustomVocabularyTerms = CustomVocabularyTerms,
             CustomCorrectionRules = CustomCorrectionRules,
             EnableVocabularyCorrections = EnableVocabularyCorrections,
+            EnableConservativeDictationPolish = EnableConservativeDictationPolish,
             EnableSoundCues = EnableSoundCues,
             SoundCueVolume = Math.Clamp(SoundCueVolumePercent / 100.0, 0, 1),
             SoundCueRecordingStartedVolume = Math.Clamp(SoundCueRecordingStartedVolumePercent / 100.0, 0, 2),
@@ -627,6 +636,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         CustomVocabularyTerms = settings.CustomVocabularyTerms;
         CustomCorrectionRules = settings.CustomCorrectionRules;
         EnableVocabularyCorrections = settings.EnableVocabularyCorrections;
+        EnableConservativeDictationPolish = settings.EnableConservativeDictationPolish;
         EnableSoundCues = settings.EnableSoundCues;
         SoundCueVolumePercent = settings.SoundCueVolume * 100;
         SoundCueRecordingStartedVolumePercent = settings.SoundCueRecordingStartedVolume * 100;

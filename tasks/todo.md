@@ -1,5 +1,22 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+## Plan: Optional Conservative Dictation Polish v0.12.2
+- [x] Add an opt-in, local-only polish stage after developer literal formatting.
+- [x] Rejoin only high-confidence continuation clauses while protecting developer literals.
+- [x] Persist the setting and expose it clearly in Dictation settings.
+- [x] Add pipeline, settings, and UI regression coverage.
+- [x] Bump LafazFlow from `0.12.1` to `0.12.2`.
+- [x] Run focused tests, full tests, build, diff check, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Optional Conservative Dictation Polish v0.12.2
+- Added `conservative_dictation_polish` after developer literal formatting. It is disabled by default and runs entirely on-device; it has no provider, model, network, or transcript-export path.
+- When enabled, it only rejoins lower-case continuation clauses after an erroneous full stop: `because`, `which means`, `so that`, `and then`, and `while`.
+- Backticks, quotes, parentheses, brackets, and braces are protected before polishing, so developer literals and quoted text stay exact.
+- Added the opt-in Dictation setting: `Polish broken continuation punctuation (on device)`.
+- Bumped LafazFlow to `0.12.2` and settings schema to `16`; older settings safely retain the disabled default.
+- Focused pipeline/settings/UI tests pass, 321 tests. Full `dotnet test` passes, 525 tests. Release build passes with 0 warnings and 0 errors. `git diff --check` passes.
+- Published both stable artifacts and relaunched `stable-single`; the responding process reports product version `0.12.2+033530109babe64cdd993579bcb01aa894d85751` and file version `0.12.2.0`.
+
 ## Plan: Spoken Developer Literal Polish v0.12.1
 - [x] Add regressions for the owner-dictated literal formatting failures.
 - [x] Support `slash debug` and `slash env` as bounded slash commands.

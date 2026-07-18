@@ -124,6 +124,17 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowContainsLocalConservativeDictationPolishControl()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Polish broken continuation punctuation (on device)", xaml);
+        Assert.Contains("IsChecked=\"{Binding EnableConservativeDictationPolish}\"", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsCustomCorrectionRulesTextBox()
     {
         var repoRoot = FindRepoRoot();

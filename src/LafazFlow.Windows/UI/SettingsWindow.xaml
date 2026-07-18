@@ -422,6 +422,7 @@
                         <StackPanel>
                             <CheckBox Content="Show live transcript preview" IsChecked="{Binding ShowLiveTranscriptPreview}" />
                             <CheckBox Content="Apply vocabulary corrections" IsChecked="{Binding EnableVocabularyCorrections}" />
+                            <CheckBox Content="Polish broken continuation punctuation (on device)" IsChecked="{Binding EnableConservativeDictationPolish}" />
                             <CheckBox Content="Append trailing space after paste" IsChecked="{Binding AppendTrailingSpace}" />
                         </StackPanel>
                     </Border>

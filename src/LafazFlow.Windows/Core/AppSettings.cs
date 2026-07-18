@@ -2,7 +2,7 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 15;
+    public const int CurrentSchemaVersion = 16;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
         "Supabase, Contabo, Vercel, Tailscale, Netlify, Mintlify, Stripe, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
@@ -31,6 +31,7 @@ public sealed record AppSettings
     public string CustomVocabularyTerms { get; init; } = "";
     public string CustomCorrectionRules { get; init; } = "";
     public bool EnableVocabularyCorrections { get; init; } = true;
+    public bool EnableConservativeDictationPolish { get; init; }
     public bool EnableSoundCues { get; init; } = true;
     public double SoundCueVolume { get; init; } = 0.5;
     public double SoundCueRecordingStartedVolume { get; init; } = 1.0;

@@ -16,7 +16,7 @@ public sealed class TranscriptionPostProcessorTests
             ""));
 
         Assert.Equal(
-            ["raw_cleanup", "vocabulary", "developer_literal_formatting", "target_context", "trailing_separator"],
+            ["raw_cleanup", "vocabulary", "developer_literal_formatting", "conservative_dictation_polish", "target_context", "trailing_separator"],
             result.Stages.Select(stage => stage.Stage));
     }
 
@@ -155,6 +155,45 @@ public sealed class TranscriptionPostProcessorTests
 
         Assert.Equal("/help ", result.Text);
         Assert.Contains(result.Stages, stage => stage is { Stage: "developer_literal_formatting", Changed: true });
+    }
+
+    [Theory]
+    [InlineData("Keep this local. because it protects privacy.", "Keep this local, because it protects privacy. ")]
+    [InlineData("Use the local model. which means nothing leaves this device.", "Use the local model, which means nothing leaves this device. ")]
+    [InlineData("Record first. and then paste the result.", "Record first, and then paste the result. ")]
+    public void ProcessRejoinsHighConfidenceContinuationClausesWhenPolishIsEnabled(string input, string expected)
+    {
+        var result = _processor.Process(new TranscriptionPostProcessingRequest(
+            input,
+            AppSettings.Default with { EnableConservativeDictationPolish = true },
+            ""));
+
+        Assert.Equal(expected, result.Text);
+        Assert.Contains(result.Stages, stage => stage is { Stage: "conservative_dictation_polish", Changed: true });
+    }
+
+    [Fact]
+    public void ProcessLeavesConservativeDictationPolishDisabledByDefault()
+    {
+        var result = _processor.Process(new TranscriptionPostProcessingRequest(
+            "Keep this local. because it protects privacy.",
+            AppSettings.Default,
+            ""));
+
+        Assert.Equal("Keep this local. because it protects privacy. ", result.Text);
+        Assert.Contains(result.Stages, stage => stage is { Stage: "conservative_dictation_polish", Skipped: true });
+    }
+
+    [Fact]
+    public void ProcessDoesNotPolishInsideDeveloperLiterals()
+    {
+        var result = _processor.Process(new TranscriptionPostProcessingRequest(
+            "backtick npm run dev. because this is a literal backtick",
+            AppSettings.Default with { EnableConservativeDictationPolish = true },
+            ""));
+
+        Assert.Equal("`npm run dev. because this is a literal` ", result.Text);
+        Assert.Contains(result.Stages, stage => stage is { Stage: "conservative_dictation_polish", Changed: false });
     }
 
     [Theory]

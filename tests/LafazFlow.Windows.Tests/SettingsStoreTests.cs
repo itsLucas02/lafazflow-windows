@@ -21,6 +21,7 @@ public sealed class SettingsStoreTests
         Assert.True(settings.AppendTrailingSpace);
         Assert.True(settings.ShowLiveTranscriptPreview);
         Assert.True(settings.EnableVocabularyCorrections);
+        Assert.False(settings.EnableConservativeDictationPolish);
         Assert.True(settings.EnableSoundCues);
         Assert.Equal(0.5, settings.SoundCueVolume);
         Assert.Equal(1.0, settings.SoundCueRecordingStartedVolume);
