@@ -392,6 +392,20 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal("Open MySupabase.", corrected);
     }
 
+    [Theory]
+    [InlineData(
+        "It adds more problems especially in terms of age cases.",
+        "It adds more problems especially in terms of edge cases.")]
+    [InlineData(
+        "We need regression tests around age cases.",
+        "We need regression tests around edge cases.")]
+    public void ApplyDefaultsRepairsDeveloperEdgeCasesHomophone(string input, string expected)
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults(input);
+
+        Assert.Equal(expected, corrected);
+    }
+
     [Fact]
     public void ApplyUsesCustomRulesInOrder()
     {

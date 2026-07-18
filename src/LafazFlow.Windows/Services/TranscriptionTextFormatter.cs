@@ -39,6 +39,7 @@ public static partial class TranscriptionTextFormatter
         normalized = OrphanPunctuationRegex().Replace(normalized, "").Trim();
         normalized = WaitQuestionLeadInRegex().Replace(normalized, "wait, $1");
         normalized = AndContinuationBreakRegex().Replace(normalized, ", and ");
+        normalized = SoThatContinuationBreakRegex().Replace(normalized, ", so that");
         normalized = RepairCommandReminderQuestions(normalized);
         normalized = RepairDeclarativeQuestionMarks(normalized);
 
@@ -204,10 +205,13 @@ public static partial class TranscriptionTextFormatter
     [GeneratedRegex(@"\.\s+And\s+(?=(?:then|there|once|maybe|therefore|it|they|we|you)\b)")]
     private static partial Regex AndContinuationBreakRegex();
 
+    [GeneratedRegex(@"[.?]\s+So\s+that\b", RegexOptions.IgnoreCase)]
+    private static partial Regex SoThatContinuationBreakRegex();
+
     [GeneratedRegex(@"(?<prefix>^|(?<=[.!?])\s+)(?<sentence>[^.!?]+\?)")]
     private static partial Regex QuestionSentenceSegmentRegex();
 
-    [GeneratedRegex(@"^(?:currently|basically|actually|honestly|technically|literally|probably|maybe|perhaps|for your information|of course|by the way)\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:currently|basically|actually|honestly|technically|literally|probably|maybe|perhaps|for your information|of course|by the way|not only)\b", RegexOptions.IgnoreCase)]
     private static partial Regex DeclarativeLeadInRegex();
 
     [GeneratedRegex(@"^(?:i|i'm|i am|we|we're|we are|this|that|it|it's|it is|there|there's|there is|the|my|your|our|all of this|everything)\b", RegexOptions.IgnoreCase)]

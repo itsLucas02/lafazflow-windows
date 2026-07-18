@@ -89,6 +89,7 @@ public static partial class VocabularyCorrectionService
         corrected = FixStripeDictationInPaymentContext(corrected);
         corrected = FixBestBangForBuckDictationContext(corrected);
         corrected = FixBetterStackErrorsDictationContext(corrected);
+        corrected = FixDeveloperEdgeCasesDictationContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
@@ -273,6 +274,12 @@ public static partial class VocabularyCorrectionService
         return BetterStackErrorsContextRegex().Replace(text, "Better Stack Errors");
     }
 
+    private static string FixDeveloperEdgeCasesDictationContext(string text)
+    {
+        return AgeCasesContextRegex().Replace(text, match =>
+            $"{match.Groups[1].Value}edge cases{match.Groups[2].Value}");
+    }
+
     private static string FixSpelledLetterDictation(string text)
     {
         var corrected = StaffSpelledWithHyphensRegex().Replace(text, "staff");
@@ -353,6 +360,9 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(?:batter\s+stack\s+errors|battle\s+stack\s+errors|better\s+stack\s+eros)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex BetterStackErrorsContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(\b(?:terms?\s+of|handling|handle|handles|scenario|scenarios|problem|problems|especially|around|cover|covers|test|tests|testing|regression|regressions)\s+)age\s+cases(\b)", RegexOptions.IgnoreCase)]
+    private static partial Regex AgeCasesContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+(why|what|how)\b", RegexOptions.IgnoreCase)]
     private static partial Regex WeightQuestionLeadInRegex();

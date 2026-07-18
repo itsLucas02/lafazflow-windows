@@ -275,3 +275,11 @@
 ## Avoid dismissing corrected hotkey reports as user timing
 - Pattern: When the owner reports normal repeated hotkey taps fail inconsistently, do not default to blaming slow second-press timing from `first_shift` rows alone.
 - Rule: Inspect missed key-up, stuck key-down, hook repeat flags, dispatcher delay, app busy state, and rejected reason counts before proposing timing as the cause.
+
+## Treat punctuation errors as continuation and intent failures
+- Pattern: ASR can split a continuing clause as `...? So that...` and can preserve question marks on declarative `not only...` statements.
+- Rule: Repair high-confidence continuation clauses such as `so that` before final punctuation intent checks, and keep declarative lead-ins covered by tests instead of assuming the model's question mark is intentional.
+
+## Repair developer phrase homophones in context
+- Pattern: ASR can turn `edge cases` into `age cases` in developer/problem/scenario contexts.
+- Rule: Repair `age cases` only near developer context words such as scenarios, problems, tests, regressions, or `terms of`, so real age-related wording is not broadly rewritten.

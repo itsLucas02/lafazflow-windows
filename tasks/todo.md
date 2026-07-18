@@ -98,6 +98,23 @@
 - Focused formatter tests pass, 53 tests; full `dotnet test` passes, 472 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
 - Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
 
+## Plan: Continuation Punctuation And Edge Cases Repair v0.11.7
+- [x] Join high-confidence `so that` continuation clauses after bad sentence breaks.
+- [x] Treat declarative `not only...` statements as statements even when the model emits `?`.
+- [x] Repair `age cases` to `edge cases` in developer/problem/scenario contexts.
+- [x] Bump LafazFlow from `0.11.6` to `0.11.7`.
+- [x] Run focused formatter/vocabulary tests, full tests, build, and diff check.
+- [x] Rebuild stable artifacts, relaunch the pinned app, commit, and push.
+
+## Review: Continuation Punctuation And Edge Cases Repair v0.11.7
+- Root cause: formatter cleanup did not join `So that` continuation clauses after bad model punctuation, and declarative detection did not cover `not only...` statements.
+- Added `so that` continuation repair so `...? So that...` and `... . So that...` become `..., so that...`.
+- Added `not only` as a declarative lead-in so statement-like sentences no longer keep a final question mark.
+- Added context-bound `age cases` -> `edge cases` repair near developer/problem/scenario/test wording.
+- Bumped LafazFlow to `0.11.7`.
+- Focused formatter/vocabulary tests pass, 186 tests; full `dotnet test` passes, 477 tests; full `dotnet build` passes with 0 warnings; `git diff --check` passes.
+- Republished `artifacts\stable-single\LafazFlow.Windows\LafazFlow.Windows.exe` and `artifacts\stable-cuda-quality\LafazFlow.Windows\LafazFlow.Windows.exe`, then relaunched the pinned stable-single app.
+
 ## Plan: Model Library Card Polish v0.11.2
 - [x] Audit the v0.11.1 model-card design complaint.
 - [x] Fix model title contrast with explicit primary foreground.

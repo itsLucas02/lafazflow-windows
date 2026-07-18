@@ -227,4 +227,29 @@ public sealed class TranscriptionTextFormatterTests
 
         Assert.Equal(expected, formatted);
     }
+
+    [Theory]
+    [InlineData(
+        "fix what we are using currently? So that we don't need to keep fixing each of them individually.",
+        "Fix what we are using currently, so that we don't need to keep fixing each of them individually.")]
+    [InlineData(
+        "fix what we are using currently. So that we don't need to keep fixing each of them individually.",
+        "Fix what we are using currently, so that we don't need to keep fixing each of them individually.")]
+    public void FormatJoinsSoThatContinuationAfterBadSentenceBreak(string input, string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Fact]
+    public void FormatRepairsNotOnlyDeclarativeQuestionMark()
+    {
+        var formatted = TranscriptionTextFormatter.Format(
+            "Not only it wasting resources but it adds more complexity and more scenarios that we need to deal with and more problems especially in terms of edge cases?");
+
+        Assert.Equal(
+            "Not only it wasting resources but it adds more complexity and more scenarios that we need to deal with and more problems especially in terms of edge cases.",
+            formatted);
+    }
 }
