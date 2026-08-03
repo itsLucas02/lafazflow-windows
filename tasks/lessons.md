@@ -1,5 +1,9 @@
 # Lessons
 
+## Centralize ownership of heavyweight Whisper processes
+- Pattern: Final transcription, live preview, and diagnostics independently launched `whisper-cli`, allowing abnormal process lifetimes or overlapping CUDA model loads to create large latency variance.
+- Rule: Route every Whisper launch through one shared coordinator; final dictation preempts interruptible work, all workloads run exclusively, and cancellation/timeout must kill and reap the complete process tree before releasing ownership.
+
 ## Prefer local/offline transcription for LafazFlow
 - Pattern: When discussing the Windows port, keep the default workflow privacy-first and local/offline.
 - Rule: Do not suggest cloud transcription as the primary path unless the user explicitly asks for cloud features.

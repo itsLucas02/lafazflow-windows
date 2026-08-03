@@ -78,7 +78,15 @@ if (Test-Path -LiteralPath $CudaCliPath) {
     $smokeProcess = [System.Diagnostics.Process]::Start($smokeStartInfo)
     $smokeStdout = $smokeProcess.StandardOutput.ReadToEndAsync()
     $smokeStderr = $smokeProcess.StandardError.ReadToEndAsync()
-    $smokeProcess.WaitForExit()
+    if (-not $smokeProcess.WaitForExit(5000)) {
+        try {
+            $smokeProcess.Kill($true)
+            $smokeProcess.WaitForExit(2000) | Out-Null
+        } catch {
+            # Best-effort cleanup; the timeout remains the primary failure.
+        }
+        throw "BROKEN CUDA whisper-cli smoke check -> timed out after 5 seconds"
+    }
     $smokeStdout.GetAwaiter().GetResult() | Out-Null
     $smokeError = $smokeStderr.GetAwaiter().GetResult().Trim()
     if ($smokeProcess.ExitCode -eq 0) {

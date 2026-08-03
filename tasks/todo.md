@@ -1706,3 +1706,30 @@
 - Added regression coverage for package version, theme dictionaries, Fluent shell, Mica, cards, and buttons.
 - Focused Settings XAML tests pass, 21 tests; full `dotnet test` passes, 531 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
 - Republished both stable artifacts, relaunched LafazFlow, confirmed the primary process remains responsive, confirmed second-launch Settings signaling exits with code 0, and observed no new Windows application errors.
+
+## Plan: Quality CUDA Transcription Latency Regression
+- [x] Separate queue, formatting, paste, and Whisper timing from recent real dictations.
+- [x] Identify the long-running `whisper-cli` process and its parent command.
+- [x] Compare current Whisper latency with pre-WPF-UI Quality/CUDA dictations.
+- [x] Audit final and live-preview process lifecycle, cancellation, and cleanup.
+- [x] Reproduce with the current Quality profile, CUDA backend, CLI, VAD, and `ggml-large-v3-turbo-q5_0.bin` unchanged.
+- [x] Implement a permanent root-cause fix with regression coverage.
+- [x] Verify focused/full tests, Release build, stable publish, relaunch, and direct-to-main push.
+
+### Investigation evidence
+- The reported slow period averaged `1678ms` in Whisper and `1877ms` stop-to-done, compared with the preceding 30-run baseline of `940ms` and `1131ms`.
+- Found an orphaned `whisper-cli --help` process and its `check-quality-prereqs.ps1` parent left alive since 19:30; terminated only those exact stale processes.
+- Direct current-setting benchmarks returned to `878-1130ms` with the same Quality profile, CUDA CLI, VAD, prompt, threads, and large-v3-turbo Q5 model.
+- Nine fresh real dictations averaged `897ms` Whisper and `1091ms` stop-to-done, slightly faster than the original baseline; recorder setup, queue handoff, post-processing, and paste also match the original baseline.
+- WPF UI with the Fluent Settings window open did not reproduce the slowdown, so the UI migration is not the transcription bottleneck.
+
+## Review: Quality CUDA Transcription Lifecycle Hardening v0.12.3
+- Added one shared `WhisperProcessCoordinator` for final transcription, live preview, and in-app diagnostics.
+- Serialized all Whisper CLI work so multiple model-loading processes cannot compete for CUDA resources.
+- Final transcription now cancels active live-preview or diagnostic work before taking exclusive CLI ownership.
+- Added workload deadlines, whole-process-tree termination, bounded output draining, and final best-effort cleanup so cancelled or timed-out processes cannot remain orphaned.
+- Hardened `check-quality-prereqs.ps1` with a five-second smoke-check timeout and process-tree cleanup.
+- Preserved the current Quality profile, CUDA CLI, large-v3-turbo Q5 model, VAD, 16 threads, prompt, and all user settings.
+- Added real child-process regressions proving final-work preemption, timeout cleanup, and coordinator recovery.
+- Focused lifecycle/transcription tests pass, 28 tests; full suite passes, 534 tests; Release build succeeds with 0 warnings and 0 errors; prerequisite smoke check passes; `git diff --check` passes.
+- Republished both stable artifacts and relaunched `stable-single`; the responding process reports file version `0.12.3.0`, second-launch Settings signaling exits with code 0, and no `whisper-cli` process remains after startup.

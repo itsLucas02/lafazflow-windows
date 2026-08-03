@@ -187,6 +187,12 @@ public sealed class RuntimeDiagnosticsService
 public sealed class RuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
 {
     private static readonly TimeSpan SmokeCheckTimeout = TimeSpan.FromSeconds(5);
+    private readonly WhisperProcessCoordinator _processCoordinator;
+
+    public RuntimeEnvironmentProbe(WhisperProcessCoordinator? processCoordinator = null)
+    {
+        _processCoordinator = processCoordinator ?? WhisperProcessCoordinator.Shared;
+    }
 
     public bool FileExists(string path)
     {
@@ -228,8 +234,6 @@ public sealed class RuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
     {
         try
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(SmokeCheckTimeout);
             var startInfo = new ProcessStartInfo
             {
                 FileName = whisperCliPath,
@@ -242,37 +246,29 @@ public sealed class RuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
             };
             startInfo.Environment["PATH"] = processPath;
 
-            using var process = Process.Start(startInfo);
-            if (process is null)
-            {
-                return new RuntimeSmokeCheckResult(false, "Unable to start Whisper CLI.");
-            }
-
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(timeout.Token);
-            var stderrTask = process.StandardError.ReadToEndAsync(timeout.Token);
-            try
-            {
-                await process.WaitForExitAsync(timeout.Token);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                TryKill(process);
-                return new RuntimeSmokeCheckResult(false, "Whisper CLI smoke check timed out.");
-            }
-
-            var stdout = await stdoutTask;
-            var stderr = await stderrTask;
-            if (process.ExitCode == 0)
+            var result = await _processCoordinator.RunAsync(
+                WhisperWorkload.Diagnostic,
+                startInfo,
+                SmokeCheckTimeout,
+                cancellationToken);
+            if (result.ExitCode == 0)
             {
                 return new RuntimeSmokeCheckResult(true, "Whisper CLI started successfully.");
             }
 
-            var message = FirstNonEmpty(stderr, stdout, $"Whisper CLI exited with code {process.ExitCode}.");
+            var message = FirstNonEmpty(
+                result.StandardError,
+                result.StandardOutput,
+                $"Whisper CLI exited with code {result.ExitCode}.");
             return new RuntimeSmokeCheckResult(false, message);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
+        }
+        catch (OperationCanceledException)
+        {
+            return new RuntimeSmokeCheckResult(false, "Whisper CLI smoke check timed out.");
         }
         catch (Exception ex)
         {
@@ -293,18 +289,4 @@ public sealed class RuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
         return "";
     }
 
-    private static void TryKill(Process process)
-    {
-        try
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
-        }
-        catch
-        {
-            // Best effort cleanup only.
-        }
-    }
 }

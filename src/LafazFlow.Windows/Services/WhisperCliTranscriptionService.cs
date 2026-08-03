@@ -6,9 +6,16 @@ namespace LafazFlow.Windows.Services;
 
 public sealed class WhisperCliTranscriptionService : ITranscriptionService
 {
+    private static readonly TimeSpan TranscriptionTimeout = TimeSpan.FromMinutes(2);
+    private readonly WhisperProcessCoordinator _processCoordinator;
     private const string EnglishOnlyPromptPrefix =
         "English dictation only. Output English text only. Do not translate into Malay or Indonesian. "
         + "Transcribe the spoken English words exactly.";
+
+    public WhisperCliTranscriptionService(WhisperProcessCoordinator? processCoordinator = null)
+    {
+        _processCoordinator = processCoordinator ?? WhisperProcessCoordinator.Shared;
+    }
 
     public static string? ValidatePaths(string whisperCliPath, string modelPath)
     {
@@ -132,19 +139,18 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
             whisperCliPath,
             Environment.GetEnvironmentVariable("PATH") ?? "");
 
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Unable to start Whisper CLI.");
+        var result = await _processCoordinator.RunAsync(
+            WhisperWorkload.FinalTranscription,
+            startInfo,
+            TranscriptionTimeout,
+            cancellationToken);
 
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        await process.WaitForExitAsync(cancellationToken);
-
-        if (process.ExitCode != 0)
+        if (result.ExitCode != 0)
         {
-            var stdout = await stdoutTask;
-            var stderr = await stderrTask;
-            throw new InvalidOperationException(BuildFailureMessage(process.ExitCode, stdout, stderr));
+            throw new InvalidOperationException(BuildFailureMessage(
+                result.ExitCode,
+                result.StandardOutput,
+                result.StandardError));
         }
 
         var textPath = outputBasePath + ".txt";
@@ -153,7 +159,7 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
             return CleanTranscript(await File.ReadAllTextAsync(textPath, cancellationToken));
         }
 
-        return CleanTranscript(await stdoutTask);
+        return CleanTranscript(result.StandardOutput);
     }
 
     public static string BuildFailureMessage(int exitCode, string stdout, string stderr)

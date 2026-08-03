@@ -17,6 +17,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private readonly Func<AppSettings, byte[], int, CancellationToken, Task<string>> _transcribeSnapshotAsync;
     private readonly Action<string> _logMessage;
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
+    private readonly WhisperProcessCoordinator _processCoordinator;
     private readonly int _minimumBytes;
     private readonly int _rollingWindowBytes;
     private readonly int _minimumNewAudioBytes;
@@ -30,7 +31,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private PreviewSessionStats _stats = new();
 
     public RollingWhisperLiveTranscriptPreviewService()
-        : this(new RollingWhisperLiveTranscriptPreviewOptions(), null, null, null)
+        : this(new RollingWhisperLiveTranscriptPreviewOptions(), null, null, null, null)
     {
     }
 
@@ -38,12 +39,14 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         RollingWhisperLiveTranscriptPreviewOptions options,
         Func<AppSettings, byte[], int, CancellationToken, Task<string>>? transcribeSnapshotAsync = null,
         Action<string>? logMessage = null,
-        IHotkeyDiagnostics? hotkeyDiagnostics = null)
+        IHotkeyDiagnostics? hotkeyDiagnostics = null,
+        WhisperProcessCoordinator? processCoordinator = null)
     {
         _options = options;
         _transcribeSnapshotAsync = transcribeSnapshotAsync ?? DefaultTranscribeSnapshotAsync;
         _logMessage = logMessage ?? Log;
         _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
+        _processCoordinator = processCoordinator ?? WhisperProcessCoordinator.Shared;
         _minimumBytes = MillisecondsToPcmBytes(options.MinimumAudioMilliseconds);
         _rollingWindowBytes = MillisecondsToPcmBytes(options.RollingWindowMilliseconds);
         _minimumNewAudioBytes = MillisecondsToPcmBytes(options.MinimumNewAudioMilliseconds);
@@ -276,7 +279,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         await writer.WriteAsync(pcmAudio, cancellationToken);
     }
 
-    private static async Task<string> RunWhisperAsync(
+    private async Task<string> RunWhisperAsync(
         AppSettings settings,
         string audioPath,
         int threads,
@@ -306,32 +309,12 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             runtime.CliPath,
             Environment.GetEnvironmentVariable("PATH") ?? "");
 
-        using var process = Process.Start(startInfo);
-        if (process is null)
-        {
-            return "";
-        }
-
-        using var cancellationRegistration = cancellationToken.Register(() =>
-        {
-            try
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill(entireProcessTree: true);
-                }
-            }
-            catch
-            {
-            }
-        });
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        await process.WaitForExitAsync(cancellationToken);
-        await Task.WhenAll(stdoutTask, stderrTask);
-        if (process.ExitCode != 0)
+        var result = await _processCoordinator.RunAsync(
+            WhisperWorkload.LivePreview,
+            startInfo,
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
+        if (result.ExitCode != 0)
         {
             return "";
         }
@@ -339,7 +322,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         var textPath = outputBasePath + ".txt";
         return File.Exists(textPath)
             ? WhisperCliTranscriptionService.CleanTranscript(await File.ReadAllTextAsync(textPath, cancellationToken))
-            : WhisperCliTranscriptionService.CleanTranscript(await stdoutTask);
+            : WhisperCliTranscriptionService.CleanTranscript(result.StandardOutput);
     }
 
     private static void TryDelete(string path)
