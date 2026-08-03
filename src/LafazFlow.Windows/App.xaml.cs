@@ -30,12 +30,14 @@ public partial class App : System.Windows.Application
     {
         RegisterExceptionHandlers();
 
-        if (!TryAcquireSingleInstance(SingleInstanceMutexName, out _singleInstanceMutex))
+        if (!TryAcquireSingleInstance(SingleInstanceMutexName, out var singleInstanceMutex))
         {
             SecondLaunchSignal.Signal(SecondLaunchSignalName);
             Shutdown();
             return;
         }
+
+        _singleInstanceMutex = singleInstanceMutex;
 
         base.OnStartup(e);
         MainWindow = new MainWindow();

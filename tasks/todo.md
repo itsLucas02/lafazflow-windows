@@ -1669,4 +1669,11 @@
 - Preserved the existing dark identity, navigation, settings bindings, microphone/transcription checks, and Diagnostics page.
 - Added XAML regression coverage for the new hierarchy and removal of the generic `Quick Actions` block.
 - Focused Settings XAML tests pass, 19 tests; full `dotnet test` passes, 528 tests; Release build and isolated Release publish succeed; `git diff --check` passes.
-- Pixel-level capture was unavailable because the Computer Use native bridge could not connect. The normal stable publish folder was also locked by the owner's running LafazFlow process, so verification published to `artifacts\overview-redesign-verification` without terminating the active app.
+- Pixel-level capture was unavailable because the Computer Use native bridge could not connect. After owner approval to terminate LafazFlow for verified updates, the normal stable artifacts were republished and the updated stable app was relaunched successfully.
+
+## Review: Clean Second-Launch Shutdown
+- Root cause: a second LafazFlow instance stored an already-disposed mutex in the application field, then `OnExit` attempted to release it and crashed with `ObjectDisposedException` after signaling the running instance.
+- Keep failed-acquisition mutexes local and assign the application-owned mutex only after acquisition succeeds.
+- Added lifecycle regression coverage so the disposed failed-acquisition handle cannot be stored again.
+- Focused lifecycle tests pass, 4 tests; full `dotnet test` passes, 529 tests; Release build succeeds with 0 warnings and 0 errors.
+- Republished both stable artifacts, relaunched the stable app, confirmed the primary process is responsive, and confirmed the second-launch Settings signal exits cleanly with code 0.

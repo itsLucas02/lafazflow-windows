@@ -34,6 +34,18 @@ public sealed class SingleInstanceTests
     }
 
     [Fact]
+    public void FailedSecondAcquireIsNotStoredForApplicationShutdown()
+    {
+        var repoRoot = FindRepoRoot();
+        var codePath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "App.xaml.cs");
+        var code = File.ReadAllText(Path.GetFullPath(codePath));
+
+        Assert.Contains("out var singleInstanceMutex", code);
+        Assert.Contains("_singleInstanceMutex = singleInstanceMutex;", code);
+        Assert.DoesNotContain("out _singleInstanceMutex", code);
+    }
+
+    [Fact]
     public void MainWindowStartupDoesNotForceMiniRecorderVisible()
     {
         var repoRoot = FindRepoRoot();
