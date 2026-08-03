@@ -164,6 +164,24 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void OverviewPresentsEverydayDictationStatusBeforeDiagnostics()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"Ready when you are\"", xaml);
+        Assert.Contains("Text=\"Ready to dictate\"", xaml);
+        Assert.Contains("Text=\"Local and private\"", xaml);
+        Assert.Contains("Text=\"Shift\"", xaml);
+        Assert.Contains("Text=\"Your setup\"", xaml);
+        Assert.Contains("Text=\"{Binding RuntimeProfileStatus}\"", xaml);
+        Assert.Contains("Text=\"{Binding CurrentModelSummary}\"", xaml);
+        Assert.Contains("Style=\"{StaticResource PrimaryButtonStyle}\"", xaml);
+        Assert.DoesNotContain("Text=\"Quick Actions\"", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsLocalModelLibraryCards()
     {
         var repoRoot = FindRepoRoot();

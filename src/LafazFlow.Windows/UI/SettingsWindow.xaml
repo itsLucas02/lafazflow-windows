@@ -70,6 +70,36 @@
             <Setter Property="HorizontalAlignment" Value="Left" />
         </Style>
 
+        <Style x:Key="OverviewHeroStyle" TargetType="Border">
+            <Setter Property="Background" Value="#142528" />
+            <Setter Property="BorderBrush" Value="#245055" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="22" />
+            <Setter Property="Margin" Value="0,0,0,20" />
+        </Style>
+
+        <Style x:Key="OverviewPanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+
+        <Style x:Key="OverviewLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+
+        <Style x:Key="KeycapStyle" TargetType="Border">
+            <Setter Property="Background" Value="#202A2E" />
+            <Setter Property="BorderBrush" Value="#385157" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+        </Style>
+
         <Style TargetType="TextBox">
             <Setter Property="Margin" Value="0,0,0,12" />
             <Setter Property="Padding" Value="9,6" />
@@ -378,30 +408,113 @@
                     </Style>
                 </ScrollViewer.Style>
                 <StackPanel>
-                    <TextBlock Text="Overview" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Text="A quick look at the local dictation runtime and the actions you are most likely to need." Style="{StaticResource SectionSubtitleStyle}" />
+                    <TextBlock Text="Ready when you are"
+                               FontSize="26"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5" />
+                    <TextBlock Text="LafazFlow is ready for private, on-device dictation."
+                               Style="{StaticResource SectionSubtitleStyle}" />
 
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Current Runtime" Style="{StaticResource FieldLabelStyle}" />
-                            <Border Style="{StaticResource StatusPillStyle}" Margin="0,0,0,12">
-                                <TextBlock Text="{Binding RuntimeProfileStatus}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" />
+                    <Border Style="{StaticResource OverviewHeroStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <Ellipse Width="9"
+                                             Height="9"
+                                             Fill="{StaticResource AccentBrush}"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,9,0" />
+                                    <TextBlock Text="Ready to dictate"
+                                               FontSize="17"
+                                               FontWeight="SemiBold" />
+                                </StackPanel>
+                                <TextBlock Text="Press Shift twice from any app, speak naturally, then press Shift twice again. Your words appear where you were typing."
+                                           Foreground="#D4DEE1"
+                                           FontSize="13"
+                                           LineHeight="20"
+                                           MaxWidth="440"
+                                           HorizontalAlignment="Left" />
+                                <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                    <Border Style="{StaticResource KeycapStyle}">
+                                        <TextBlock Text="Shift" FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Text="+" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                    <Border Style="{StaticResource KeycapStyle}">
+                                        <TextBlock Text="Shift" FontWeight="SemiBold" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                            <Border Grid.Column="1"
+                                    Style="{StaticResource StatusPillStyle}"
+                                    VerticalAlignment="Top"
+                                    Margin="20,0,0,0">
+                                <TextBlock Text="Local and private"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           FontWeight="SemiBold" />
                             </Border>
-                            <TextBlock Text="{Binding RuntimeDiagnosticsMessage}" Foreground="{StaticResource TextSecondaryBrush}" />
-                        </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Quick Actions" Style="{StaticResource FieldLabelStyle}" />
-                            <WrapPanel Margin="0,8,0,0">
-                                <Button Content="Refresh Checks" Width="124" Click="RefreshRuntimeDiagnostics_OnClick" />
-                                <Button Content="Test Microphone" Width="128" Click="TestMicrophone_OnClick" />
-                                <Button Content="Test Transcription" Width="142" Click="TestTranscription_OnClick" />
-                                <Button Content="Open Logs" Width="96" Click="OpenLogsFolder_OnClick" />
-                            </WrapPanel>
-                        </StackPanel>
-                    </Border>
+                    <TextBlock Text="Your setup"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10" />
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource OverviewPanelStyle}">
+                            <StackPanel>
+                                <TextBlock Text="ACTIVE RUNTIME" Style="{StaticResource OverviewLabelStyle}" />
+                                <TextBlock Text="{Binding RuntimeProfileStatus}"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,7" />
+                                <TextBlock Text="{Binding RuntimeDiagnosticsMessage}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           LineHeight="17" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource OverviewPanelStyle}">
+                            <StackPanel>
+                                <TextBlock Text="CURRENT MODEL" Style="{StaticResource OverviewLabelStyle}" />
+                                <TextBlock Text="{Binding CurrentModelSummary}"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,7" />
+                                <TextBlock Text="Speech stays on this computer and is processed by your selected local model."
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           LineHeight="17" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <TextBlock Text="Check your setup"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4" />
+                    <TextBlock Text="Run a quick check after changing your microphone, model, or GPU runtime."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,0,0,12" />
+                    <WrapPanel>
+                        <Button Content="Test Transcription"
+                                Width="142"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Click="TestTranscription_OnClick" />
+                        <Button Content="Test Microphone"
+                                Width="128"
+                                Click="TestMicrophone_OnClick" />
+                        <Button Content="Refresh Status"
+                                Width="116"
+                                Click="RefreshRuntimeDiagnostics_OnClick" />
+                    </WrapPanel>
                 </StackPanel>
             </ScrollViewer>
 

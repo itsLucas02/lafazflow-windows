@@ -1655,3 +1655,18 @@
 - Verified the exact current CUDA + quality model + VAD pipeline on the RTX 4070: exit code 0 and approximately 0.87 seconds total processing for an 11.7-second retained recording.
 - Focused Whisper service tests pass, 11 tests; full `dotnet test` passes, 527 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
 - Republished both `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; the app was left stopped for owner-controlled end-to-end dictation testing.
+
+## Plan: Public Project Positioning And Release Readiness
+- [x] Audit the current desktop technology stack, Overview page, GitHub description, README, and release channel.
+- [x] Replace macOS-reference/MVP positioning with professional privacy-first Windows dictation messaging.
+- [x] Document the current feature set, native technology stack, source setup, privacy model, and contribution workflow.
+- [x] Approve and implement the Overview page redesign as a separate verified UI slice.
+- [ ] Add a reproducible Windows release pipeline, package manifest, checksums, and clean-machine installation verification before publishing the first GitHub Release.
+
+## Review: Overview Page Redesign
+- Replaced the generic Overview title and stacked diagnostics cards with an everyday dictation-first hierarchy.
+- Added a clear ready state, double-Shift instruction, local/private status, active runtime and model summaries, and a smaller setup-check action group.
+- Preserved the existing dark identity, navigation, settings bindings, microphone/transcription checks, and Diagnostics page.
+- Added XAML regression coverage for the new hierarchy and removal of the generic `Quick Actions` block.
+- Focused Settings XAML tests pass, 19 tests; full `dotnet test` passes, 528 tests; Release build and isolated Release publish succeed; `git diff --check` passes.
+- Pixel-level capture was unavailable because the Computer Use native bridge could not connect. The normal stable publish folder was also locked by the owner's running LafazFlow process, so verification published to `artifacts\overview-redesign-verification` without terminating the active app.

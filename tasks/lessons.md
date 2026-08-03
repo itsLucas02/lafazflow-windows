@@ -300,6 +300,10 @@
 - Pattern: Creating a feature branch after the owner says to commit and push the completed work can conflict with their established direct-to-main workflow.
 - Rule: When the owner explicitly requests the finished changes on `main`, commit and push `main` directly unless repository protection prevents it; do not impose a PR branch workflow they did not request.
 
+## Publish verified implementation slices automatically
+- Pattern: The owner wants successful implementation work committed and pushed without a separate approval prompt each time.
+- Rule: After an implementation passes its required verification, commit the scoped changes and push `main` automatically; do not publish planning-only, failed, incomplete, or unverified work.
+
 ## Smoke-test native tools after installation
 - Pattern: A native executable can exist with all expected backend DLLs yet crash before argument parsing when its MSVC runtime is older than the build toolset.
 - Rule: Deploy the matching app-local redistributable runtime and execute a non-mutating `--help` smoke check before declaring a CUDA Whisper build ready.
