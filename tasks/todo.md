@@ -1733,3 +1733,22 @@
 - Added real child-process regressions proving final-work preemption, timeout cleanup, and coordinator recovery.
 - Focused lifecycle/transcription tests pass, 28 tests; full suite passes, 534 tests; Release build succeeds with 0 warnings and 0 errors; prerequisite smoke check passes; `git diff --check` passes.
 - Republished both stable artifacts and relaunched `stable-single`; the responding process reports file version `0.12.3.0`, second-launch Settings signaling exits with code 0, and no `whisper-cli` process remains after startup.
+
+## Plan: Recording Session Isolation And Trailing Speech Repair
+- [x] Confirm the missing ending is absent from raw Whisper output, not removed by post-processing.
+- [x] Replay the retained WAV with current, padded, and disabled VAD configurations.
+- [x] Compare WAV duration with LafazFlow's logged recording duration and identify cross-session audio corruption.
+- [x] Make microphone devices, callbacks, and WAV writers session-owned instead of shared mutable fields.
+- [x] Add a regression proving a stopped session cannot write into or stop the next recording.
+- [x] Bump the patch version and verify focused/full tests, Release build, real duration parity, stable publish, relaunch, and direct-to-main push.
+
+## Review: Recording Session Isolation And Trailing Speech Repair v0.12.4
+- Root cause: `AudioCaptureService` stored the active `WaveInEvent` and `WaveFileWriter` in shared mutable fields. A late callback from a stopped recording could therefore write into the next session's writer during rapid dictation cycles.
+- Corrupted retained WAVs were approximately 1.5-2x longer than their logged sessions: `11.549s` became `23.05s`, `37.187s` became `73.5s`, and `25.177s` became `38.45s`.
+- Replaying the affected WAV with current VAD, larger VAD padding, and VAD disabled could not recover `scenario-based`, proving VAD was not the root cause.
+- Replaced service-level capture resources with session-owned input, callback, writer, active-state guard, and deterministic callback detachment.
+- Late callbacks from stopped sessions are rejected and cannot write into or stop a later recording; overlapping active starts now fail loudly instead of replacing resources.
+- Added regressions for late cross-session callbacks and active-session replacement.
+- Focused capture/controller tests pass, 28 tests; full suite passes, 536 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
+- Real v0.12.4 verification passed twice: `14.135s` logged vs `13.900s` WAV and `16.783s` logged vs `16.550s` WAV. Both raw transcripts preserved the complete final phrase `such as this is the final ending.`
+- Republished both stable artifacts and relaunched the pinned `stable-single` v0.12.4 build.

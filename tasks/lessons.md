@@ -1,5 +1,9 @@
 # Lessons
 
+## Keep microphone callbacks bound to their capture session
+- Pattern: Reusing service-level `_waveIn` and `_writer` fields allowed a late callback from a disposed recording to write into the next recording, producing WAV files nearly twice the actual session duration and losing trailing speech during transcription.
+- Rule: Each recording owns its input device, callback, and writer; stop must detach that exact callback and late events must be rejected by the stopped session rather than consulting mutable service-level resources.
+
 ## Centralize ownership of heavyweight Whisper processes
 - Pattern: Final transcription, live preview, and diagnostics independently launched `whisper-cli`, allowing abnormal process lifetimes or overlapping CUDA model loads to create large latency variance.
 - Rule: Route every Whisper launch through one shared coordinator; final dictation preempts interruptible work, all workloads run exclusively, and cancellation/timeout must kill and reap the complete process tree before releasing ownership.
