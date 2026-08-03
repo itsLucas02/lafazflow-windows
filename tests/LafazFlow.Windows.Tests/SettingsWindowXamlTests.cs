@@ -23,6 +23,31 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowUsesWpfUiFluentShellAndOverviewControls()
+    {
+        var repoRoot = FindRepoRoot();
+        var appXamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "App.xaml");
+        var settingsXamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var codeBehindPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml.cs");
+        var projectPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "LafazFlow.Windows.csproj");
+        var appXaml = File.ReadAllText(Path.GetFullPath(appXamlPath));
+        var settingsXaml = File.ReadAllText(Path.GetFullPath(settingsXamlPath));
+        var codeBehind = File.ReadAllText(Path.GetFullPath(codeBehindPath));
+        var project = File.ReadAllText(Path.GetFullPath(projectPath));
+
+        Assert.Contains("PackageReference Include=\"WPF-UI\" Version=\"4.2.0\"", project);
+        Assert.Contains("<ui:ThemesDictionary Theme=\"Dark\" />", appXaml);
+        Assert.Contains("<ui:ControlsDictionary />", appXaml);
+        Assert.Contains("<ui:FluentWindow", settingsXaml);
+        Assert.Contains("<ui:TitleBar", settingsXaml);
+        Assert.Contains("WindowBackdropType=\"Mica\"", settingsXaml);
+        Assert.Contains("<ui:Card", settingsXaml);
+        Assert.Contains("<ui:Button Content=\"Test Transcription\"", settingsXaml);
+        Assert.Contains("Appearance=\"Primary\"", settingsXaml);
+        Assert.Contains("SettingsWindow : WpfFluentWindow", codeBehind);
+    }
+
+    [Fact]
     public void ReadOnlyFolderTextBoxesUseOneWayBinding()
     {
         var repoRoot = FindRepoRoot();

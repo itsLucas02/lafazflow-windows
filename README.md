@@ -35,7 +35,7 @@ Transcription runs locally with `whisper.cpp`. Your recordings and transcripts d
 LafazFlow is a native Windows desktop application—not React Native or Electron.
 
 - **Application:** C# and .NET 9
-- **Interface:** Windows Presentation Foundation (WPF) with XAML
+- **Interface:** Windows Presentation Foundation (WPF), XAML, and WPF UI's Fluent Design controls
 - **Audio capture:** NAudio
 - **Speech recognition:** local `whisper.cpp` CLI
 - **GPU acceleration:** NVIDIA CUDA through a CUDA-enabled `whisper.cpp` build

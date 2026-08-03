@@ -1689,3 +1689,20 @@
 - Added a dark WPF scrollbar template with restrained tracks, compact thumbs, horizontal and vertical paging behavior, hover feedback, and teal drag feedback.
 - Focused Settings XAML tests pass, 20 tests; full `dotnet test` passes, 530 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
 - Republished both stable artifacts, relaunched LafazFlow successfully, confirmed the primary process remains responsive, and confirmed second-launch Settings signaling exits with code 0.
+
+## Plan: WPF UI Reform Foundation
+- [x] Adopt WPF UI 4.2 as the official Fluent component layer on .NET 9/WPF.
+- [x] Register dark WPF UI themes and control resources application-wide.
+- [x] Migrate Settings to `FluentWindow`, WPF UI `TitleBar`, rounded Windows 11 chrome, and Mica backdrop support.
+- [x] Migrate Overview surfaces and actions to WPF UI cards and buttons.
+- [x] Add regression coverage for the package, theme resources, Fluent shell, and migrated Overview controls.
+- [x] Verify focused/full tests, stable publish, relaunch, and direct-to-main push.
+
+## Review: WPF UI Reform Foundation
+- Added WPF UI 4.2.0 to the existing .NET 9 WPF application; recording, transcription, hotkeys, clipboard, CUDA, and tray services remain unchanged.
+- Registered WPF UI dark themes and control resources at application scope.
+- Migrated Settings from a plain WPF `Window` to WPF UI `FluentWindow` with a Fluent title bar, rounded Windows 11 chrome, and Mica backdrop support.
+- Migrated Overview hero/setup surfaces to WPF UI cards and its setup actions to WPF UI buttons with a primary action appearance.
+- Added regression coverage for package version, theme dictionaries, Fluent shell, Mica, cards, and buttons.
+- Focused Settings XAML tests pass, 21 tests; full `dotnet test` passes, 531 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
+- Republished both stable artifacts, relaunched LafazFlow, confirmed the primary process remains responsive, confirmed second-launch Settings signaling exits with code 0, and observed no new Windows application errors.

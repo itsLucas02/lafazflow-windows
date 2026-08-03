@@ -3,10 +3,11 @@ using System.IO;
 using System.Windows;
 using LafazFlow.Windows.Services;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using WpfFluentWindow = Wpf.Ui.Controls.FluentWindow;
 
 namespace LafazFlow.Windows.UI;
 
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : WpfFluentWindow
 {
     private readonly SettingsViewModel _viewModel;
     private readonly SoundCueService _soundCues;
