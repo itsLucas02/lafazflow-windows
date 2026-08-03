@@ -1636,3 +1636,22 @@
 - Republished artifacts\\stable-single\\LafazFlow.Windows\\LafazFlow.Windows.exe and artifacts\\stable-cuda-quality\\LafazFlow.Windows\\LafazFlow.Windows.exe, then relaunched the pinned stable-single app.
 - Stable launch smoke reports product version 0.10.22+c2f311a32b6331317bad37312040cddef4a18f8e and the second-launch Settings signal keeps the app responsive.
 - Trademark scan found no forbidden public mentions. Public-readiness scan found no credentials; matches are GPL/docs words and local code identifiers such as token.
+
+## Plan: Permanent CUDA Runtime Repair
+- [x] Reproduce the configured CUDA CLI failure independently of LafazFlow.
+- [x] Confirm the Windows native crash signature and compiler/runtime version mismatch.
+- [x] Keep the current Quality profile, CUDA backend, CLI path, VAD settings, and `ggml-large-v3-turbo-q5_0.bin` model unchanged.
+- [x] Deploy the matching app-local MSVC runtime beside the CUDA CLI.
+- [x] Make the CUDA build and prerequisite scripts perform a real CLI smoke check.
+- [x] Verify real CUDA transcription with the current model and VAD configuration.
+- [x] Run the full application test suite and document the result.
+
+## Review: Permanent CUDA Runtime Repair
+- Root cause: `whisper-cli.exe` was built with MSVC 14.44 but loaded the machine-wide MSVC 14.28 runtime, crashing before argument parsing with Windows exception `0xC0000005` in `MSVCP140.dll`.
+- Installed the matching redistributable VC143 runtime app-locally in `C:\Tools\whisper.cpp-cuda\bin`; the configured CUDA CLI path, Quality profile, VAD settings, and `ggml-large-v3-turbo-q5_0.bin` model remain unchanged.
+- Updated the CUDA build script to deploy its matching app-local runtime and refuse success unless `whisper-cli --help` exits successfully.
+- Updated the prerequisite check to report the app-local runtime version and fail on a broken CLI smoke check.
+- Updated process failure reporting to retain stdout, signed and hexadecimal exit codes, and actionable native access-violation guidance.
+- Verified the exact current CUDA + quality model + VAD pipeline on the RTX 4070: exit code 0 and approximately 0.87 seconds total processing for an 11.7-second retained recording.
+- Focused Whisper service tests pass, 11 tests; full `dotnet test` passes, 527 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
+- Republished both `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; the app was left stopped for owner-controlled end-to-end dictation testing.

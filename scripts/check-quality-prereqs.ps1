@@ -58,6 +58,34 @@ if ($vsRoot) {
 
 if (Test-Path -LiteralPath $CudaCliPath) {
     "OK      CUDA whisper-cli -> $CudaCliPath"
+    $cliDirectory = Split-Path -Parent $CudaCliPath
+    $appLocalRuntime = Join-Path $cliDirectory "msvcp140.dll"
+    if (Test-Path -LiteralPath $appLocalRuntime) {
+        $runtimeVersion = (Get-Item $appLocalRuntime).VersionInfo.FileVersion
+        "OK      App-local MSVC runtime -> $appLocalRuntime ($runtimeVersion)"
+    } else {
+        "MISSING App-local MSVC runtime -> $appLocalRuntime"
+    }
+
+    $smokeStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $smokeStartInfo.FileName = $CudaCliPath
+    $smokeStartInfo.Arguments = "--help"
+    $smokeStartInfo.UseShellExecute = $false
+    $smokeStartInfo.RedirectStandardOutput = $true
+    $smokeStartInfo.RedirectStandardError = $true
+    $smokeStartInfo.CreateNoWindow = $true
+    $smokeStartInfo.WorkingDirectory = $cliDirectory
+    $smokeProcess = [System.Diagnostics.Process]::Start($smokeStartInfo)
+    $smokeStdout = $smokeProcess.StandardOutput.ReadToEndAsync()
+    $smokeStderr = $smokeProcess.StandardError.ReadToEndAsync()
+    $smokeProcess.WaitForExit()
+    $smokeStdout.GetAwaiter().GetResult() | Out-Null
+    $smokeError = $smokeStderr.GetAwaiter().GetResult().Trim()
+    if ($smokeProcess.ExitCode -eq 0) {
+        "OK      CUDA whisper-cli smoke check"
+    } else {
+        throw "BROKEN CUDA whisper-cli smoke check -> exit $($smokeProcess.ExitCode) $smokeError"
+    }
 } else {
     "MISSING CUDA whisper-cli -> $CudaCliPath"
 }

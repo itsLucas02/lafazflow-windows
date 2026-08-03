@@ -292,6 +292,14 @@
 - Pattern: ASR can preserve a question mark on complaint/opinion statements such as `I don't think I can rely on...` or `It is quite dumb?`, especially when an earlier clause starts with `can you`.
 - Rule: Declarative opinion clauses must override generic question-starter preservation unless the sentence is clearly asking for information.
 
+## Preserve the requested accelerated runtime when diagnosing failures
+- Pattern: Suggesting a CPU fallback for a broken CUDA runtime does not solve the owner's requirement to keep GPU acceleration, the selected CLI, model, and quality settings.
+- Rule: Treat the configured accelerated runtime as a hard requirement unless the owner explicitly permits a fallback; diagnose and repair its native dependency chain, then prove the exact selected runtime works.
+
+## Smoke-test native tools after installation
+- Pattern: A native executable can exist with all expected backend DLLs yet crash before argument parsing when its MSVC runtime is older than the build toolset.
+- Rule: Deploy the matching app-local redistributable runtime and execute a non-mutating `--help` smoke check before declaring a CUDA Whisper build ready.
+
 ## Keep spoken developer literals conservative
 - Pattern: Spoken punctuation words such as slash, dot, quote, and open can be real English words or instructions to emit developer syntax.
 - Rule: Convert only high-confidence bounded phrases, keep denied/normal-English cases covered by tests, and place literal formatting after vocabulary but before continuation casing.

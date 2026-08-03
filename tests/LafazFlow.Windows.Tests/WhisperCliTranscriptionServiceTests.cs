@@ -174,4 +174,26 @@ public sealed class WhisperCliTranscriptionServiceTests
 
         Assert.Equal("Hello LafazFlow.", result);
     }
+
+    [Fact]
+    public void BuildFailureMessageExplainsNativeAccessViolationWithoutStderr()
+    {
+        var message = WhisperCliTranscriptionService.BuildFailureMessage(
+            unchecked((int)0xC0000005),
+            "",
+            "");
+
+        Assert.Contains("access violation (0xC0000005)", message);
+        Assert.Contains("app-local MSVC runtime", message);
+        Assert.Contains("CUDA native dependencies", message);
+    }
+
+    [Fact]
+    public void BuildFailureMessageUsesStdoutWhenNativeToolLeavesStderrEmpty()
+    {
+        var message = WhisperCliTranscriptionService.BuildFailureMessage(1, "model load failed", "");
+
+        Assert.Contains("exit code 1 (0x00000001)", message);
+        Assert.Contains("model load failed", message);
+    }
 }

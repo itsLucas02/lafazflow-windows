@@ -83,4 +83,40 @@ if (-not (Test-Path -LiteralPath $cliPath)) {
     throw "Build completed but whisper-cli.exe was not found under $InstallDirectory."
 }
 
-Write-Host "CUDA whisper-cli is ready: $cliPath"
+$vcToolsRoot = Join-Path (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $vcvarsPath))) "Redist\MSVC"
+$vcRuntimeDirectory = Get-ChildItem $vcToolsRoot -Directory -ErrorAction SilentlyContinue |
+    Sort-Object { [version]$_.Name } -Descending |
+    ForEach-Object { Join-Path $_.FullName "x64\Microsoft.VC143.CRT" } |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_ "msvcp140.dll") } |
+    Select-Object -First 1
+
+if (-not $vcRuntimeDirectory) {
+    throw "The matching x64 Microsoft VC143 runtime was not found under $vcToolsRoot."
+}
+
+$cliDirectory = Split-Path -Parent $cliPath
+Get-ChildItem $vcRuntimeDirectory -Filter "*.dll" | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $cliDirectory $_.Name) -Force
+}
+
+$smokeStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
+$smokeStartInfo.FileName = $cliPath
+$smokeStartInfo.Arguments = "--help"
+$smokeStartInfo.UseShellExecute = $false
+$smokeStartInfo.RedirectStandardOutput = $true
+$smokeStartInfo.RedirectStandardError = $true
+$smokeStartInfo.CreateNoWindow = $true
+$smokeStartInfo.WorkingDirectory = $cliDirectory
+
+$smokeProcess = [System.Diagnostics.Process]::Start($smokeStartInfo)
+$smokeStdout = $smokeProcess.StandardOutput.ReadToEndAsync()
+$smokeStderr = $smokeProcess.StandardError.ReadToEndAsync()
+$smokeProcess.WaitForExit()
+[void]$smokeStdout.GetAwaiter().GetResult()
+$smokeError = $smokeStderr.GetAwaiter().GetResult().Trim()
+if ($smokeProcess.ExitCode -ne 0) {
+    throw "CUDA whisper-cli smoke check failed with exit code $($smokeProcess.ExitCode): $smokeError"
+}
+
+$runtimeVersion = (Get-Item (Join-Path $cliDirectory "msvcp140.dll")).VersionInfo.FileVersion
+Write-Host "CUDA whisper-cli is ready: $cliPath (app-local MSVC runtime $runtimeVersion)"

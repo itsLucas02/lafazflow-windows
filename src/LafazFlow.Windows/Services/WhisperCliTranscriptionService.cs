@@ -142,8 +142,9 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
 
         if (process.ExitCode != 0)
         {
+            var stdout = await stdoutTask;
             var stderr = await stderrTask;
-            throw new InvalidOperationException($"Whisper CLI failed: {stderr.Trim()}");
+            throw new InvalidOperationException(BuildFailureMessage(process.ExitCode, stdout, stderr));
         }
 
         var textPath = outputBasePath + ".txt";
@@ -153,6 +154,17 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         }
 
         return CleanTranscript(await stdoutTask);
+    }
+
+    public static string BuildFailureMessage(int exitCode, string stdout, string stderr)
+    {
+        var exitCodeHex = $"0x{unchecked((uint)exitCode):X8}";
+        var detail = string.IsNullOrWhiteSpace(stderr) ? stdout.Trim() : stderr.Trim();
+        var summary = exitCode == unchecked((int)0xC0000005)
+            ? $"Whisper CLI crashed with an access violation ({exitCodeHex}). Check its app-local MSVC runtime and CUDA native dependencies."
+            : $"Whisper CLI failed with exit code {exitCode} ({exitCodeHex}).";
+
+        return string.IsNullOrWhiteSpace(detail) ? summary : $"{summary} {detail}";
     }
 
     public static string CleanTranscript(string text)
