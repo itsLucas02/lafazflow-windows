@@ -296,6 +296,10 @@
 - Pattern: Suggesting a CPU fallback for a broken CUDA runtime does not solve the owner's requirement to keep GPU acceleration, the selected CLI, model, and quality settings.
 - Rule: Treat the configured accelerated runtime as a hard requirement unless the owner explicitly permits a fallback; diagnose and repair its native dependency chain, then prove the exact selected runtime works.
 
+## Honor an explicit direct-to-main publish request
+- Pattern: Creating a feature branch after the owner says to commit and push the completed work can conflict with their established direct-to-main workflow.
+- Rule: When the owner explicitly requests the finished changes on `main`, commit and push `main` directly unless repository protection prevents it; do not impose a PR branch workflow they did not request.
+
 ## Smoke-test native tools after installation
 - Pattern: A native executable can exist with all expected backend DLLs yet crash before argument parsing when its MSVC runtime is older than the build toolset.
 - Rule: Deploy the matching app-local redistributable runtime and execute a non-mutating `--help` smoke check before declaring a CUDA Whisper build ready.
