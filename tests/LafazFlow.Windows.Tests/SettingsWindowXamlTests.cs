@@ -182,6 +182,23 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void OverviewUsesCompactBadgeAndDarkScrollBarChrome()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("x:Key=\"StatusPillStyle\"", xaml);
+        Assert.Contains("CornerRadius\" Value=\"6\"", xaml);
+        Assert.DoesNotContain("CornerRadius\" Value=\"999\"", xaml);
+        Assert.Contains("<Style TargetType=\"ScrollBar\">", xaml);
+        Assert.Contains("x:Name=\"ScrollThumb\"", xaml);
+        Assert.Contains("Value=\"#4B5662\"", xaml);
+        Assert.Contains("ScrollBar.PageLeftCommand", xaml);
+        Assert.Contains("ScrollBar.PageRightCommand", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsLocalModelLibraryCards()
     {
         var repoRoot = FindRepoRoot();

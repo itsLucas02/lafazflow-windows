@@ -1677,3 +1677,15 @@
 - Added lifecycle regression coverage so the disposed failed-acquisition handle cannot be stored again.
 - Focused lifecycle tests pass, 4 tests; full `dotnet test` passes, 529 tests; Release build succeeds with 0 warnings and 0 errors.
 - Republished both stable artifacts, relaunched the stable app, confirmed the primary process is responsive, and confirmed the second-launch Settings signal exits cleanly with code 0.
+
+## Plan: Overview Badge And Scrollbar Polish
+- [x] Replace the oversized oval local/private badge with compact badge geometry.
+- [x] Replace default bright WPF scrollbar chrome with a dark orientation-aware template.
+- [x] Add regression coverage for badge radius and scrollbar styling.
+- [x] Verify tests, Release build, stable publish, relaunch, and direct-to-main push.
+
+## Review: Overview Badge And Scrollbar Polish
+- Replaced the `999`-radius oval status treatment with a compact 6px rounded badge and tighter padding.
+- Added a dark WPF scrollbar template with restrained tracks, compact thumbs, horizontal and vertical paging behavior, hover feedback, and teal drag feedback.
+- Focused Settings XAML tests pass, 20 tests; full `dotnet test` passes, 530 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
+- Republished both stable artifacts, relaunched LafazFlow successfully, confirmed the primary process remains responsive, and confirmed second-launch Settings signaling exits with code 0.

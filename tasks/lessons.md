@@ -308,6 +308,10 @@
 - Pattern: The owner permits terminating the running LafazFlow process when it locks the stable publish artifacts during a verified local update.
 - Rule: For verified LafazFlow updates, stop the LafazFlow process if necessary, publish the stable artifacts, relaunch the updated stable app, and verify responsiveness; do not treat the running process as a blocker.
 
+## Style every native control used by the dark Settings shell
+- Pattern: Leaving WPF ScrollBar on its operating-system template introduces bright native chrome that clashes with an otherwise dark custom interface; excessive badge radius also turns compact status UI into an oval.
+- Rule: Give every visible native control an intentional dark template with interaction states, and keep status badges compact with moderate corner radii rather than maximum capsule geometry.
+
 ## Smoke-test native tools after installation
 - Pattern: A native executable can exist with all expected backend DLLs yet crash before argument parsing when its MSVC runtime is older than the build toolset.
 - Rule: Deploy the matching app-local redistributable runtime and execute a non-mutating `--help` smoke check before declaring a CUDA Whisper build ready.
