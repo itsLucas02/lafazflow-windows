@@ -355,6 +355,18 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void LivePreviewOverlayBindsToLatestWordsAndCanGrow()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "MiniRecorderWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"{Binding PreviewDisplay}\"", xaml);
+        Assert.Contains("ToolTip=\"{Binding PartialTranscript}\"", xaml);
+        Assert.Contains("LiveTranscriptOverlayMaxHeight", xaml);
+    }
+
+    [Fact]
     public void MiniRecorderShowSelfHealsInvisibleVisibleWindowState()
     {
         var repoRoot = FindRepoRoot();

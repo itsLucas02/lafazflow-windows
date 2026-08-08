@@ -84,6 +84,20 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
             _partialTranscript = next;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasLiveTranscript));
+            OnPropertyChanged(nameof(PreviewDisplay));
+        }
+    }
+
+    public string PreviewDisplay
+    {
+        get
+        {
+            if (_partialTranscript.Length <= MiniRecorderVisualSpec.LiveTranscriptPreviewMaxCharacters)
+            {
+                return _partialTranscript;
+            }
+
+            return "…" + _partialTranscript[^MiniRecorderVisualSpec.LiveTranscriptPreviewMaxCharacters..];
         }
     }
 

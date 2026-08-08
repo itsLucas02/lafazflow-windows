@@ -22,7 +22,8 @@
     <Grid>
         <Border x:Name="LiveTranscriptOverlay"
                 Width="{x:Static ui:MiniRecorderVisualSpec.LiveTranscriptOverlayWidth}"
-                Height="{x:Static ui:MiniRecorderVisualSpec.LiveTranscriptOverlayHeight}"
+                MinHeight="36"
+                MaxHeight="{x:Static ui:MiniRecorderVisualSpec.LiveTranscriptOverlayMaxHeight}"
                 Padding="14,6"
                 Background="#E6000000"
                 BorderBrush="#18FFFFFF"
@@ -34,12 +35,13 @@
                 Margin="0,0,0,52"
                 Opacity="0"
                 IsHitTestVisible="False">
-            <TextBlock Text="{Binding PartialTranscript}"
+            <TextBlock ToolTip="{Binding PartialTranscript}"
+                       Text="{Binding PreviewDisplay}"
                        Foreground="#CCFFFFFF"
                        FontSize="12"
                        TextWrapping="Wrap"
                        TextTrimming="CharacterEllipsis"
-                       MaxHeight="32" />
+                       MaxHeight="76" />
         </Border>
 
         <Border x:Name="RecorderShell"

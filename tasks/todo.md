@@ -1788,4 +1788,21 @@
 - Focused startup/tray tests pass (13); full `dotnet test` passes (543); Release build passes with 0 warnings and 0 errors; `git diff --check` passes. One pre-existing timing-sensitive RecorderController test flaked once under load and passed 5/5 in isolation and in the final full run.
 - Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.1.0`; launch smoke shows no visible windows and no fresh crash events.
 
+## Plan: Live Preview Trust v0.13.2
+- [x] Make the live preview monotonic so words already shown are never removed by rolling-window regressions.
+- [x] Stitch overlapping rolling-window transcripts by longest shared word overlap.
+- [x] Show the latest words in the overlay with a leading ellipsis instead of freezing on the sentence start.
+- [x] Let the overlay grow up to two compact lines so more of the live text is visible.
+- [x] Add regression tests for monotonic growth, stitching, non-overlap appending, and latest-word display.
+- [x] Bump LafazFlow from `0.13.1` to `0.13.2`.
+- [x] Run focused tests, full tests, build, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Live Preview Trust v0.13.2
+- Diagnosis evidence: the controlled five-dictation test captured all 18 words in every recording at the raw engine level; VAD on/off, `-sns` on/off, and beam search produced identical output; audio levels were healthy. The engine and microphone are capable on clear speech, so the perceived word loss was traced to the live preview: it showed the start of the transcript, trimmed the end, and suppressed regressive rolling-window updates, making words appear to vanish while recording.
+- `RollingWhisperLiveTranscriptPreviewService` now maintains a monotonic displayed preview: words once shown are never removed. Rolling-window transcripts are stitched by the longest shared word overlap, and non-overlapping windows append instead of replacing.
+- The mini recorder overlay now binds to `PreviewDisplay` (the latest words with a leading ellipsis when truncated), can grow up to two compact lines, and shows the full transcript on hover via tooltip.
+- Bumped LafazFlow to `0.13.2`.
+- Focused preview/view-model tests pass (72); full `dotnet test` passes (549); Release build passes with 0 warnings and 0 errors; `git diff --check` passes.
+- Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.2.0`.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

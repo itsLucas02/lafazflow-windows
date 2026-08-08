@@ -255,6 +255,34 @@ public sealed class MiniRecorderViewModelTests
     }
 
     [Fact]
+    public void PreviewDisplayShowsLatestWordsWithLeadingEllipsisWhenLong()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            State = RecordingState.Recording,
+            PartialTranscript = new string('w', 250)
+        };
+
+        Assert.StartsWith("…", viewModel.PreviewDisplay);
+        Assert.Equal(1 + MiniRecorderVisualSpec.LiveTranscriptPreviewMaxCharacters, viewModel.PreviewDisplay.Length);
+        Assert.EndsWith(
+            new string('w', MiniRecorderVisualSpec.LiveTranscriptPreviewMaxCharacters),
+            viewModel.PreviewDisplay);
+    }
+
+    [Fact]
+    public void PreviewDisplayPassesThroughShortTranscript()
+    {
+        var viewModel = new MiniRecorderViewModel
+        {
+            State = RecordingState.Recording,
+            PartialTranscript = "Testing one two."
+        };
+
+        Assert.Equal("Testing one two.", viewModel.PreviewDisplay);
+    }
+
+    [Fact]
     public void AudioLevelResetsWhenRecordingStops()
     {
         var viewModel = new MiniRecorderViewModel

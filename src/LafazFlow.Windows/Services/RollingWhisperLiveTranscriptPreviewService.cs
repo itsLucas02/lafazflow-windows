@@ -26,6 +26,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private AppSettings? _settings;
     private Action<string>? _onPartialTranscript;
     private string _lastPreview = "";
+    private string _displayedPreview = "";
     private long _totalAudioByteCount;
     private long _lastAttemptTotalAudioByteCount;
     private PreviewSessionStats _stats = new();
@@ -71,6 +72,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         };
         _onPartialTranscript = onPartialTranscript;
         _lastPreview = "";
+        _displayedPreview = "";
         _totalAudioByteCount = 0;
         _lastAttemptTotalAudioByteCount = 0;
         _stats = new PreviewSessionStats();
@@ -128,6 +130,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         _settings = null;
         _onPartialTranscript = null;
         _lastPreview = "";
+        _displayedPreview = "";
         _totalAudioByteCount = 0;
         _lastAttemptTotalAudioByteCount = 0;
         _stats = new PreviewSessionStats();
@@ -218,10 +221,55 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
                 continue;
             }
 
-            _lastPreview = stablePreview;
+            _displayedPreview = ExtendMonotonically(_displayedPreview, stablePreview);
+            _lastPreview = _displayedPreview;
             _stats.Accepted++;
-            _onPartialTranscript?.Invoke(stablePreview);
+            _onPartialTranscript?.Invoke(_displayedPreview);
         }
+    }
+
+    private static string ExtendMonotonically(string display, string next)
+    {
+        if (string.IsNullOrWhiteSpace(display))
+        {
+            return next;
+        }
+
+        if (next.StartsWith(display, StringComparison.OrdinalIgnoreCase))
+        {
+            return next;
+        }
+
+        var displayWords = SplitWords(display);
+        var nextWords = SplitWords(next);
+        var overlap = FindOverlapWordCount(displayWords, nextWords);
+        if (overlap <= 0)
+        {
+            return $"{display} {next}".Trim();
+        }
+
+        return string.Join(' ', displayWords.Concat(nextWords.Skip(overlap))).Trim();
+    }
+
+    private static int FindOverlapWordCount(List<string> displayWords, List<string> nextWords)
+    {
+        var maxOverlap = Math.Min(displayWords.Count - 1, nextWords.Count);
+        for (var length = maxOverlap; length >= 2; length--)
+        {
+            var suffix = displayWords.GetRange(displayWords.Count - length, length);
+            var prefix = nextWords.GetRange(0, length);
+            if (suffix.SequenceEqual(prefix, StringComparer.OrdinalIgnoreCase))
+            {
+                return length;
+            }
+        }
+
+        return 0;
+    }
+
+    private static List<string> SplitWords(string text)
+    {
+        return text.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
     }
 
     private AudioSnapshot SnapshotAudio()

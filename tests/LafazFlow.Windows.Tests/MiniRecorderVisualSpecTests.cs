@@ -21,6 +21,13 @@ public sealed class MiniRecorderVisualSpecTests
     }
 
     [Fact]
+    public void LivePreviewOverlayGrowsToShowLatestWords()
+    {
+        Assert.Equal(88, MiniRecorderVisualSpec.LiveTranscriptOverlayMaxHeight);
+        Assert.Equal(200, MiniRecorderVisualSpec.LiveTranscriptPreviewMaxCharacters);
+    }
+
+    [Fact]
     public void VisualizerBarsStayFlatWhenInactive()
     {
         var height = MiniRecorderVisualSpec.CalculateBarHeight(

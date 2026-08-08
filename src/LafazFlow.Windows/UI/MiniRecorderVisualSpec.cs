@@ -23,7 +23,9 @@ public static class MiniRecorderVisualSpec
     public const double ExpandedCornerRadius = 14;
     public const double LiveTranscriptOverlayWidth = 300;
     public const double LiveTranscriptOverlayHeight = 44;
+    public const double LiveTranscriptOverlayMaxHeight = 88;
     public const double LiveTranscriptOverlayGap = 12;
+    public const int LiveTranscriptPreviewMaxCharacters = 200;
     public const double BarWidth = 3;
     public const double BarSpacing = 2;
     public const double BarMinHeight = 4;

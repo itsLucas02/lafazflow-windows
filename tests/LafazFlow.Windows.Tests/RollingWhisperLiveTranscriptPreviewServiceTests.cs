@@ -22,6 +22,48 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task PreviewNeverShrinksWhenRollingWindowDropsEarlierWords()
+    {
+        var service = CreateService(
+            previews:
+            [
+                "The quick brown fox jumps over the lazy dog and when",
+                "over the lazy dog and when the sun sets we all go home."
+            ],
+            logs: out _);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 1);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 2);
+        await service.StopAsync();
+
+        Assert.Equal(
+            "The quick brown fox jumps over the lazy dog and when the sun sets we all go home.",
+            received[^1]);
+    }
+
+    [Fact]
+    public async Task PreviewAppendsNonOverlappingWindowTextWithoutRemovingWords()
+    {
+        var service = CreateService(
+            previews: ["First part.", "Second part."],
+            logs: out _);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 1);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 2);
+        await service.StopAsync();
+
+        Assert.Equal(["First part.", "First part. Second part."], received);
+    }
+
+    [Fact]
     public async Task SkipsPreviewWhenNotEnoughNewAudioArrived()
     {
         var calls = 0;
