@@ -31,7 +31,7 @@ Status values:
 | Crash resilience | UI animation exceptions are logged and narrowly recoverable; app launch smoke shows no fresh crash events. | Done | `AppCrashLogServiceTests`, custom animation tests, `v0.2` launch smoke. | Revisit only after new crash evidence. |
 | Public repository hygiene | Public docs avoid third-party trademark references and do not commit models, logs, recordings, secrets, or local settings. | Done | Trademark and public-readiness scans are part of every release slice. | Maintain every release. |
 | Runtime setup docs | A user can understand required local Whisper CLI/model/CUDA/VAD setup. | Done | `docs/windows-runtime-setup.md` covers download, install, model setup, first dictation, and troubleshooting. | None. |
-| Release packaging | User can install or run a clean packaged build without relying on development artifact folders. | Partial | Packaging script, Inno Setup template, and GitHub Actions release workflow are ready; first public release is pending an owner-approved tag. | Cut the first public release. |
+| Release packaging | User can install or run a clean packaged build without relying on development artifact folders. | Done | v1.0.0 released with installer and portable ZIP built by GitHub Actions; package safety checks pass. | None. |
 
 ## Next Recommended Order
 

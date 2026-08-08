@@ -1848,5 +1848,12 @@
 - [x] Full tests, build, republish stable artifacts, commit, push, force-move the `v1.0.0` tag, and re-run the release workflow.
 
 ## Review: Release Pipeline CI Robustness v1.0.0
+- First GitHub Actions run failed on the runner's missing audio device (`BadDeviceId`); `NAudioSoundCuePlayer` now falls back to a silent no-op player when the output device cannot be initialized, so the app also starts safely on machines without audio output.
+- Widened the process-coordinator timeout test margins for CI load and made the whisper thread assertion machine-independent (`Math.Min(16, Environment.ProcessorCount)`).
+- Full `dotnet test` passes (562); Release build clean; all three CI retries addressed; the `v1.0.0` tag now points at the verified code.
+
+## Review: First Public Release v1.0.0
+- Pushed tag `v1.0.0`; GitHub Actions ran the full suite, built the Inno Setup installer, packaged the portable ZIP, and published the release automatically.
+- Live release: `LafazFlow-1.0.0-setup.exe` (54.4 MB) and `LafazFlow-1.0.0-win-x64-portable.zip` (79.0 MB) at https://github.com/itsLucas02/lafazflow-windows/releases/tag/v1.0.0.
 
 # Task: Windows MVP Hotkey And Prerequisite Revision
