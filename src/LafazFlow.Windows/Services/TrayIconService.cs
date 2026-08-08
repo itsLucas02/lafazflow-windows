@@ -95,6 +95,14 @@ public sealed class TrayIconService : IDisposable
         "LafazFlow",
         "Logs");
 
+    public void ShowStartupNotification()
+    {
+        _notifyIcon.BalloonTipTitle = "LafazFlow";
+        _notifyIcon.BalloonTipText = "LafazFlow is ready. Double-press Shift to dictate.";
+        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+        _notifyIcon.ShowBalloonTip(3000);
+    }
+
     public static void OpenLogsFolder()
     {
         Directory.CreateDirectory(LogsFolder);

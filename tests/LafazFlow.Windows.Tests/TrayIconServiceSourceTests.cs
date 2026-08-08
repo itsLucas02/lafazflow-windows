@@ -13,6 +13,19 @@ public sealed class TrayIconServiceSourceTests
         Assert.Contains("Enabled = false", source);
     }
 
+    [Fact]
+    public void TrayServiceShowsStartupNotificationViaBalloon()
+    {
+        var repoRoot = FindRepoRoot();
+        var sourcePath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "Services", "TrayIconService.cs");
+        var source = File.ReadAllText(Path.GetFullPath(sourcePath));
+
+        Assert.Contains("ShowStartupNotification", source);
+        Assert.Contains("BalloonTipTitle", source);
+        Assert.Contains("BalloonTipText", source);
+        Assert.Contains("ShowBalloonTip(3000)", source);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -66,6 +66,7 @@ public partial class MainWindow : Window
         _miniRecorderViewModel.State = RecordingState.Idle;
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
+        _trayIcon.ShowStartupNotification();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)

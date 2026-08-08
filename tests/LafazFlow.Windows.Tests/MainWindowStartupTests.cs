@@ -43,6 +43,19 @@ public sealed class MainWindowStartupTests
         Assert.Contains("_mainWindow.MarkOnboardingComplete();", startupBody);
     }
 
+    [Fact]
+    public void ShellInitializationAcknowledgesSuccessfulStartup()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
+        var initStart = code.IndexOf("public void InitializeShell", StringComparison.Ordinal);
+        var initEnd = code.IndexOf("private void OnLoaded", StringComparison.Ordinal);
+        var initBody = code[initStart..initEnd];
+
+        Assert.Contains("_trayIcon.ShowStartupNotification();", initBody);
+        Assert.Contains("_hotkeyService.Start();", initBody);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

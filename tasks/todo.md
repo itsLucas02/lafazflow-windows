@@ -1772,4 +1772,20 @@
 - Focused startup/settings tests pass (31); full `dotnet test` passes (541); Release build passes with 0 warnings and 0 errors; `git diff --check` passes; public-readiness scan found no credentials.
 - Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.0.0`. Launch smoke found no visible windows (hidden start verified) and no fresh crash events.
 
+## Plan: Startup Acknowledgement Hotfix v0.13.1
+- [x] Show a tray notification on every successful launch so the user knows the app started.
+- [x] Keep first-run setup opening while notifying on later launches.
+- [x] Add regression tests for the startup notification path.
+- [x] Bump LafazFlow from `0.13.0` to `0.13.1`.
+- [x] Run focused tests, full tests, build, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Startup Acknowledgement Hotfix v0.13.1
+- Owner feedback: launching the app gave no signal that it started successfully; the first-run setup window did not appear on this machine because an existing profile already marked onboarding complete.
+- Added `TrayIconService.ShowStartupNotification`, which shows a tray balloon on every successful launch: `LafazFlow is ready. Double-press Shift to dictate.`
+- `InitializeShell` now calls the notification after the hotkey is active, so the tray hint appears only after startup actually completed.
+- First-run behavior is unchanged: a truly fresh profile still opens the Settings setup window, and later launches get the tray acknowledgement instead.
+- Bumped LafazFlow to `0.13.1`.
+- Focused startup/tray tests pass (13); full `dotnet test` passes (543); Release build passes with 0 warnings and 0 errors; `git diff --check` passes. One pre-existing timing-sensitive RecorderController test flaked once under load and passed 5/5 in isolation and in the final full run.
+- Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.1.0`; launch smoke shows no visible windows and no fresh crash events.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision
