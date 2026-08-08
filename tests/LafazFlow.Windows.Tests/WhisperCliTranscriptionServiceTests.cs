@@ -17,7 +17,7 @@ public sealed class WhisperCliTranscriptionServiceTests
 
         Assert.Contains("-m \"C:\\Models\\ggml-base.en.bin\"", args);
         Assert.Contains("-f \"C:\\Audio\\sample.wav\"", args);
-        Assert.Contains("-t 16", args);
+        Assert.Contains($"-t {Math.Min(16, Environment.ProcessorCount)}", args);
         Assert.Contains("-otxt", args);
         Assert.Contains("-nt", args);
         Assert.Contains("-tp 0", args);
