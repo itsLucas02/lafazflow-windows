@@ -1826,4 +1826,18 @@
 - Verified end-to-end: `LafazFlow-1.0.0-win-x64-portable.zip` (80 MB) extracted and launched cleanly with the bundled whisper CLI; stable artifacts republished and pinned app relaunched as v1.0.0 with hidden start and no crash events.
 - Findings: during packaged-app smoke, the mini recorder appeared only because the double-Shift hotkey fired on real Shift key presses (foreground app `Code`) - the hotkey is sensitive while typing; recorded as a follow-up, not changed in this slice. The first public GitHub release is intentionally not cut; the repo policy requires owner approval before tagging.
 
+## Plan: Hotkey Hold Hardening v1.0.0
+- [x] Fix auto-repeat detection in the low-level keyboard hook by tracking the Shift key's down/up state instead of reading a non-existent repeat flag from `KBDLLHOOKSTRUCT`.
+- [x] Make the double-Shift detector reject any key-down that arrives while Shift is still held, so holding Shift never triggers dictation.
+- [x] Recover missed key-up states through the existing stale timeout instead of self-healing into a trigger.
+- [x] Add regression tests: held Shift with and without repeat flags never triggers; proper double-taps still trigger; missed key-up no longer triggers.
+- [x] Verify end-to-end with simulated keyboard input: hold Shift does not start dictation, double-tap still does.
+- [x] Full tests, build, republish stable artifacts, commit, push, then cut the first public GitHub release.
+
+## Review: Hotkey Hold Hardening v1.0.0
+- Root cause: the low-level keyboard hook read a WM_KEYDOWN-style repeat flag (`0x40000000`) from `KBDLLHOOKSTRUCT.flags`, which never exists there, so OS auto-repeat key-downs while holding Shift looked like fresh presses. The detector's missed-keyup self-heal then treated the first auto-repeat as a second tap and started dictation.
+- The hook service now tracks the Shift key's down/up state and flags auto-repeats correctly; the detector rejects any key-down that arrives while Shift is still held (`repeat`/`already_down`) and recovers stuck states via the stale timeout instead of self-healing into a trigger.
+- Live verification with simulated keyboard input: holding Shift with auto-repeats produced only `first_shift`/`repeat` rejections and no trigger; a genuine double-tap still fired `second_shift` and started recording as designed. The near-silent test recording was correctly rejected (no paste).
+- Focused hotkey tests pass (14); full `dotnet test` passes (560); Release build clean; stable artifacts republished and pinned app relaunched.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

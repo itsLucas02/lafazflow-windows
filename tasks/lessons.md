@@ -331,3 +331,7 @@
 ## Accept ASR marker drift for literals
 - Pattern: Literal dictation markers can drift through ASR as nearby words or comma-separated tokens, such as `backtake` for `backtick`, `RunDev` for `run dev`, and `clues parent` for `close paren`.
 - Rule: Normalize common marker drift inside explicit literal spans, but keep allow-lists and delimiter-pair checks so ordinary prose remains untouched.
+
+## Never trigger dictation from a held Shift key
+- Pattern: A low-level keyboard hook has no auto-repeat bit in `KBDLLHOOKSTRUCT.flags`, so reading a WM_KEYDOWN-style repeat flag (0x40000000) from the hook struct never fires. Holding Shift then delivers repeated key-downs that looked like fresh presses, and the missed-keyup self-heal treated the first auto-repeat as a second tap, starting dictation while typing or holding Shift.
+- Rule: Track the Shift key's down/up state in the hook service to flag auto-repeats, and make the detector reject any key-down that arrives while the key is already down (reason `repeat`/`already_down`). Recover stuck down states with a stale timeout instead of self-healing into a trigger.

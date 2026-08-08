@@ -14,11 +14,14 @@ public sealed class DoubleShiftHotkeyService : IDisposable
     private const int VkLeftShift = 0xA0;
     private const int VkRightShift = 0xA1;
     private static readonly TimeSpan DoublePressWindow = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan StaleDownTimeout = TimeSpan.FromMilliseconds(1000);
 
     private readonly LowLevelKeyboardProc _proc;
     private readonly DoubleShiftDetector _detector = new(DoublePressWindow);
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private IntPtr _hookId;
+    private bool _shiftKeyDown;
+    private DateTimeOffset? _shiftKeyDownSince;
 
     public event Action<long>? DoubleShiftPressed;
 
@@ -65,9 +68,17 @@ public sealed class DoubleShiftHotkeyService : IDisposable
             var virtualKey = Marshal.ReadInt32(lParam);
             if (IsShift(virtualKey) && IsKeyDownMessage(wParam))
             {
-                var flags = Marshal.ReadInt32(lParam, 8);
-                var isRepeat = (flags & 0x40000000) != 0;
-                var result = _detector.RegisterKeyDownWithReason(DateTimeOffset.UtcNow, isRepeat);
+                var now = DateTimeOffset.UtcNow;
+                if (_shiftKeyDown && _shiftKeyDownSince is not null && now - _shiftKeyDownSince > StaleDownTimeout)
+                {
+                    _shiftKeyDown = false;
+                    _shiftKeyDownSince = null;
+                }
+
+                var isRepeat = _shiftKeyDown;
+                _shiftKeyDown = true;
+                _shiftKeyDownSince = now;
+                var result = _detector.RegisterKeyDownWithReason(now, isRepeat);
                 _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
                     Event: result.Triggered ? "detected" : "rejected",
                     Accepted: result.Triggered ? "true" : "false",
@@ -79,6 +90,8 @@ public sealed class DoubleShiftHotkeyService : IDisposable
             }
             else if (IsShift(virtualKey) && IsKeyUpMessage(wParam))
             {
+                _shiftKeyDown = false;
+                _shiftKeyDownSince = null;
                 _detector.RegisterKeyUp();
             }
         }

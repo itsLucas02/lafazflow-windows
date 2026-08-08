@@ -74,15 +74,15 @@ public sealed class DoubleShiftDetectorTests
     }
 
     [Fact]
-    public void MissedKeyUpInsideWindowStillTriggersSecondShift()
+    public void MissedKeyUpInsideWindowDoesNotTrigger()
     {
         var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(350));
 
         detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
         var result = detector.RegisterKeyDownWithReason(DateTimeOffset.UnixEpoch.AddMilliseconds(180), isRepeat: false);
 
-        Assert.True(result.Triggered);
-        Assert.Equal("second_shift_after_missed_keyup", result.Reason);
+        Assert.False(result.Triggered);
+        Assert.Equal("already_down", result.Reason);
     }
 
     [Fact]
@@ -95,6 +95,45 @@ public sealed class DoubleShiftDetectorTests
 
         Assert.False(result.Triggered);
         Assert.Equal("repeat", result.Reason);
+    }
+
+    [Fact]
+    public void HoldingShiftWithAutoRepeatsNeverTriggers()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(500));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        for (var index = 1; index <= 20; index++)
+        {
+            var repeat = detector.RegisterKeyDownWithReason(
+                DateTimeOffset.UnixEpoch.AddMilliseconds(50 * index),
+                isRepeat: true);
+            Assert.False(repeat.Triggered);
+        }
+
+        detector.RegisterKeyUp();
+        var freshPress = detector.RegisterKeyDown(
+            DateTimeOffset.UnixEpoch.AddMilliseconds(50 * 21),
+            isRepeat: false);
+
+        Assert.False(freshPress);
+    }
+
+    [Fact]
+    public void HoldingShiftWithoutRepeatFlagStillNeverTriggers()
+    {
+        var detector = new DoubleShiftDetector(TimeSpan.FromMilliseconds(500));
+
+        detector.RegisterKeyDown(DateTimeOffset.UnixEpoch, isRepeat: false);
+        for (var index = 1; index <= 20; index++)
+        {
+            var result = detector.RegisterKeyDownWithReason(
+                DateTimeOffset.UnixEpoch.AddMilliseconds(50 * index),
+                isRepeat: false);
+
+            Assert.False(result.Triggered);
+            Assert.Equal("already_down", result.Reason);
+        }
     }
 
     [Fact]
