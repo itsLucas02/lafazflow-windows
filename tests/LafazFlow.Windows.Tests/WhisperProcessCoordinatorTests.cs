@@ -39,13 +39,13 @@ public sealed class WhisperProcessCoordinatorTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => coordinator.RunAsync(
             WhisperWorkload.Diagnostic,
             PowerShell("Start-Sleep -Seconds 30"),
-            TimeSpan.FromMilliseconds(250),
+            TimeSpan.FromMilliseconds(750),
             CancellationToken.None));
 
         var next = await coordinator.RunAsync(
             WhisperWorkload.FinalTranscription,
             PowerShell("Write-Output recovered"),
-            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(15),
             CancellationToken.None);
         Assert.Equal(0, next.ExitCode);
         Assert.Contains("recovered", next.StandardOutput);

@@ -142,29 +142,43 @@ public sealed class SoundCueService
     {
         private readonly object _syncRoot = new();
         private readonly Dictionary<string, CachedSound> _cache = new(StringComparer.OrdinalIgnoreCase);
-        private readonly WaveOutEvent _output;
-        private readonly MixingSampleProvider _mixer;
+        private readonly WaveOutEvent? _output;
+        private readonly MixingSampleProvider? _mixer;
 
         public NAudioSoundCuePlayer()
         {
-            _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
+            try
             {
-                ReadFully = true
-            };
-            _output = new WaveOutEvent
+                _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
+                {
+                    ReadFully = true
+                };
+                _output = new WaveOutEvent
+                {
+                    DesiredLatency = 120,
+                    NumberOfBuffers = 3
+                };
+                _output.Init(_mixer);
+                _output.Play();
+            }
+            catch
             {
-                DesiredLatency = 120,
-                NumberOfBuffers = 3
-            };
-            _output.Init(_mixer);
-            _output.Play();
+                _output?.Dispose();
+                _output = null;
+                _mixer = null;
+            }
         }
 
         public void Play(string path, float volume)
         {
+            if (_output is null || _mixer is null)
+            {
+                return;
+            }
+
             lock (_syncRoot)
             {
-                var sound = GetOrLoad(path);
+                var sound = GetOrLoad(path, _mixer);
                 _mixer.AddMixerInput(new CachedSoundSampleProvider(sound, volume));
 
                 if (_output.PlaybackState != PlaybackState.Playing)
@@ -174,14 +188,14 @@ public sealed class SoundCueService
             }
         }
 
-        private CachedSound GetOrLoad(string path)
+        private CachedSound GetOrLoad(string path, MixingSampleProvider mixer)
         {
             if (_cache.TryGetValue(path, out var cachedSound))
             {
                 return cachedSound;
             }
 
-            var sound = new CachedSound(path, _mixer.WaveFormat);
+            var sound = new CachedSound(path, mixer.WaveFormat);
             _cache[path] = sound;
             return sound;
         }

@@ -1840,4 +1840,13 @@
 - Live verification with simulated keyboard input: holding Shift with auto-repeats produced only `first_shift`/`repeat` rejections and no trigger; a genuine double-tap still fired `second_shift` and started recording as designed. The near-silent test recording was correctly rejected (no paste).
 - Focused hotkey tests pass (14); full `dotnet test` passes (560); Release build clean; stable artifacts republished and pinned app relaunched.
 
+## Plan: Release Pipeline CI Robustness v1.0.0
+- [x] First GitHub Actions run failed because the runner has no audio output device: `NAudioSoundCuePlayer` threw `BadDeviceId` in its constructor, failing tests that build the real `SoundCueService`.
+- [x] Make sound cues degrade gracefully: if the audio output device cannot be initialized, cues are silently skipped instead of crashing startup or tests.
+- [x] Widen the timing margins of the process-coordinator timeout test so it is stable under CI load.
+- [x] Add regression tests for the no-audio fallback.
+- [x] Full tests, build, republish stable artifacts, commit, push, force-move the `v1.0.0` tag, and re-run the release workflow.
+
+## Review: Release Pipeline CI Robustness v1.0.0
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

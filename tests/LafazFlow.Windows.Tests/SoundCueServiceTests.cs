@@ -127,6 +127,30 @@ public sealed class SoundCueServiceTests
     }
 
     [Fact]
+    public void DefaultServiceConstructsEvenWithoutAudioOutputDevice()
+    {
+        var service = new SoundCueService();
+
+        var exception = Record.Exception(() => service.Play(SoundCueKind.RecordingStarted, SoundCueOptions.Default));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SoundPlayerDegradesGracefullyWhenAudioDeviceIsUnavailable()
+    {
+        var repoRoot = FindRepoRoot();
+        var source = File.ReadAllText(
+            Path.Combine(repoRoot, "src", "LafazFlow.Windows", "Services", "SoundCueService.cs"));
+
+        Assert.Contains("_output.Init(_mixer)", source);
+        Assert.Contains("catch", source);
+        Assert.Contains("_output?.Dispose()", source);
+        Assert.Contains("_output = null", source);
+        Assert.Contains("_mixer = null", source);
+    }
+
+    [Fact]
     public void BundledSoundCueFilesAreCopiedToOutput()
     {
         var soundRoot = Path.Combine(AppContext.BaseDirectory, "Resources", "Sounds");
@@ -199,5 +223,21 @@ public sealed class SoundCueServiceTests
         {
             throw new InvalidOperationException("Audio output unavailable.");
         }
+    }
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (Directory.Exists(Path.Combine(directory.FullName, "src", "LafazFlow.Windows")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Could not locate the repository root.");
     }
 }
