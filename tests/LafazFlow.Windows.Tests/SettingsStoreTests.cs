@@ -115,6 +115,59 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
+    public void LoadFallsBackToBundledWhisperCliWhenStandardPathsAreMissing()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var bundledCli = Path.GetTempFileName();
+        var missingDefaultCli = Path.Combine(root, "missing-whisper-cli.exe");
+        var store = new SettingsStore(root, defaultWhisperCliPath: missingDefaultCli, bundledWhisperCliPath: bundledCli);
+
+        var settings = store.Load();
+
+        Assert.Equal(bundledCli, settings.WhisperCliPath);
+        File.Delete(bundledCli);
+    }
+
+    [Fact]
+    public void MigrationFallsBackToBundledWhisperCliForEmptyPersistedPath()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var bundledCli = Path.GetTempFileName();
+        var store = new SettingsStore(root, bundledWhisperCliPath: bundledCli);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 16,
+            WhisperCliPath = ""
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(AppSettings.CurrentSchemaVersion, migrated.SettingsSchemaVersion);
+        Assert.Equal(bundledCli, migrated.WhisperCliPath);
+        File.Delete(bundledCli);
+    }
+
+    [Fact]
+    public void MigrationPreservesExistingWhisperCliPathWhenBundledExists()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var bundledCli = Path.GetTempFileName();
+        var configuredCli = Path.GetTempFileName();
+        var store = new SettingsStore(root, bundledWhisperCliPath: bundledCli);
+        store.Save(AppSettings.Default with
+        {
+            SettingsSchemaVersion = 16,
+            WhisperCliPath = configuredCli
+        });
+
+        var migrated = store.Load();
+
+        Assert.Equal(configuredCli, migrated.WhisperCliPath);
+        File.Delete(bundledCli);
+        File.Delete(configuredCli);
+    }
+
+    [Fact]
     public void LoadMigratesCustomVocabularyTermsToEmptyString()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

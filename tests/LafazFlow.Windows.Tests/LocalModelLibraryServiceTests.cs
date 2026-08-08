@@ -5,6 +5,17 @@ namespace LafazFlow.Windows.Tests;
 public sealed class LocalModelLibraryServiceTests
 {
     [Fact]
+    public void DefaultModelDirectoryIsUserWritableLafazFlowModelsFolder()
+    {
+        var expected = Path.GetFullPath(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LafazFlow",
+            "Models"));
+
+        Assert.Equal(expected, new LocalModelLibraryService().ModelDirectory);
+    }
+
+    [Fact]
     public void DetectsInstalledAndMissingCatalogModels()
     {
         var root = CreateRoot();

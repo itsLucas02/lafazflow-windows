@@ -44,7 +44,16 @@ LafazFlow is a native Windows desktop application—not React Native or Electron
 
 This stack produces a genuine Windows executable and gives LafazFlow direct access to global keyboard hooks, microphones, the system tray, native windows, and the clipboard.
 
-## Getting started from source
+## Download
+
+Ready-to-run Windows builds are published on the [Releases](https://github.com/itsLucas02/lafazflow-windows/releases) page:
+
+- `LafazFlow-<version>-win-x64-portable.zip` — unzip and run, no installation needed.
+- `LafazFlow-<version>-setup.exe` — installer with Start Menu and desktop shortcuts.
+
+End users do not need the .NET SDK; releases are self-contained and include a bundled `whisper-cli.exe`. Follow [Windows runtime setup](docs/windows-runtime-setup.md) for first-run steps: microphone permission, model download, and your first dictation.
+
+## Building from source
 
 ### Requirements
 

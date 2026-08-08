@@ -56,6 +56,7 @@ public sealed class SettingsStore
     private readonly string _defaultModelPath;
     private readonly string _defaultQualityModelPath;
     private readonly string _defaultModelDirectory;
+    private readonly string _bundledWhisperCliPath;
 
     public SettingsStore(
         string? rootDirectory = null,
@@ -63,12 +64,15 @@ public sealed class SettingsStore
         string defaultModelPath = @"C:\Models\whisper\ggml-base.en.bin",
         string? defaultModelDirectory = null,
         string defaultCudaWhisperCliPath = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe",
-        string defaultQualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin")
+        string defaultQualityModelPath = @"C:\Models\whisper\ggml-large-v3-turbo-q5_0.bin",
+        string? bundledWhisperCliPath = null)
     {
         _defaultWhisperCliPath = defaultWhisperCliPath;
         _defaultCudaWhisperCliPath = defaultCudaWhisperCliPath;
         _defaultModelPath = defaultModelPath;
         _defaultQualityModelPath = defaultQualityModelPath;
+        _bundledWhisperCliPath = bundledWhisperCliPath
+            ?? Path.Combine(AppContext.BaseDirectory, "whisper-cli.exe");
         _defaultModelDirectory = defaultModelDirectory
             ?? Path.GetDirectoryName(defaultModelPath)
             ?? @"C:\Models\whisper";
@@ -125,6 +129,10 @@ public sealed class SettingsStore
         {
             settings = settings with { WhisperCliPath = _defaultWhisperCliPath };
         }
+        else if (File.Exists(_bundledWhisperCliPath))
+        {
+            settings = settings with { WhisperCliPath = _bundledWhisperCliPath };
+        }
 
         if (File.Exists(_defaultCudaWhisperCliPath))
         {
@@ -176,6 +184,15 @@ public sealed class SettingsStore
         if (migrated.WhisperThreads <= 0)
         {
             migrated = migrated with { WhisperThreads = AppSettings.Default.WhisperThreads };
+        }
+
+        if (string.IsNullOrWhiteSpace(migrated.WhisperCliPath)
+            || !File.Exists(migrated.WhisperCliPath))
+        {
+            if (File.Exists(_bundledWhisperCliPath))
+            {
+                migrated = migrated with { WhisperCliPath = _bundledWhisperCliPath };
+            }
         }
 
         if (ShouldUpgradeDefaultModel(migrated.ModelPath))

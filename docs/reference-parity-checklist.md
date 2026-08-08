@@ -30,8 +30,8 @@ Status values:
 | Diagnostics | Logs and latency rows are local, privacy-safe, and accessible from Settings/tray. | Partial | Latency viewer, compact latest summary, and crash logging are implemented; runtime health checks still need Task 7. | Task 7: Settings UX And Runtime Diagnostics. |
 | Crash resilience | UI animation exceptions are logged and narrowly recoverable; app launch smoke shows no fresh crash events. | Done | `AppCrashLogServiceTests`, custom animation tests, `v0.2` launch smoke. | Revisit only after new crash evidence. |
 | Public repository hygiene | Public docs avoid third-party trademark references and do not commit models, logs, recordings, secrets, or local settings. | Done | Trademark and public-readiness scans are part of every release slice. | Maintain every release. |
-| Runtime setup docs | A user can understand required local Whisper CLI/model/CUDA/VAD setup. | Partial | README covers model basics; full Windows runtime guide is not complete. | Task 8: Installer And Release Packaging. |
-| Release packaging | User can install or run a clean packaged build without relying on development artifact folders. | Missing | Current stable use depends on `artifacts\stable-single`. | Task 8: Installer And Release Packaging. |
+| Runtime setup docs | A user can understand required local Whisper CLI/model/CUDA/VAD setup. | Done | `docs/windows-runtime-setup.md` covers download, install, model setup, first dictation, and troubleshooting. | None. |
+| Release packaging | User can install or run a clean packaged build without relying on development artifact folders. | Partial | Packaging script, Inno Setup template, and GitHub Actions release workflow are ready; first public release is pending an owner-approved tag. | Cut the first public release. |
 
 ## Next Recommended Order
 

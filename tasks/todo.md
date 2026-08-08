@@ -1805,4 +1805,25 @@
 - Focused preview/view-model tests pass (72); full `dotnet test` passes (549); Release build passes with 0 warnings and 0 errors; `git diff --check` passes.
 - Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.2.0`.
 
+## Plan: Release Pipeline v1.0.0
+- [x] Add bundled `whisper-cli.exe` fallback so a fresh user never needs to build or install whisper.cpp.
+- [x] Move the default model folder to a per-user writable location (`%LocalAppData%\LafazFlow\Models`) so model downloads never require admin rights.
+- [x] Add `scripts/package-windows-release.ps1` producing a self-contained portable ZIP with bundled whisper CLI, docs, licenses, and release safety checks.
+- [x] Add an Inno Setup template and installer build support in the packaging script.
+- [x] Add a GitHub Actions release workflow that tests, packages, and publishes artifacts to a GitHub Release on `v*` tags.
+- [x] Add `docs/windows-runtime-setup.md` and a README Download section for end users.
+- [x] Add regression tests for packaging artifacts, bundled CLI fallback, and user-writable model directory.
+- [x] Bump LafazFlow from `0.13.2` to `1.0.0`.
+- [x] Run focused tests, full tests, build, verify a real packaged ZIP end-to-end, commit, and push.
+
+## Review: Release Pipeline v1.0.0
+- Added `scripts/package-windows-release.ps1`: self-contained win-x64 publish, bundles the latest official CPU `whisper-cli.exe` (with `--help` smoke check), copies README/LICENSE/third-party notices/runtime docs, runs release safety checks (user audio, logs, settings, model binaries, credential patterns), and produces a portable ZIP plus an optional Inno Setup installer.
+- Added `scripts/lafazflow-setup.iss` (installer template with Start Menu/desktop shortcuts) and `.github/workflows/release.yml` (tests on Windows, installs Inno Setup, packages, publishes ZIP + installer to a GitHub Release on `v*` tags or manual dispatch).
+- Bundled CLI fallback: fresh installs and migrated profiles resolve a packaged `whisper-cli.exe` next to the app (schema 17), and the default model folder moved to `%LocalAppData%\LafazFlow\Models` so downloads never require admin rights.
+- Added `docs/windows-runtime-setup.md` and a README Download section for end users.
+- Bumped LafazFlow to `1.0.0`.
+- Full `dotnet test` passes (557); Release build passes with 0 warnings and 0 errors; `git diff --check` passes.
+- Verified end-to-end: `LafazFlow-1.0.0-win-x64-portable.zip` (80 MB) extracted and launched cleanly with the bundled whisper CLI; stable artifacts republished and pinned app relaunched as v1.0.0 with hidden start and no crash events.
+- Findings: during packaged-app smoke, the mini recorder appeared only because the double-Shift hotkey fired on real Shift key presses (foreground app `Code`) - the hotkey is sensitive while typing; recorded as a follow-up, not changed in this slice. The first public GitHub release is intentionally not cut; the repo policy requires owner approval before tagging.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

@@ -59,10 +59,13 @@ public sealed class LocalModelLibraryService
     private readonly IModelDownloadClient _downloadClient;
 
     public LocalModelLibraryService(
-        string modelDirectory = @"C:\Models\whisper",
+        string? modelDirectory = null,
         IModelDownloadClient? downloadClient = null)
     {
-        ModelDirectory = Path.GetFullPath(modelDirectory);
+        ModelDirectory = Path.GetFullPath(modelDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LafazFlow",
+            "Models"));
         _downloadClient = downloadClient ?? new HttpModelDownloadClient();
     }
 

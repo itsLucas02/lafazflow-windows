@@ -2,7 +2,7 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 16;
+    public const int CurrentSchemaVersion = 17;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
         "Supabase, Contabo, Vercel, Tailscale, Netlify, Mintlify, Stripe, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
