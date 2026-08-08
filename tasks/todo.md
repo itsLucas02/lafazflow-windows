@@ -1752,3 +1752,24 @@
 - Focused capture/controller tests pass, 28 tests; full suite passes, 536 tests; Release build succeeds with 0 warnings and 0 errors; `git diff --check` passes.
 - Real v0.12.4 verification passed twice: `14.135s` logged vs `13.900s` WAV and `16.783s` logged vs `16.550s` WAV. Both raw transcripts preserved the complete final phrase `such as this is the final ending.`
 - Republished both stable artifacts and relaunched the pinned `stable-single` v0.12.4 build.
+# Task: Launch Polish v0.13.0
+
+## Plan: Silent Hidden Startup And First-Run Setup v0.13.0
+- [x] Start the tray app without ever showing the blank 800x450 MainWindow that caused the launch flash.
+- [x] Move shell initialization out of the Loaded event into an idempotent `InitializeShell` called from startup.
+- [x] Add first-run detection to `SettingsStore` and open the Settings setup window on the very first launch.
+- [x] Keep the second-launch single-instance path routed to Settings.
+- [x] Add regression tests for hidden startup, first-run detection, and onboarding completion.
+- [x] Bump LafazFlow from `0.12.4` to `0.13.0`.
+- [x] Run focused tests, full tests, build, diff check, publish stable artifacts, relaunch pinned app, commit, and push.
+
+## Review: Silent Hidden Startup And First-Run Setup v0.13.0
+- Root cause: `App.OnStartup` called `MainWindow.Show()` and `MainWindow.OnLoaded` then called `Hide()`, so every launch painted a blank 800x450 dark window (and a brief taskbar entry) before hiding.
+- `MainWindow` now starts as a hidden, non-taskbar, non-activating host window and is never shown; shell initialization moved to an idempotent `InitializeShell` called directly from app startup.
+- Added `SettingsStore.IsFirstRun` and `MarkOnboardingComplete`; the very first launch now opens the Settings setup window automatically, then marks onboarding complete so later launches stay silent.
+- Second-launch single-instance routing to Settings is preserved.
+- Bumped LafazFlow to `0.13.0`.
+- Focused startup/settings tests pass (31); full `dotnet test` passes (541); Release build passes with 0 warnings and 0 errors; `git diff --check` passes; public-readiness scan found no credentials.
+- Published `artifacts\stable-single\LafazFlow.Windows` and `artifacts\stable-cuda-quality\LafazFlow.Windows`; relaunched the pinned stable-single app, which reports file version `0.13.0.0`. Launch smoke found no visible windows (hidden start verified) and no fresh crash events.
+
+# Task: Windows MVP Hotkey And Prerequisite Revision

@@ -5,8 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:LafazFlow.Windows"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-
-    </Grid>
+        Title="LafazFlow"
+        Width="1"
+        Height="1"
+        WindowStyle="None"
+        Visibility="Hidden"
+        ShowInTaskbar="False"
+        ShowActivated="False">
 </Window>

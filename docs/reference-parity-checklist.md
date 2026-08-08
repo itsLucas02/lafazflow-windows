@@ -10,7 +10,7 @@ Status values:
 | Area | Target Behavior | Current Status | Evidence | Next Fix Slice |
 | --- | --- | --- | --- | --- |
 | Global hotkey | Double Shift starts recording; Double Shift stops and queues transcription without blocking the next recording. | Done | `DoubleShiftDetectorTests`, rapid dictation queue tests, daily owner testing. | None unless timing complaints return. |
-| Startup behavior | App starts silently, registers hotkey, and keeps the mini recorder hidden until dictation or an error needs attention. | Done | Shell polish notes and launch smoke checks in `tasks/todo.md`. | Settings/release polish only. |
+| Startup behavior | App starts silently, registers hotkey, and keeps the mini recorder hidden until dictation or an error needs attention. | Done | v0.13.0 hidden-start smoke: no visible window or taskbar flash, tray/hotkey active, first-run setup window. | Settings/release polish only. |
 | Single instance | Launching LafazFlow again should not create duplicate hotkey listeners and should route to the existing app. | Done | `SingleInstanceTests`; second-launch smoke recorded in `tasks/todo.md`. | Installer shortcut polish. |
 | Tray behavior | Tray icon exposes Settings, Open Logs, and Exit, with useful idle/recording/transcribing/error tooltip state. | Partial | Tray service exists and shell UX tests pass, but no broad manual checklist yet. | Task 7: Settings UX And Runtime Diagnostics. |
 | Recorder shell placement | Compact floating shell stays bottom-centered, avoids startup clutter, and does not shift during preview/status changes. | Done | Mini recorder layout tests and owner feedback after shell stability fixes. | Task 5 only for visual fine-tuning. |

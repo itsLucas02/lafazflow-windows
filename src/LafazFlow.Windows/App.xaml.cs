@@ -12,6 +12,7 @@ public partial class App : System.Windows.Application
     private const string SecondLaunchSignalName = @"Local\LafazFlow.Windows.ShowSettingsRequest";
     private Mutex? _singleInstanceMutex;
     private SecondLaunchSignal? _secondLaunchSignal;
+    private MainWindow? _mainWindow;
     private readonly IAppCrashLogService _crashLogService = new AppCrashLogService();
 
     public static bool TryAcquireSingleInstance(string mutexName, out Mutex mutex)
@@ -40,8 +41,9 @@ public partial class App : System.Windows.Application
         _singleInstanceMutex = singleInstanceMutex;
 
         base.OnStartup(e);
-        MainWindow = new MainWindow();
-        MainWindow.Show();
+        _mainWindow = new MainWindow();
+        MainWindow = _mainWindow;
+        _mainWindow.InitializeShell();
         _secondLaunchSignal = SecondLaunchSignal.Listen(
             SecondLaunchSignalName,
             () => Dispatcher.BeginInvoke(() =>
@@ -51,6 +53,12 @@ public partial class App : System.Windows.Application
                     mainWindow.ShowSettingsFromShell();
                 }
         }));
+
+        if (_mainWindow.IsFirstRun)
+        {
+            _mainWindow.ShowSettingsFromShell();
+            _mainWindow.MarkOnboardingComplete();
+        }
     }
 
     public static bool IsRecoverableDispatcherException(Exception exception)

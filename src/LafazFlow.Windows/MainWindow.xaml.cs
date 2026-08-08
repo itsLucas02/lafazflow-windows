@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly RecorderController _recorderController;
     private readonly TrayIconService _trayIcon;
     private SettingsWindow? _settingsWindow;
+    private bool _shellInitialized;
 
     public MainWindow()
     {
@@ -46,12 +47,30 @@ public partial class MainWindow : Window
         Closed += OnClosed;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    public bool IsFirstRun => _settingsStore.IsFirstRun;
+
+    public void MarkOnboardingComplete()
     {
+        _settingsStore.MarkOnboardingComplete();
+    }
+
+    public void InitializeShell()
+    {
+        if (_shellInitialized)
+        {
+            return;
+        }
+
+        _shellInitialized = true;
         Hide();
         _miniRecorderViewModel.State = RecordingState.Idle;
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        InitializeShell();
     }
 
     private void OnClosed(object? sender, EventArgs e)

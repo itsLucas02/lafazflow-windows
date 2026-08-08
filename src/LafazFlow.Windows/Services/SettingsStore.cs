@@ -105,6 +105,13 @@ public sealed class SettingsStore
         return settings;
     }
 
+    public bool IsFirstRun => !File.Exists(_settingsPath);
+
+    public void MarkOnboardingComplete()
+    {
+        Save(Load());
+    }
+
     private static JsonSerializerOptions JsonOptions() => new()
     {
         WriteIndented = true

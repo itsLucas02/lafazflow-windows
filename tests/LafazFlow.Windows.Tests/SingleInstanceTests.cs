@@ -51,12 +51,12 @@ public sealed class SingleInstanceTests
         var repoRoot = FindRepoRoot();
         var codePath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs");
         var code = File.ReadAllText(Path.GetFullPath(codePath));
-        var onLoadedStart = code.IndexOf("private void OnLoaded", StringComparison.Ordinal);
+        var shellInitStart = code.IndexOf("public void InitializeShell", StringComparison.Ordinal);
         var onClosedStart = code.IndexOf("private void OnClosed", StringComparison.Ordinal);
-        var onLoadedBody = code[onLoadedStart..onClosedStart];
+        var shellInitBody = code[shellInitStart..onClosedStart];
 
-        Assert.DoesNotContain("_miniRecorderWindow.ShowBottomCenter();", onLoadedBody);
-        Assert.Contains("_hotkeyService.Start();", onLoadedBody);
+        Assert.DoesNotContain("_miniRecorderWindow.ShowBottomCenter();", shellInitBody);
+        Assert.Contains("_hotkeyService.Start();", shellInitBody);
     }
 
     private static string FindRepoRoot()

@@ -94,6 +94,27 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
+    public void IsFirstRunIsTrueBeforeAnySettingsSave()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+
+        Assert.True(store.IsFirstRun);
+    }
+
+    [Fact]
+    public void MarkOnboardingCompletePersistsSettingsAndClearsFirstRun()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+
+        store.MarkOnboardingComplete();
+
+        Assert.False(store.IsFirstRun);
+        Assert.True(File.Exists(Path.Combine(root, "settings.json")));
+    }
+
+    [Fact]
     public void LoadMigratesCustomVocabularyTermsToEmptyString()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
