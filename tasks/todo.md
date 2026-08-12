@@ -1,5 +1,180 @@
 # Task: Windows MVP Hotkey And Prerequisite Revision
 
+# Task: Persistent Whisper Engine And Dictation Reliability
+
+**Detailed implementation roadmap:** `docs/superpowers/plans/2026-08-13-persistent-whisper-engine-roadmap.md`
+
+## Agreed product direction
+- Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
+- Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
+- Preserve the owner's current Quality profile, NVIDIA CUDA acceleration, `ggml-large-v3-turbo-q5_0.bin`, VAD, language, prompt, vocabulary, thread count, local/offline privacy, and normal dictation workflow.
+- Keep the existing one-shot `whisper-cli.exe` path available for diagnostics and safe recovery, but stop launching a fresh CLI for every successful everyday dictation once the persistent worker is proven.
+
+## Implementation plan
+
+### Stage 1: Establish an objective before/after baseline
+- [ ] Add a repeatable benchmark using retained test audio and the exact current Quality/CUDA settings.
+- [ ] Record first-dictation time, later-dictation median and P95, engine-load time, final-audio-drain time, paste time, empty-result rate, failure rate, and surviving-process count.
+- [ ] Define the acceptance target: warm dictations remove the repeated model-load cost, sustained P95 materially improves over the current one-shot CLI baseline, and output text remains equivalent or better.
+
+### Stage 2: Guarantee complete recording endings
+- [ ] Replace best-effort recorder shutdown with an explicit end-of-audio handshake: stop accepting new microphone samples, drain every already-captured sample, finalize the WAV, then allow final transcription.
+- [ ] Keep each recording session isolated so late callbacks cannot enter a later session.
+- [ ] Add regression tests for a final word arriving in the last audio buffer, rapid back-to-back recordings, delayed callbacks, device removal, and drain timeout recovery.
+- [ ] Log captured sample count and finalized WAV duration without recording transcript content.
+
+### Stage 3: Build the persistent Windows Whisper worker
+- [ ] Add a small crash-isolated background worker that loads whisper.cpp, the selected model, CUDA, and VAD once and accepts sequential transcription requests from LafazFlow.
+- [ ] Send audio and the current request settings to the worker through a local-only Windows connection; never expose a network port.
+- [ ] Validate request identity, size, deadlines, and response ownership so stale or crossed responses cannot be pasted.
+- [ ] Keep exactly one final transcription active at a time and ensure final dictation remains higher priority than live preview and diagnostics.
+- [ ] Reload the worker only when the model/backend settings change, the user requests it, the inactivity policy unloads it, or health recovery requires it.
+
+### Stage 4: Make failure recovery automatic
+- [ ] Detect worker startup failure, crash, timeout, invalid response, lost connection, and repeated abnormal latency.
+- [ ] Terminate and fully reap an unhealthy worker, restart it once with bounded backoff, reload the same settings, and retry only when doing so cannot duplicate a paste.
+- [ ] Use the existing one-shot CLI as a clearly logged recovery path when the persistent worker cannot become healthy; never silently switch model, GPU backend, or quality profile.
+- [ ] Ensure a native Whisper/CUDA crash cannot terminate the WPF application.
+
+### Stage 5: Add performance-health monitoring
+- [ ] Maintain a local rolling window of cold/warm latency, median, P95, audio real-time factor, failures, empty results, restarts, and queue delay.
+- [ ] Establish the healthy baseline from successful warm dictations on the current machine rather than one hard-coded millisecond threshold.
+- [ ] Mark performance degraded only after a sustained pattern, not one slow dictation; attempt recovery and report the reason and outcome in Diagnostics.
+- [ ] Add privacy-safe phase timings for audio drain, worker readiness, model load, inference, response transfer, formatting, and paste.
+
+### Stage 6: Add understandable settings and status
+- [ ] Add a plain-language engine setting: `Keep ready` (recommended), `Unload after 10 minutes`, and `Unload immediately`.
+- [ ] Show `Loading voice engine`, `Ready`, `Recovering`, or `Using recovery engine` without exposing implementation jargon in normal UI.
+- [ ] Preserve advanced CLI paths and existing diagnostics for technical troubleshooting.
+
+### Stage 7: Verification and safe rollout
+- [ ] Add focused lifecycle, crash, timeout, audio-tail, settings-change, rapid-dictation, and no-duplicate-paste tests.
+- [ ] Run the full test suite and Release build, then compare the same audio corpus before and after for text, punctuation, ending-word retention, median, and P95 latency.
+- [ ] Test the exact current CUDA/model/VAD profile through at least 30 warm dictations, forced worker crashes, app restart, sleep/wake, and device changes.
+- [ ] Publish and relaunch the actual stable build only after all acceptance checks pass; do not change the public release until the owner separately approves a new release.
+
+## Explicit non-goals for this slice
+- Do not change the selected Whisper model or trade accuracy for a smaller model.
+- Do not replace local transcription with a cloud service.
+- Do not remove the existing CLI diagnostics/recovery capability.
+- Do not combine the microphone-selection UI feature into this engine reliability change.
+- Do not copy macOS-specific source code directly; implement the agreed behaviour natively for Windows and retain required license notices for any reused third-party code.
+
+## Decision-complete design (owner-approved choices)
+
+### Evidence boundary from reference applications
+- FluidVoice is the closest match to LafazFlow's chosen startup behaviour: after its main content appears, it waits about one second and preloads the ASR model, then keeps the provider ready.
+- Handy begins model loading when recording starts, overlaps loading with the user's speech, then reuses the loaded engine across later dictations until its configured idle-unload policy releases it.
+- VoiceInk has an optional launch/wake prewarm scheduled after roughly three seconds, also loads the selected model during recording when needed, and currently runs cleanup paths after a completed pipeline; it is not evidence that every model remains loaded for the entire app session by default.
+- LafazFlow's selected policy—prepare at launch and keep ready until exit—is a deliberate speed-first combination, not a claim that all three projects implement identical lifecycle timing.
+
+### Reference-first engineering rule
+- Primary reference repositories for this project are `altic-dev/FluidVoice`, `cjpais/Handy`, and `Beingpax/VoiceInk` at recorded commit SHAs captured when implementation begins.
+- Before implementing each major subsystem, inspect and document the corresponding current reference paths: startup/model preparation, retained model lifecycle, recording stop/audio drain, preview/final priority, crash recovery, performance metrics, and model unloading.
+- Each implementation-plan item and review entry must include a traceability note: `Reference adopted`, `Reference adapted for Windows`, or `Evidence-backed improvement`, with repository/file/commit links.
+- Do not invent a materially different lifecycle or reliability mechanism merely from intuition. If none of the references implements the needed behaviour, first seek upstream whisper.cpp guidance and reproducible local evidence, then document the gap, alternatives, risks, and proof before implementation.
+- An `Evidence-backed improvement` must state why the reference behaviour is insufficient for LafazFlow on Windows and must have a measurable acceptance test. “Cleaner architecture” or AI preference alone is not sufficient.
+- Copy behaviour and proven patterns, not macOS-specific source blindly. Review licenses before reusing code; retain copyright and license notices for copied or adapted code as required by GPLv3/MIT and update `THIRD_PARTY_NOTICES.md` with exact provenance.
+- Do not claim parity or superiority without before/after measurements using the same audio, settings, hardware, and workload.
+- If implementation discoveries contradict the approved reference-backed plan, stop and return to planning rather than silently substituting an unproven design.
+
+### Product behaviour
+- Engine readiness: prepare immediately in the background at app launch and keep ready until LafazFlow exits.
+- Startup sequence: `LafazFlow launches -> start worker -> load Whisper/model/CUDA/VAD -> report Ready`; this happens before any recording and is independent of the recording stop flow.
+- Dictation sequence: `user finishes speaking -> drain/finalize audio -> send audio to the already-ready worker -> format -> paste`.
+- GPU memory: retain the selected model and CUDA context for the whole app session; closing LafazFlow releases them.
+- Live preview: preserve it, coalesce preview work so stale previews never accumulate, and cancel preview immediately when final transcription begins.
+- Crash recovery: restart the worker with the exact same settings and retry the unfinished, not-yet-pasted dictation once.
+- Degradation recovery: recover automatically after sustained abnormal latency and show one brief plain-language notice.
+- Rollout: update and observe the owner's local stable build first; a new public GitHub release requires separate later approval.
+
+### Native worker architecture
+- Add `native/LafazFlow.WhisperWorker`, a small C++ executable linked against a pinned whisper.cpp revision.
+- Build the worker from the same whisper.cpp source and native backend used for its paired CLI: CUDA for the owner's Quality runtime and CPU for the bundled public runtime.
+- Load one `whisper_context` at worker startup and retain it. Create/reset fresh per-request decoding state so transcripts cannot leak context into later dictations.
+- Keep the worker outside the WPF process. A native CUDA/Whisper crash can terminate only the worker; the main LafazFlow process detects exit and recovers.
+- Communicate over a Windows named pipe restricted to the current user. Do not listen on TCP/HTTP and do not expose any network port.
+- Use a versioned, length-prefixed protocol with: protocol version, request ID, workload, settings fingerprint, deadline, PCM format, sample count, request options, and bounded PCM payload.
+- Require 16 kHz, mono, signed 16-bit PCM at the boundary. Reject wrong formats, oversized messages, unknown operations, mismatched request IDs, stale responses, and protocol-version mismatches.
+- The WPF app owns worker startup and shutdown. On normal exit it requests graceful shutdown, waits briefly, then terminates only the exact child process if needed.
+
+### Worker request lifecycle
+- `Initialize`: load the configured model, CUDA backend, VAD model, and immutable engine options; return readiness and non-sensitive capability/timing metadata.
+- `Preview`: use a fresh decode state, remain cancellable through whisper.cpp's abort callback, and return only if its recording/session ID is still current.
+- `Final`: cancel/await preview, run with the exact current language, prompt, VAD, temperature, fallback, suppression, context, and thread settings, then return raw text plus phase timings.
+- `Health`: report process uptime, model fingerprint, backend, readiness, completed requests, last failure category, and memory/timing metadata without transcript or audio content.
+- `Shutdown`: release request state, VAD state, model context, CUDA resources, and exit cleanly.
+- Only one inference request may use the retained model at once. Final work has priority; only the newest pending preview is retained.
+
+### Configuration identity and reload rules
+- Compute a worker fingerprint from worker/protocol version, whisper.cpp revision, model path plus safe file identity, backend, GPU choice, VAD path/options, language/decode settings, and thread count.
+- Prompt and vocabulary may remain request-level when supported safely; settings requiring context recreation trigger a controlled worker replacement.
+- Start a replacement worker, prove it is ready, then retire the previous idle worker. Never discard a healthy worker before its replacement is usable unless the old configuration is invalid or unsafe.
+- Never silently substitute CPU, a smaller model, disabled VAD, another language, or different quality settings.
+
+### Complete-audio stop handshake
+- Change `IAudioCaptureService.Stop()` into an awaited stop/finalize operation.
+- Recording stop enters `Stopping`, asks NAudio to stop, continues accepting callbacks already owned by that session, and waits for NAudio's `RecordingStopped` signal.
+- After the stop signal, take the session lock, detach the callback, finalize/flush the WAV writer, record sample/byte counts, and only then make the file available for final transcription.
+- Normal stop has a two-second safety deadline. On deadline, force-close only that input session, finalize all audio already received, record `audio_drain_timeout`, and continue if the WAV is valid; report an error if safe finalization failed.
+- Preserve the existing session-ownership guard: callbacks from a stopped session can never write into another session.
+- The processing visual/sound may appear immediately, but queueing and final transcription must wait for audio finalization.
+
+### Automatic crash and retry policy
+- A request is retryable only before clipboard/paste begins and only for worker exit, broken pipe, engine abort without user cancellation, timeout, or invalid worker response.
+- First failure: terminate/reap the exact unhealthy worker tree, start a fresh worker with the same fingerprint, wait for readiness, then retry the same finalized audio once.
+- If the restarted worker cannot complete, use the existing one-shot CLI once with the same model/backend/settings as the last recovery path.
+- If both paths fail, preserve the retained audio, show a compact failure, and never paste empty, partial, or duplicate text.
+- User cancellation, invalid audio, missing files, or invalid settings are not automatically retried.
+- Apply a recovery lock so simultaneous requests cannot start multiple replacement workers.
+
+### Performance-health algorithm
+- Record privacy-safe phases: audio drain, queue wait, worker start/readiness, cold model load, warm inference, response transfer, formatting, clipboard/paste, and total stop-to-done.
+- Record audio duration, inference real-time factor (`inference time / audio duration`), result character count, and terminal punctuation category; never log transcript text or PCM content.
+- Key baselines by worker fingerprint. Cold/retried/cancelled/failed runs and recordings shorter than two seconds do not train the warm baseline.
+- Establish a baseline after 10 successful warm dictations and retain up to the latest 30 healthy samples.
+- Mark one run slow only when both conditions hold: inference is at least 750 ms above its baseline median and its real-time factor is at least 1.75x the baseline median for comparable audio duration.
+- Declare sustained degradation when 3 of the latest 5 eligible warm runs are slow. One outlier never restarts the engine.
+- On sustained degradation, restart once, mark the next successful run as recovery validation, and suppress another automatic degradation restart for 10 minutes to prevent restart loops.
+- Timeouts, crashes, empty responses, surviving worker processes, and recovery outcomes remain separately visible in Diagnostics.
+
+### Punctuation observability boundary
+- This engine slice does not broaden question-mark grammar heuristics.
+- Add privacy-safe stage metadata—raw final character category, formatted final character category, clipboard final character category, and character counts—to prove where punctuation changes without storing dictated text.
+- Address a punctuation defect only when evidence shows which stage changed it and a focused regression can express the intended sentence structure.
+
+### Build and packaging plan
+- Pin the whisper.cpp revision used by both worker and CLI build inputs; do not build from an unpinned moving branch.
+- Extend the CUDA build script to compile/deploy/smoke-test `lafazflow-whisper-worker.exe` beside the owner's CUDA CLI and matching native runtime DLLs.
+- Extend release packaging to build/bundle the CPU worker beside the bundled CPU CLI, include required MIT/GPL notices, and fail packaging if worker readiness smoke checks fail.
+- Keep CLI resolution intact for diagnostics and recovery. Add worker resolution beside the chosen CLI plus an advanced explicit worker path only if required for custom runtimes.
+- Treat a worker/CLI/whisper.cpp revision mismatch as a visible configuration error, not a silent fallback.
+
+### Test matrix
+- Recorder: final buffer after stop request, delayed final callback, rapid sessions, callback from an old session, stop timeout, writer failure, device removal, zero audio, and valid WAV header/duration/sample parity.
+- Protocol: partial reads/writes, oversized payload, invalid version, invalid request ID, stale response, disconnect, malformed metadata, cancellation, and current-user-only pipe access.
+- Lifecycle: launch preparation, already-ready reuse, settings fingerprint change, app exit, worker crash during load/preview/final, hung worker, retry success, retry failure, CLI recovery, and no orphan process.
+- Priority: many preview requests collapse to the latest; final cancels preview within the defined bound and cannot be delayed by diagnostics.
+- Delivery: no paste before successful final result, exactly one paste after retry, no paste on terminal failure, retained audio remains recoverable.
+- Quality: compare raw text, punctuation, ending-word retention, and empty-result rate against the existing CLI using the same retained corpus and exact settings.
+- Performance: cold start plus at least 30 warm final dictations; compute median, P90, P95, maximum, real-time factor, and stop-to-paste time before and after.
+- Environment: exact RTX 4070 CUDA Quality profile, app restart, Windows sleep/wake, display/GPU reset where safely reproducible, microphone device change, and rapid back-to-back dictation.
+
+### Acceptance and rollout gates
+- All focused and full tests pass; Release build and both stable publish profiles succeed; `git diff --check` passes.
+- The selected model/backend/VAD/prompt/language/thread settings shown by Diagnostics exactly match the current configuration.
+- Every audio-tail regression preserves the final buffer; real recordings maintain logged-duration/WAV-duration parity within normal device-buffer tolerance.
+- No repeated model load occurs during 30 warm dictations with an unchanged fingerprint.
+- Warm median must improve by at least the measured repeated-load cost; warm P95 must be at least 30% lower than the one-shot baseline and must not contain unexplained process-start/cleanup spikes.
+- Raw transcript quality must not regress on the retained corpus; no increase in empty results or missing final phrases is accepted.
+- Forced crash recovery completes one retry with exactly one paste; terminal double failure pastes nothing and preserves diagnostic audio.
+- Update the owner's actual pinned stable build, run real hands-free dictation, and observe normal use before proposing a public version/tag/release.
+
+### Rollback
+- Preserve the current one-shot CLI implementation during local rollout as a recovery path and an explicit emergency compatibility mode.
+- If the persistent worker fails an acceptance gate or causes real-use regressions, switch local execution back to the verified CLI path without changing the model, CUDA runtime, VAD, or user settings.
+- Do not delete the worker diagnostics or failed-session evidence during rollback; use them to correct the worker before another rollout attempt.
+
 ## Plan: Optional Conservative Dictation Polish v0.12.2
 - [x] Add an opt-in, local-only polish stage after developer literal formatting.
 - [x] Rejoin only high-confidence continuation clauses while protecting developer literals.

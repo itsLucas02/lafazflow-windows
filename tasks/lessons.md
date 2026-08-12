@@ -335,3 +335,23 @@
 ## Never trigger dictation from a held Shift key
 - Pattern: A low-level keyboard hook has no auto-repeat bit in `KBDLLHOOKSTRUCT.flags`, so reading a WM_KEYDOWN-style repeat flag (0x40000000) from the hook struct never fires. Holding Shift then delivers repeated key-downs that looked like fresh presses, and the missed-keyup self-heal treated the first auto-repeat as a second tap, starting dictation while typing or holding Shift.
 - Rule: Track the Shift key's down/up state in the hook service to flag auto-repeats, and make the detector reject any key-down that arrives while the key is already down (reason `repeat`/`already_down`). Recover stuck down states with a stale timeout instead of self-healing into a trigger.
+
+## Explain architecture decisions in owner language first
+- Pattern: Describing persistent model contexts, process boundaries, actors, and named pipes before explaining the everyday impact left the non-programmer owner unable to evaluate the recommendation.
+- Rule: Start with a concrete everyday analogy, state exactly what LafazFlow does now, what would change, what stays unchanged, and the practical benefit or risk; put implementation terminology last and only when useful.
+
+## Distinguish copying behaviour from copying platform code
+- Pattern: Saying LafazFlow could not copy VoiceInk's solution implied the proven approach was unavailable, when only VoiceInk's macOS-specific Swift implementation was incompatible with Windows.
+- Rule: Say clearly that LafazFlow can reproduce the same product behaviour and architecture using Windows code; distinguish that from literally copying source written for another operating system.
+
+## Show background preparation in lifecycle diagrams
+- Pattern: A dictation-only diagram began at `You finish speaking` and pointed to the ready engine, which made it look as though the engine starts only after recording ends even though startup preparation was a core decision.
+- Rule: Any persistent-engine lifecycle diagram must show two connected flows: app launch prepares the engine in advance, then recording completion sends finalized audio to that already-ready engine.
+
+## Separate shared architecture from exact reference timing
+- Pattern: Grouping several voice tools under one persistent-engine description obscured that FluidVoice preloads shortly after UI startup, Handy starts loading when recording begins and retains the engine by idle policy, and VoiceInk combines optional delayed prewarm with recording-time loading and pipeline cleanup.
+- Rule: When citing reference apps, distinguish the shared principle—prepare before final transcription and reuse expensive resources—from each app's exact trigger and unload policy; label LafazFlow's chosen hybrid as its own design.
+
+## Require traceable reference evidence for voice-engine architecture
+- Pattern: Unreferenced architectural suggestions can sound plausible while overlooking proven lifecycle and reliability work in mature open-source dictation tools.
+- Rule: For LafazFlow engine, recording, recovery, and performance work, begin with current VoiceInk, Handy, and FluidVoice evidence. Trace every major choice to an adopted reference, a Windows adaptation, or a measured improvement; do not substitute intuition for repository evidence, and do not claim “better” without equivalent before/after tests.
