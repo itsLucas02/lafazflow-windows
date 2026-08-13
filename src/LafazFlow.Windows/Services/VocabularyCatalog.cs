@@ -36,7 +36,12 @@ public static class VocabularyCatalog
         new("InputGroup", ["input group"]),
         new("Sentry", ["sentry"]),
         new("GitHub", ["github"]),
-        new("DeepSeek", ["deep seek", "deepseek", "deep seq", "deepsick", "deep sick"]),
+        new(
+            "DeepSeek",
+            [
+                "deep seek", "deepseek", "deep seq", "deepseq", "deep sec", "deepsec",
+                "deepsick", "deep sick"
+            ]),
         new("PowerShell", ["power shell", "powershell"]),
         new("Cursor", ["cursor"]),
         new("Stripe", []),

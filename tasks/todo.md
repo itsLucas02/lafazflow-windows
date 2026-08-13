@@ -359,6 +359,7 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Added `VocabularyCatalog` as the single source of truth for default terms, heard variants, prompt injection, and correction rules; the Vocabulary screen now shows the default vocabulary and the prompt always includes it.
 - Added `deep seq`, `deepsick`, and `deep sick` variants to the `DeepSeek` corrections while preserving all existing correction behavior.
 - Focused vocabulary/formatter/settings tests pass, 249 tests; full suite expected green; Release build 0 warnings/0 errors; stable package re-published and relaunched.
+- Follow-up: owner still saw occasional `DeepSeq`/`DeepSec` (single tokens, no space). Added `deepseq`, `deepsec`, and `deep sec` variants to the `DeepSeek` entry; regression tests cover `DeepSeq`, `DeepSec`, and `deep sec`; full suite 661 green; stable package re-published and relaunched.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
