@@ -217,6 +217,12 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
                 continue;
             }
 
+            if (PromptLeakDetector.IsPromptLeak(preview, settings.WhisperInitialPrompt))
+            {
+                _stats.CountSuppression("prompt_leak");
+                continue;
+            }
+
             if (settings.EnableVocabularyCorrections)
             {
                 preview = VocabularyCorrectionService.Apply(preview, settings.CustomCorrectionRules);

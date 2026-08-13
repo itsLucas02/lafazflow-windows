@@ -39,6 +39,45 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task PromptLeakFromWorkerSnapshotIsNotDisplayed()
+    {
+        var received = new List<string>();
+        var leaked = "Custom vocabulary, " +
+            string.Join(" ", Enumerable.Repeat("Individu,", 20)) + " Individu.";
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            workerTranscribeSnapshotAsync: (_, _, _, _) =>
+                Task.FromResult<string?>(leaked));
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await Task.Delay(120);
+        await service.StopAsync();
+
+        Assert.Empty(received);
+    }
+
+    [Fact]
+    public async Task PromptLeakFromCliFallbackIsNotDisplayedAndCountedAsSuppression()
+    {
+        var leaked = "Custom vocabulary, " +
+            string.Join(" ", Enumerable.Repeat("Individu,", 20)) + " Individu.";
+        var service = CreateService(previews: [leaked], logs: out var logs);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await Task.Delay(120);
+        await service.StopAsync();
+
+        Assert.Empty(received);
+        var summary = Assert.Single(logs);
+        Assert.Contains("Live preview summary:", summary);
+        Assert.Contains("accepted=0", summary);
+        Assert.Matches("empty=\\d+", summary);
+    }
+
+    [Fact]
     public async Task WorkerSnapshotPathStitchesMonotonically()
     {
         var previews = new Queue<string>(["first part", "part second part"]);
