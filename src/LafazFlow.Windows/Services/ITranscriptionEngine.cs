@@ -16,4 +16,5 @@ public sealed record TranscriptionEngineResult(
     bool Succeeded,
     string? FailureKind,
     long? ModelLoadMs,
-    long? InferenceMs);
+    long? InferenceMs,
+    bool WasRetried = false);

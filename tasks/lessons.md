@@ -354,4 +354,8 @@
 
 ## Require traceable reference evidence for voice-engine architecture
 - Pattern: Unreferenced architectural suggestions can sound plausible while overlooking proven lifecycle and reliability work in mature open-source dictation tools.
-- Rule: For LafazFlow engine, recording, recovery, and performance work, begin with current VoiceInk, Handy, and FluidVoice evidence. Trace every major choice to an adopted reference, a Windows adaptation, or a measured improvement; do not substitute intuition for repository evidence, and do not claim “better” without equivalent before/after tests.
+- Rule: For LafazFlow engine, recording, recovery, and performance work, begin with current VoiceInk, Handy, and FluidVoice evidence. Trace every major choice to an adopted reference, a Windows adaptation, or a measured improvement; do not substitute intuition for repository evidence, and do not claim "better" without equivalent before/after tests.
+
+## Make health-sample fixtures realistic end to end
+- Pattern: Recorder tests for the performance-health monitor silently produced no sample: a zero-filled WAV is "effectively silent" so the job aborted before transcription, the settings fingerprint includes random temp CLI/model paths so a separately created store never matches, and the recorder deletes each finalized WAV unless diagnostics retention is enabled.
+- Rule: When a recorder test must reach post-transcription behavior, write a real non-silent tone WAV, reuse the exact same `SettingsStore` instance for the controller and the fingerprint assertion, and provide one audio file per dictation because finished jobs delete their WAV. Assert with a diagnostic message when the expected health sample is absent.

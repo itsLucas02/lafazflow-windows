@@ -22,9 +22,13 @@ public sealed class RecorderController
     private readonly TranscriptionPostProcessor _postProcessor;
     private readonly ITranscriptionTimingProvider? _transcriptionTiming;
     private readonly ITranscriptionEngine? _transcriptionEngine;
+    private readonly PerformanceHealthMonitor? _performanceHealthMonitor;
+    private readonly Func<AppSettings, CancellationToken, Task>? _restartWorkerAsync;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
+    private AppSettings _lastSettings = AppSettings.Default;
+    private bool _firstDictation = true;
     private string? _currentAudioPath;
     private LatencyTrace? _currentLatencyTrace;
     private IntPtr _targetWindow;
@@ -47,7 +51,9 @@ public sealed class RecorderController
         TranscriptionPostProcessor? postProcessor = null,
         TimeSpan? transientErrorDismissDelay = null,
         ITranscriptionTimingProvider? transcriptionTiming = null,
-        ITranscriptionEngine? transcriptionEngine = null)
+        ITranscriptionEngine? transcriptionEngine = null,
+        PerformanceHealthMonitor? performanceHealthMonitor = null,
+        Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -65,7 +71,13 @@ public sealed class RecorderController
         _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
         _transcriptionTiming = transcriptionTiming;
         _transcriptionEngine = transcriptionEngine;
+        _performanceHealthMonitor = performanceHealthMonitor;
+        _restartWorkerAsync = restartWorkerAsync;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
+        if (_performanceHealthMonitor is not null)
+        {
+            _performanceHealthMonitor.SustainedDegradation += OnSustainedDegradation;
+        }
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
         _audioCapture.AudioLevelChanged += level =>
@@ -112,6 +124,7 @@ public sealed class RecorderController
     public void StartRecording(long? hotkeyTimestamp = null, long? toggleHandlingTimestamp = null)
     {
         var settings = _settingsStore.Load();
+        _lastSettings = settings;
         var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
         var validationError = WhisperCliTranscriptionService.ValidatePaths(
             runtime.CliPath,
@@ -357,9 +370,10 @@ public sealed class RecorderController
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
             var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
             string transcript;
+            TranscriptionEngineResult? engineResult = null;
             if (_transcriptionEngine is not null)
             {
-                var engineResult = await _transcriptionEngine.TranscribeAsync(
+                engineResult = await _transcriptionEngine.TranscribeAsync(
                     job.AudioPath,
                     job.Settings,
                     job.DictationId,
@@ -417,6 +431,8 @@ public sealed class RecorderController
                 throw new InvalidOperationException(
                     "No speech was transcribed. Check the microphone input and try again.");
             }
+
+            RecordHealthSample(job, engineResult);
 
             if (job.LatencyTrace is { } rawTrace)
             {
@@ -576,6 +592,56 @@ public sealed class RecorderController
         catch
         {
         }
+    }
+
+    private void RecordHealthSample(DictationJob job, TranscriptionEngineResult? engineResult)
+    {
+        if (_performanceHealthMonitor is null)
+        {
+            return;
+        }
+
+        var inferenceMs = engineResult?.InferenceMs
+            ?? job.LatencyTrace?.ElapsedMilliseconds(
+                LatencyCheckpoint.WhisperStarted,
+                LatencyCheckpoint.WhisperFinished)
+            ?? 0;
+        var audioDurationMs = WavFileValidator.Inspect(job.AudioPath)?.DurationMilliseconds ?? 0;
+        var sample = new HealthSample(
+            job.DictationId,
+            EngineSettingsFingerprint.Compute(job.Settings),
+            inferenceMs,
+            audioDurationMs,
+            IsCold: _firstDictation,
+            IsRetried: engineResult?.WasRetried ?? false,
+            IsCancelled: false,
+            IsFailed: false,
+            DateTimeOffset.Now);
+        _firstDictation = false;
+        _performanceHealthMonitor.Record(sample);
+    }
+
+    private void OnSustainedDegradation(string fingerprintHex)
+    {
+        var safeFingerprint = fingerprintHex.Length <= 12 ? fingerprintHex : fingerprintHex[..12];
+        LogInfo($"WORKER sustained degradation detected for fingerprint {safeFingerprint}; restarting worker once.");
+        if (_restartWorkerAsync is null)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _restartWorkerAsync(_lastSettings, CancellationToken.None);
+                LogInfo("WORKER restarted after sustained degradation.");
+            }
+            catch (Exception error)
+            {
+                LogInfo($"WORKER degradation restart failed: {error.Message}");
+            }
+        }, CancellationToken.None);
     }
 
     [DllImport("user32.dll")]

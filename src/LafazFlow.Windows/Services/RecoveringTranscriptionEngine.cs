@@ -36,12 +36,12 @@ public sealed class RecoveringTranscriptionEngine : ITranscriptionEngine
         var retried = await _primary.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
         if (retried.Succeeded)
         {
-            return retried;
+            return retried with { WasRetried = true };
         }
 
         var cliRecovery = await _fallback.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
         return cliRecovery.Succeeded
-            ? cliRecovery
+            ? cliRecovery with { WasRetried = true }
             : retried;
     }
 }

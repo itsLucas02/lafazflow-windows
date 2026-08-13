@@ -206,6 +206,31 @@
 **Rollback readiness:** CLI engine remains the fallback; recovery is logged and testable
 **Next milestone entry conditions:** satisfied — M8 (sustained performance-degradation monitor) can proceed.
 
+## M8 — Sustained performance-degradation monitor
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `PerformanceHealthMonitor`: per-fingerprint rolling windows (latest 30 eligible samples), eligibility rules, baseline, slow-run rule, and bounded degradation recovery
+- Eligibility: excludes cold, retried, cancelled, failed, and sub-two-second dictations from baseline training; baseline established after 10 successful warm dictations
+- Slow-run rule: a run is slow only when inference is at least 750 ms above the baseline median AND inference real-time factor is at least 1.75x the baseline median for comparable audio duration
+- Sustained degradation: only 3 of the latest 5 eligible runs being slow declares degradation; a single outlier never restarts the engine
+- Recovery: one restart per fingerprint, next success marked cold as recovery validation, and a 10-minute cooldown suppresses restart loops; crashes/timeouts remain immediate lifecycle failures outside the slow-run rule
+- Recorder wiring: successful dictations record privacy-safe health samples (dictation id, fingerprint, inference ms, audio duration ms, cold/retried flags, timestamp); sustained degradation logs the fingerprint prefix and restarts the worker once with the last captured settings
+- MainWindow wiring: health monitor shared with the recorder; degradation restart routes through `WhisperWorkerSupervisor.RestartSessionAsync` when the worker is present
+- `TranscriptionEngineResult.WasRetried`: recovered (worker-retry or CLI-fallback) results are flagged so retried runs never train the baseline
+
+**Verification**
+- PerformanceHealthMonitor tests: baseline builds after 10 eligible samples and excludes cold/retried/sub-two-second; slow classification requires both inference and RTF rules; isolated outlier never triggers; 3-of-5 triggers once per cooldown; normal jitter never triggers; injected sustained delay triggers exactly one recovery
+- Recorder regression: two successful dictations produce exactly one warm health sample with the engine's inference ms and no cold marking
+- Focused 48; full suite 631 green; Release build 0 warnings/0 errors
+
+**Reference traceability**
+- Handy/FluidVoice duration and real-time-factor measurement — Reference adopted
+- Rolling per-fingerprint health, 750 ms/1.75x slow rule, 3-of-5 sustained rule, and 10-minute restart cooldown — Evidence-backed improvement with measurable tests (no pinned reference implements LafazFlow's exact recovery rule)
+**Rollback readiness:** monitoring is additive; the degradation restart is a single recorder hook that can be disabled without touching engine behavior
+**Next milestone entry conditions:** satisfied — M9 (plain-language status and Diagnostics) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

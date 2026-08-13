@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly TrayIconService _trayIcon;
     private readonly WhisperWorkerSupervisor? _workerSupervisor;
     private readonly ITranscriptionEngine? _workerEngine;
+    private readonly PerformanceHealthMonitor _healthMonitor = new();
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
@@ -65,7 +66,12 @@ public partial class MainWindow : Window
             livePreview: previewService,
             hotkeyDiagnostics: _hotkeyDiagnostics,
             transcriptionTiming: transcriptionService,
-            transcriptionEngine: _workerEngine);
+            transcriptionEngine: _workerEngine,
+            performanceHealthMonitor: _healthMonitor,
+            restartWorkerAsync: _workerSupervisor is null
+                ? null
+                : (settings, cancellationToken) =>
+                    _workerSupervisor.RestartSessionAsync(settings, cancellationToken));
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,

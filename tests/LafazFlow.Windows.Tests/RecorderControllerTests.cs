@@ -790,6 +790,93 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task SuccessfulDictationRecordsPerformanceHealthSample()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        // Each recording is finalized and the audio file is deleted afterwards
+        // unless diagnostics retention is enabled, so use one file per dictation.
+        var firstAudioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-health-{Guid.NewGuid():N}.wav");
+        var secondAudioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-health-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(firstAudioPath, BuildThreeSecondPcmWav());
+        File.WriteAllBytes(secondAudioPath, BuildThreeSecondPcmWav());
+        var audio = new FakeAudioCaptureService(firstAudioPath, secondAudioPath);
+        var paste = new FakeClipboardPasteService();
+        var monitor = new PerformanceHealthMonitor();
+        var store = CreateSettingsStore();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult(
+                WhisperCliTranscriptionService.CleanTranscript("hello world"),
+                true,
+                null,
+                null,
+                InferenceMs: 120)));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            paste,
+            store,
+            new SoundCueService(),
+            () => (IntPtr)111,
+            transcriptionEngine: engine,
+            performanceHealthMonitor: monitor);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        // The first dictation is deliberately cold (excluded from the health window),
+        // so run a second successful dictation to produce the first warm sample.
+        await controller.ToggleAsync();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        var settings = store.Load();
+        var fingerprint = EngineSettingsFingerprint.Compute(settings);
+        var samples = monitor.RecentSamples(fingerprint);
+        Assert.True(
+            samples.Count == 1,
+            $"engine requests={engine.Requests.Count}, transcripts={viewModel.RecentTranscripts.Count}, " +
+            $"state={viewModel.State}, first={File.Exists(firstAudioPath)}, second={File.Exists(secondAudioPath)}");
+        var sample = samples.Single();
+        Assert.Equal(120, sample.InferenceMs);
+        Assert.NotEqual(Guid.Empty, sample.DictationId);
+        Assert.False(sample.IsCold);
+    }
+
+    private static byte[] BuildThreeSecondPcmWav()
+    {
+        var sampleCount = 16000 * 3;
+        var dataSize = sampleCount * 2;
+        var bytes = new byte[44 + dataSize];
+        Buffer.BlockCopy("RIFF"u8.ToArray(), 0, bytes, 0, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(36 + dataSize), 0, bytes, 4, 4);
+        Buffer.BlockCopy("WAVE"u8.ToArray(), 0, bytes, 8, 4);
+        Buffer.BlockCopy("fmt "u8.ToArray(), 0, bytes, 12, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(16), 0, bytes, 16, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)1), 0, bytes, 20, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)1), 0, bytes, 22, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes(16000), 0, bytes, 24, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(32000), 0, bytes, 28, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)2), 0, bytes, 32, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)16), 0, bytes, 34, 2);
+        Buffer.BlockCopy("data"u8.ToArray(), 0, bytes, 36, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(dataSize), 0, bytes, 40, 4);
+        var tone = new byte[2];
+        for (var i = 0; i < sampleCount; i++)
+        {
+            // A gentle 440 Hz tone keeps the fixture audible (non-silent) without clipping.
+            var sample = (short)(Math.Sin(2 * Math.PI * 440 * i / 16000.0) * short.MaxValue * 0.35);
+            BitConverter.GetBytes(sample).CopyTo(tone, 0);
+            Buffer.BlockCopy(tone, 0, bytes, 44 + (i * 2), 2);
+        }
+
+        return bytes;
+    }
+
+    [Fact]
     public async Task EmptyEngineResultDoesNotPaste()
     {
         var viewModel = new MiniRecorderViewModel();
