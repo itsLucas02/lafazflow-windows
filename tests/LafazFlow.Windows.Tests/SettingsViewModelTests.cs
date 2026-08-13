@@ -33,6 +33,48 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void EngineStatusPropertiesReflectStatusSourceSnapshot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var settings = AppSettings.Default with
+        {
+            WhisperCliPath = cliPath,
+            ModelPath = modelPath,
+            QualityModelPath = modelPath,
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda
+        };
+        store.Save(settings);
+        var fingerprint = EngineSettingsFingerprint.Compute(settings);
+        var monitor = new PerformanceHealthMonitor();
+        for (var i = 0; i < 10; i++)
+        {
+            monitor.Record(new HealthSample(
+                Guid.NewGuid(),
+                fingerprint,
+                300 + (i * 10),
+                10000,
+                false,
+                false,
+                false,
+                false,
+                DateTimeOffset.UtcNow));
+        }
+
+        var source = new VoiceEngineStatusSource(monitor);
+        var viewModel = SettingsViewModel.Load(store, voiceEngineStatus: source);
+
+        Assert.Equal("Using compatibility engine", viewModel.EngineStatusText);
+        Assert.Equal("NVIDIA CUDA · " + Path.GetFileName(modelPath), viewModel.EngineStatusDetail);
+        Assert.Contains("350 ms median", viewModel.EngineWarmLatencyText);
+        Assert.Contains(fingerprint[..12], viewModel.EngineIdText);
+        Assert.Equal("No recovery yet", viewModel.EngineLastRecoveryText);
+    }
+
+    [Fact]
     public void LoadCopiesPersistedSettingsIntoEditableProperties()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

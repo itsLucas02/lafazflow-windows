@@ -231,6 +231,35 @@
 **Rollback readiness:** monitoring is additive; the degradation restart is a single recorder hook that can be disabled without touching engine behavior
 **Next milestone entry conditions:** satisfied — M9 (plain-language status and Diagnostics) can proceed.
 
+## M9 — Plain-language status and Diagnostics
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `VoiceEngineStatusSource`: converts worker state, health samples, and recovery events into plain-language snapshots — `Loading voice engine`, `Ready`, `Recovering voice engine`, `Using recovery engine`, `Voice engine needs attention`, and `Using compatibility engine` (CLI-only installs)
+- Overview: new VOICE ENGINE card showing status, backend + model filename (no raw internal paths), and uptime
+- Diagnostics: new Voice Engine card with uptime, cold/warm median and P95 from the latest samples, last recovery reason/outcome with timestamp, and a fingerprint-safe engine identity prefix
+- `PerformanceHealthMonitor` now retains a bounded diagnostics history (latest 30 per fingerprint, including cold/retried/short samples) so reporting works without polluting the health baseline
+- Supervisor: `RestartSessionAsync` accepts a recovery reason and raises `RecoveryRecorded(reason, succeeded)`; the recovering engine passes the typed failure kind (for example `worker_timeout`, `pipe_broken`) so Diagnostics explains why recovery happened
+- Recorder degradation restart reports `Sustained slowdown` as its recovery reason
+- Diagnostics latency grid now shows raw/formatted/clipboard character counts and final-character categories for punctuation investigations; advanced CLI paths and technical logs remain untouched
+- Startup notification is truthful: the hotkey is registered first, and with a worker present the "ready" balloon is shown only after the worker reports Ready (or an attention message if startup fails)
+- Settings ViewModel subscribes to status changes while the window is open and detaches on close
+
+**Verification**
+- VoiceEngineStatusSource tests: compatibility mode without worker; Ready + uptime progression; Unavailable → needs attention; recovery reason/outcome recorded (success and failure); retried delivery → "Using recovery engine"; disconnected worker → Recovering; cold/warm median/P95 summaries
+- Health monitor test: diagnostics history retains cold/retried/short samples while the health window stays clean
+- Recovering-engine test: restart delegate receives the typed failure reason
+- Startup test: hotkey registration precedes any notification and worker readiness gates the balloon
+- ViewModel/XAML tests: engine status properties reflect the source snapshot; Overview and Diagnostics render the new cards; latency grid exposes char/final-char columns
+- Rapid back-to-back test hardened to model the real recorder state gate (second dictation starts while the first is still transcribing); full suite 643 green twice; Release build 0 warnings/0 errors
+
+**Reference traceability**
+- Readiness/recovery surfaced in plain language — Reference adapted for Windows (Handy/FluidVoice readiness reporting)
+- Truthful startup notification and fingerprint-safe identity — Evidence-backed improvement (no pinned reference gates its startup balloon on real engine readiness)
+**Rollback readiness:** status is additive; hiding the new cards or reverting the notification gating leaves engine behavior unchanged
+**Next milestone entry conditions:** satisfied — M10 (full verification and owner-local rollout) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

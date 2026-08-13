@@ -44,7 +44,7 @@ public sealed class MainWindowStartupTests
     }
 
     [Fact]
-    public void ShellInitializationAcknowledgesSuccessfulStartup()
+    public void ShellInitializationAcknowledgesStartupOnlyAfterHotkeyRegistration()
     {
         var repoRoot = FindRepoRoot();
         var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
@@ -52,8 +52,13 @@ public sealed class MainWindowStartupTests
         var initEnd = code.IndexOf("private void OnLoaded", StringComparison.Ordinal);
         var initBody = code[initStart..initEnd];
 
-        Assert.Contains("_trayIcon.ShowStartupNotification();", initBody);
         Assert.Contains("_hotkeyService.Start();", initBody);
+        Assert.Contains("_trayIcon.ShowStartupNotification();", initBody);
+        Assert.Contains("GetReadySessionAsync", initBody);
+        Assert.True(
+            initBody.IndexOf("_hotkeyService.Start();", StringComparison.Ordinal)
+                < initBody.IndexOf("ShowStartupNotification", StringComparison.Ordinal),
+            "The hotkey must be registered before any startup notification is shown.");
     }
 
     [Fact]

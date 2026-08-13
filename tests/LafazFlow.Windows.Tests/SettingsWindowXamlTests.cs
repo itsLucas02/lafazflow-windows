@@ -70,9 +70,30 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Text=\"{Binding LatencyDiagnosticsMessage}\"", xaml);
         Assert.Contains("Text=\"{Binding LatestLatencySummary}\"", xaml);
         Assert.Contains("Binding=\"{Binding HotkeyToVisibleMs}\"", xaml);
+        Assert.Contains("Header=\"RawCh\"", xaml);
+        Assert.Contains("Header=\"FmtEnd\"", xaml);
+        Assert.Contains("Binding=\"{Binding RawFinalChar}\"", xaml);
         Assert.Contains("Binding=\"{Binding UiHideMs}\"", xaml);
         Assert.Contains("Click=\"RefreshLatency_OnClick\"", xaml);
         Assert.Contains("Click=\"ClearLatency_OnClick\"", xaml);
+    }
+
+    [Fact]
+    public void SettingsWindowContainsVoiceEngineStatusCards()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"VOICE ENGINE\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineStatusText}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineStatusDetail}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineUptimeText}\"", xaml);
+        Assert.Contains("Text=\"Voice Engine\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineColdLatencyText}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineWarmLatencyText}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineLastRecoveryText}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineIdText}\"", xaml);
     }
 
     [Fact]

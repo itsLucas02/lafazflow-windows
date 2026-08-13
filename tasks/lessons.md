@@ -359,3 +359,11 @@
 ## Make health-sample fixtures realistic end to end
 - Pattern: Recorder tests for the performance-health monitor silently produced no sample: a zero-filled WAV is "effectively silent" so the job aborted before transcription, the settings fingerprint includes random temp CLI/model paths so a separately created store never matches, and the recorder deletes each finalized WAV unless diagnostics retention is enabled.
 - Rule: When a recorder test must reach post-transcription behavior, write a real non-silent tone WAV, reuse the exact same `SettingsStore` instance for the controller and the fingerprint assertion, and provide one audio file per dictation because finished jobs delete their WAV. Assert with a diagnostic message when the expected health sample is absent.
+
+## Model recorder tests on the real state gate, not direct calls
+- Pattern: A rapid back-to-back recorder test called `StartRecording()` while the previous stop-handoff task was still pending. Because the real app ignores a toggle while the state is `Transcribing`, the handoff never races in production, but the direct test call did — producing flipped or missing paste order and a fake-capture service that reported the wrong session path.
+- Rule: To exercise queued dictations, wait until the first stop has handed the job to the queue (transcription-started signal while the recorder is idle again), then start and stop the second recording while the first is still transcribing. Reuse one `TaskCompletionSource` per test and guard it with `TrySetResult` because the transcription lambda runs once per job.
+
+## Keep task-completion sources single-shot in shared stubs
+- Pattern: A transcription stub called `SetResult()` on the same completion source for every queued job; the second call threw "task to a final state" inside the recorder, which swallowed it as a silent job failure during tests.
+- Rule: In stubs that run per job, use `TrySetResult()` (or gate on a specific input) so repeated invocations are harmless; otherwise failures surface far from their cause as missing pastes.

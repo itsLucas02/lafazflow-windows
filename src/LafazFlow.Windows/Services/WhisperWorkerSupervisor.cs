@@ -52,6 +52,8 @@ public sealed class WhisperWorkerSupervisor : IDisposable
 
     public event Action<WhisperWorkerState>? StateChanged;
 
+    public event Action<string, bool>? RecoveryRecorded;
+
     public WhisperWorkerState State { get; private set; } = WhisperWorkerState.Idle;
 
     public WhisperWorkerSession? Session => _session;
@@ -88,7 +90,8 @@ public sealed class WhisperWorkerSupervisor : IDisposable
 
     public async Task<WhisperWorkerSession> RestartSessionAsync(
         AppSettings settings,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string recoveryReason = "Worker recovery")
     {
         await _startGate.WaitAsync(cancellationToken);
         try
@@ -108,7 +111,13 @@ public sealed class WhisperWorkerSupervisor : IDisposable
                 cancellationToken);
             _session = replacement;
             SetState(WhisperWorkerState.Ready);
+            RecoveryRecorded?.Invoke(recoveryReason, true);
             return replacement;
+        }
+        catch
+        {
+            RecoveryRecorded?.Invoke(recoveryReason, false);
+            throw;
         }
         finally
         {

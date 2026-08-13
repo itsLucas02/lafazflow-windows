@@ -6,12 +6,12 @@ public sealed class RecoveringTranscriptionEngine : ITranscriptionEngine
 {
     private readonly ITranscriptionEngine _primary;
     private readonly ITranscriptionEngine _fallback;
-    private readonly Func<AppSettings, CancellationToken, Task> _restartAsync;
+    private readonly Func<AppSettings, string, CancellationToken, Task> _restartAsync;
 
     public RecoveringTranscriptionEngine(
         ITranscriptionEngine primary,
         ITranscriptionEngine fallback,
-        Func<AppSettings, CancellationToken, Task> restartAsync)
+        Func<AppSettings, string, CancellationToken, Task> restartAsync)
     {
         _primary = primary;
         _fallback = fallback;
@@ -32,7 +32,7 @@ public sealed class RecoveringTranscriptionEngine : ITranscriptionEngine
             return first;
         }
 
-        await _restartAsync(settings, cancellationToken);
+        await _restartAsync(settings, first.FailureKind ?? "worker_unavailable", cancellationToken);
         var retried = await _primary.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
         if (retried.Succeeded)
         {

@@ -592,6 +592,25 @@
                         </ui:Card>
                     </Grid>
 
+                    <ui:Card Background="{StaticResource PanelBrush}"
+                             Padding="16"
+                             Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="VOICE ENGINE" Style="{StaticResource OverviewLabelStyle}" />
+                            <TextBlock Text="{Binding EngineStatusText}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       Margin="0,0,0,7" />
+                            <TextBlock Text="{Binding EngineStatusDetail}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       LineHeight="17" />
+                            <TextBlock Text="{Binding EngineUptimeText}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:Card>
+
                     <TextBlock Text="Check your setup"
                                FontSize="15"
                                FontWeight="SemiBold"
@@ -954,6 +973,35 @@
 
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
+                            <TextBlock Text="Voice Engine" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="{Binding EngineStatusText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding EngineStatusDetail}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8" />
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Uptime" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding EngineUptimeText}" />
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Cold first-run latency" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding EngineColdLatencyText}" />
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Warm latency" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding EngineWarmLatencyText}" />
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Last recovery" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding EngineLastRecoveryText}" TextWrapping="Wrap" />
+                            </Grid>
+                            <TextBlock Text="{Binding EngineIdText}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
                             <TextBlock Text="Runtime Status" Style="{StaticResource FieldLabelStyle}" />
                             <TextBlock Text="{Binding RuntimeProfileStatus}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,4" />
                             <TextBlock Text="{Binding RuntimeDiagnosticsMessage}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8" />
@@ -999,6 +1047,11 @@
                                     <DataGridTextColumn Header="Hotkey" Binding="{Binding HotkeyToVisibleMs}" Width="64" />
                                     <DataGridTextColumn Header="Queue" Binding="{Binding QueueWaitMs}" Width="64" />
                                     <DataGridTextColumn Header="Whisper" Binding="{Binding WhisperMs}" Width="70" />
+                                    <DataGridTextColumn Header="RawCh" Binding="{Binding RawChars}" Width="58" />
+                                    <DataGridTextColumn Header="FmtCh" Binding="{Binding FormattedChars}" Width="58" />
+                                    <DataGridTextColumn Header="ClipCh" Binding="{Binding ClipboardChars}" Width="58" />
+                                    <DataGridTextColumn Header="RawEnd" Binding="{Binding RawFinalChar}" Width="58" />
+                                    <DataGridTextColumn Header="FmtEnd" Binding="{Binding FormattedFinalChar}" Width="58" />
                                     <DataGridTextColumn Header="Paste" Binding="{Binding PasteMs}" Width="64" />
                                     <DataGridTextColumn Header="Hide" Binding="{Binding UiHideMs}" Width="58" />
                                     <DataGridTextColumn Header="Total" Binding="{Binding TotalStopToDoneMs}" Width="70" />

@@ -253,7 +253,14 @@ public sealed class RecorderControllerTests
         var viewModel = new MiniRecorderViewModel();
         var window = new FakeMiniRecorderWindow();
         var audio = new FakeAudioCaptureService("first.wav", "second.wav");
-        var transcription = new FakeTranscriptionService(audioPath => Task.FromResult(audioPath));
+        var transcriptionStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseTranscription = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var transcription = new FakeTranscriptionService(async audioPath =>
+        {
+            transcriptionStarted.TrySetResult();
+            await releaseTranscription.Task;
+            return audioPath;
+        });
         var paste = new FakeClipboardPasteService();
         var targets = new Queue<IntPtr>([(IntPtr)111, (IntPtr)222]);
         var controller = new RecorderController(
@@ -268,8 +275,14 @@ public sealed class RecorderControllerTests
 
         controller.StartRecording();
         await controller.ToggleAsync();
+        await transcriptionStarted.Task;
+
+        // The first stop handed the job to the queue (and the recorder is idle again),
+        // but that job is still transcribing — exactly when a real user starts the
+        // next dictation. The second stop must enqueue behind the first.
         controller.StartRecording();
         await controller.ToggleAsync();
+        releaseTranscription.SetResult();
         await controller.WaitForPendingTranscriptionsAsync();
 
         Assert.Equal([(IntPtr)111, (IntPtr)222], paste.TargetWindows);

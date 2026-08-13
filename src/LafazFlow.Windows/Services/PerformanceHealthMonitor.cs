@@ -53,6 +53,13 @@ public sealed class PerformanceHealthMonitor
             : [];
     }
 
+    public IReadOnlyCollection<HealthSample> DiagnosticSamples(string fingerprintHex)
+    {
+        return _windows.TryGetValue(fingerprintHex, out var window)
+            ? window.Diagnostics.ToArray()
+            : [];
+    }
+
     public bool IsEligible(HealthSample sample)
     {
         return !sample.IsCold
@@ -79,14 +86,16 @@ public sealed class PerformanceHealthMonitor
 
     public bool Record(HealthSample sample)
     {
-        if (!IsEligible(sample))
+        var window = GetOrCreateWindow(sample.FingerprintHex);
+        var effectiveSample = window.ApplyRecoveryMark(sample);
+        window.AddDiagnostic(effectiveSample);
+        if (!IsEligible(effectiveSample))
         {
             return false;
         }
 
-        var window = GetOrCreateWindow(sample.FingerprintHex);
-        window.Add(sample);
-        if (!window.HasBaseline || !IsSlow(sample.FingerprintHex, sample))
+        window.Add(effectiveSample);
+        if (!window.HasBaseline || !IsSlow(sample.FingerprintHex, effectiveSample))
         {
             return false;
         }
@@ -99,7 +108,7 @@ public sealed class PerformanceHealthMonitor
         {
             window.LastRestartUtc = _clock();
             window.MarkNextSampleAsCold = true;
-            SustainedDegradation?.Invoke(sample.FingerprintHex);
+            SustainedDegradation?.Invoke(effectiveSample.FingerprintHex);
             return true;
         }
 
@@ -121,6 +130,7 @@ public sealed class PerformanceHealthMonitor
     {
         private readonly PerformanceHealthMonitorOptions _options;
         private readonly List<HealthSample> _samples = [];
+        private readonly List<HealthSample> _diagnostics = [];
 
         public FingerprintWindow(PerformanceHealthMonitorOptions options)
         {
@@ -141,16 +151,32 @@ public sealed class PerformanceHealthMonitor
             .Where(sample => !sample.IsCold && !sample.IsRetried && !sample.IsCancelled && !sample.IsFailed)
             .ToList();
 
+        public IReadOnlyList<HealthSample> Diagnostics => _diagnostics.ToList();
+
         public void Add(HealthSample sample)
+        {
+            _samples.Add(sample);
+            if (_samples.Count > _options.WindowSize)
+            {
+                _samples.RemoveRange(0, _samples.Count - _options.WindowSize);
+            }
+        }
+
+        public HealthSample ApplyRecoveryMark(HealthSample sample)
         {
             var effectiveSample = MarkNextSampleAsCold
                 ? sample with { IsCold = true }
                 : sample;
             MarkNextSampleAsCold = false;
-            _samples.Add(effectiveSample);
-            if (_samples.Count > _options.WindowSize)
+            return effectiveSample;
+        }
+
+        public void AddDiagnostic(HealthSample sample)
+        {
+            _diagnostics.Add(sample);
+            if (_diagnostics.Count > _options.WindowSize)
             {
-                _samples.RemoveRange(0, _samples.Count - _options.WindowSize);
+                _diagnostics.RemoveRange(0, _diagnostics.Count - _options.WindowSize);
             }
         }
 

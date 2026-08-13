@@ -23,6 +23,7 @@ public partial class SettingsWindow : WpfFluentWindow
         _viewModel = viewModel;
         _soundCues = soundCues;
         DataContext = viewModel;
+        Closed += (_, _) => _viewModel.DetachVoiceEngineStatus();
     }
 
     private void BrowseWhisperCli_OnClick(object sender, RoutedEventArgs e)

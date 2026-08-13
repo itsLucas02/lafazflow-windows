@@ -14,6 +14,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly HotkeyDiagnosticLogStore _hotkeyDiagnostics;
     private readonly RuntimeDiagnosticsService _runtimeDiagnostics;
     private readonly LocalModelLibraryService _modelLibrary;
+    private readonly VoiceEngineStatusSource? _voiceEngineStatus;
     private readonly string? _logsFolderOverride;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
@@ -47,6 +48,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _latestLatencySummary = "";
     private string _hotkeyDiagnosticsMessage = "";
     private string _latestHotkeySummary = "";
+    private string _engineStatusText = "Loading voice engine";
+    private string _engineStatusDetail = "";
+    private string _engineUptimeText = "Not ready yet";
+    private string _engineColdLatencyText = "n/a";
+    private string _engineWarmLatencyText = "n/a";
+    private string _engineLastRecoveryText = "No recovery yet";
+    private string _engineIdText = "";
     private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
@@ -56,6 +64,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         HotkeyDiagnosticLogStore hotkeyDiagnostics,
         RuntimeDiagnosticsService runtimeDiagnostics,
         LocalModelLibraryService modelLibrary,
+        VoiceEngineStatusSource? voiceEngineStatus,
         string? logsFolderOverride)
     {
         _settingsStore = settingsStore;
@@ -63,8 +72,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _hotkeyDiagnostics = hotkeyDiagnostics;
         _runtimeDiagnostics = runtimeDiagnostics;
         _modelLibrary = modelLibrary;
+        _voiceEngineStatus = voiceEngineStatus;
         _logsFolderOverride = logsFolderOverride;
         _sourceSettings = settings;
+        if (_voiceEngineStatus is not null)
+        {
+            _voiceEngineStatus.Changed += RefreshVoiceEngineStatus;
+        }
+
         WhisperCliPath = settings.WhisperCliPath;
         CudaWhisperCliPath = settings.CudaWhisperCliPath;
         ModelPath = settings.ModelPath;
@@ -93,6 +108,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         RefreshLatencyDiagnostics();
         RefreshHotkeyDiagnostics();
         RefreshRuntimeDiagnostics();
+        RefreshVoiceEngineStatus();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -328,6 +344,48 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         private set => SetProperty(ref _latestHotkeySummary, value);
     }
 
+    public string EngineStatusText
+    {
+        get => _engineStatusText;
+        private set => SetProperty(ref _engineStatusText, value);
+    }
+
+    public string EngineStatusDetail
+    {
+        get => _engineStatusDetail;
+        private set => SetProperty(ref _engineStatusDetail, value);
+    }
+
+    public string EngineUptimeText
+    {
+        get => _engineUptimeText;
+        private set => SetProperty(ref _engineUptimeText, value);
+    }
+
+    public string EngineColdLatencyText
+    {
+        get => _engineColdLatencyText;
+        private set => SetProperty(ref _engineColdLatencyText, value);
+    }
+
+    public string EngineWarmLatencyText
+    {
+        get => _engineWarmLatencyText;
+        private set => SetProperty(ref _engineWarmLatencyText, value);
+    }
+
+    public string EngineLastRecoveryText
+    {
+        get => _engineLastRecoveryText;
+        private set => SetProperty(ref _engineLastRecoveryText, value);
+    }
+
+    public string EngineIdText
+    {
+        get => _engineIdText;
+        private set => SetProperty(ref _engineIdText, value);
+    }
+
     public string SettingsFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "LafazFlow");
@@ -379,6 +437,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         HotkeyDiagnosticLogStore? hotkeyDiagnostics = null,
         RuntimeDiagnosticsService? runtimeDiagnostics = null,
         LocalModelLibraryService? modelLibrary = null,
+        VoiceEngineStatusSource? voiceEngineStatus = null,
         string? logsFolderOverride = null)
     {
         return new SettingsViewModel(
@@ -388,6 +447,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             hotkeyDiagnostics ?? new HotkeyDiagnosticLogStore(),
             runtimeDiagnostics ?? new RuntimeDiagnosticsService(),
             modelLibrary ?? new LocalModelLibraryService(),
+            voiceEngineStatus,
             logsFolderOverride);
     }
 
@@ -436,6 +496,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         ValidationMessage = "";
         RefreshModelCards();
         RefreshRuntimeDiagnostics();
+    }
+
+    public void DetachVoiceEngineStatus()
+    {
+        if (_voiceEngineStatus is not null)
+        {
+            _voiceEngineStatus.Changed -= RefreshVoiceEngineStatus;
+        }
     }
 
     public void DeleteModel(ModelCardViewModel card)
@@ -645,6 +713,52 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
         RefreshModelCards();
+        RefreshVoiceEngineStatus();
+    }
+
+    private void RefreshVoiceEngineStatus()
+    {
+        if (_voiceEngineStatus is null)
+        {
+            EngineStatusText = "Using compatibility engine";
+            EngineStatusDetail = $"{BackendName(_sourceSettings.WhisperBackend)} · {ActiveModelFileName(_sourceSettings)}";
+            EngineUptimeText = "Not ready yet";
+            EngineColdLatencyText = "n/a";
+            EngineWarmLatencyText = "n/a";
+            EngineLastRecoveryText = "No recovery yet";
+            EngineIdText = "";
+            return;
+        }
+
+        var fingerprintHex = EngineSettingsFingerprint.Compute(_sourceSettings);
+        var snapshot = _voiceEngineStatus.Snapshot(fingerprintHex);
+        EngineStatusText = snapshot.StatusText;
+        EngineStatusDetail = $"{BackendName(_sourceSettings.WhisperBackend)} · {ActiveModelFileName(_sourceSettings)}";
+        EngineUptimeText = snapshot.UptimeText;
+        EngineColdLatencyText = snapshot.ColdLatencyText;
+        EngineWarmLatencyText = snapshot.WarmLatencyText;
+        EngineLastRecoveryText = snapshot.LastRecoveryText;
+        EngineIdText = snapshot.EngineIdText;
+    }
+
+    private static string BackendName(WhisperBackend backend)
+    {
+        return backend switch
+        {
+            WhisperBackend.Cuda => "NVIDIA CUDA",
+            WhisperBackend.Cpu => "CPU (local)",
+            _ => backend.ToString()
+        };
+    }
+
+    private string ActiveModelFileName(AppSettings settings)
+    {
+        var path = settings.TranscriptionProfile == TranscriptionProfile.Quality
+            ? settings.QualityModelPath
+            : settings.ModelPath;
+        return string.IsNullOrWhiteSpace(path)
+            ? "No local model selected"
+            : Path.GetFileName(path);
     }
 
     private void RefreshModelCards()

@@ -131,6 +131,29 @@ public sealed class PerformanceHealthMonitorTests
         Assert.Equal(1, triggered);
     }
 
+    [Fact]
+    public void DiagnosticSamplesRetainColdAndRetriedRunsForReporting()
+    {
+        var monitor = new PerformanceHealthMonitor();
+        var fingerprint = "F7";
+        for (var i = 0; i < 10; i++)
+        {
+            monitor.Record(Sample(fingerprint, 300, 10000));
+        }
+
+        monitor.Record(Sample(fingerprint, 300, 10000, cold: true));
+        monitor.Record(Sample(fingerprint, 300, 10000, retried: true));
+        monitor.Record(Sample(fingerprint, 300, 500));
+
+        var diagnostics = monitor.DiagnosticSamples(fingerprint);
+
+        Assert.Equal(13, diagnostics.Count);
+        Assert.Equal(1, diagnostics.Count(sample => sample.IsCold));
+        Assert.Equal(1, diagnostics.Count(sample => sample.IsRetried));
+        Assert.Equal(1, diagnostics.Count(sample => sample.AudioDurationMs == 500));
+        Assert.Equal(10, monitor.RecentSamples(fingerprint).Count);
+    }
+
     private static HealthSample Sample(
         string fingerprint,
         long inferenceMs,

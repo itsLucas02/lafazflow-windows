@@ -98,6 +98,27 @@ public sealed class RecoveringTranscriptionEngineTests
         Assert.Equal(0, fallbackCalls);
     }
 
+    [Fact]
+    public async Task RestartReceivesFailureReasonForRecoveryDiagnostics()
+    {
+        string? restartReason = null;
+        var fallbackCalls = 0;
+        var engine = CreateEngine(
+            primary: new StubEngine(Failure("pipe_broken")),
+            fallback: new StubEngine(Success("cli"), calls: () => fallbackCalls++),
+            restart: reason =>
+            {
+                restartReason = reason;
+                return Task.CompletedTask;
+            });
+
+        var result = await engine.TranscribeAsync("a.wav", AppSettings.Default, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("pipe_broken", restartReason);
+        Assert.Equal(1, fallbackCalls);
+    }
+
     private static RecoveringTranscriptionEngine CreateEngine(
         ITranscriptionEngine primary,
         ITranscriptionEngine fallback,
@@ -106,11 +127,22 @@ public sealed class RecoveringTranscriptionEngineTests
         return new RecoveringTranscriptionEngine(
             primary,
             fallback,
-            (_, _) =>
+            (_, _, _) =>
             {
                 restart();
                 return Task.CompletedTask;
             });
+    }
+
+    private static RecoveringTranscriptionEngine CreateEngine(
+        ITranscriptionEngine primary,
+        ITranscriptionEngine fallback,
+        Func<string, Task> restart)
+    {
+        return new RecoveringTranscriptionEngine(
+            primary,
+            fallback,
+            (_, reason, _) => restart(reason));
     }
 
     private static TranscriptionEngineResult Success(string text)

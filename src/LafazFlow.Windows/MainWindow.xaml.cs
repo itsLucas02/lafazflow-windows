@@ -21,12 +21,14 @@ public partial class MainWindow : Window
     private readonly WhisperWorkerSupervisor? _workerSupervisor;
     private readonly ITranscriptionEngine? _workerEngine;
     private readonly PerformanceHealthMonitor _healthMonitor = new();
+    private readonly VoiceEngineStatusSource _voiceEngineStatus;
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
     public MainWindow()
     {
         InitializeComponent();
+        _voiceEngineStatus = new VoiceEngineStatusSource(_healthMonitor);
         var whisperProcesses = WhisperProcessCoordinator.Shared;
         _hotkeyService = new DoubleShiftHotkeyService(_hotkeyDiagnostics);
         _miniRecorderWindow = new MiniRecorderWindow(_miniRecorderViewModel);
@@ -38,11 +40,15 @@ public partial class MainWindow : Window
             {
                 WorkerExecutablePath = workerExecutable
             });
+            _voiceEngineStatus.AttachSupervisor(_workerSupervisor);
             _workerEngine = new RecoveringTranscriptionEngine(
                 new WorkerTranscriptionEngine(_workerSupervisor),
                 new CliTranscriptionEngine(transcriptionService, transcriptionService),
-                (settings, cancellationToken) =>
-                    _workerSupervisor.RestartSessionAsync(settings, cancellationToken));
+                (settings, reason, cancellationToken) =>
+                    _workerSupervisor.RestartSessionAsync(
+                        settings,
+                        cancellationToken,
+                        string.IsNullOrWhiteSpace(reason) ? "Worker failure recovery" : reason));
         }
 
         var previewService = _workerSupervisor is null
@@ -71,7 +77,10 @@ public partial class MainWindow : Window
             restartWorkerAsync: _workerSupervisor is null
                 ? null
                 : (settings, cancellationToken) =>
-                    _workerSupervisor.RestartSessionAsync(settings, cancellationToken));
+                    _workerSupervisor.RestartSessionAsync(
+                        settings,
+                        cancellationToken,
+                        "Sustained slowdown"));
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,
@@ -103,18 +112,27 @@ public partial class MainWindow : Window
         _hotkeyService.Start();
         if (_workerSupervisor is not null)
         {
-            _ = Task.Run(() => _workerSupervisor.GetReadySessionAsync(
-                _settingsStore.Load(),
-                CancellationToken.None), CancellationToken.None)
-                .ContinueWith(task =>
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    if (task.IsFaulted)
-                    {
-                        LogWorkerStartupFailure(task.Exception);
-                    }
-                }, TaskScheduler.Default);
+                    await _workerSupervisor.GetReadySessionAsync(
+                        _settingsStore.Load(),
+                        CancellationToken.None);
+                    await Dispatcher.InvokeAsync(() => _trayIcon.ShowStartupNotification());
+                }
+                catch (Exception error)
+                {
+                    LogWorkerStartupFailure(error);
+                    await Dispatcher.InvokeAsync(() => _trayIcon.ShowStartupNotification(
+                        "LafazFlow is running, but the voice engine needs attention. Open Settings to check."));
+                }
+            }, CancellationToken.None);
         }
-        _trayIcon.ShowStartupNotification();
+        else
+        {
+            _trayIcon.ShowStartupNotification();
+        }
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -234,7 +252,9 @@ public partial class MainWindow : Window
                 return;
             }
 
-            _settingsWindow = new SettingsWindow(SettingsViewModel.Load(_settingsStore));
+            _settingsWindow = new SettingsWindow(SettingsViewModel.Load(
+                _settingsStore,
+                voiceEngineStatus: _voiceEngineStatus));
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
             _settingsWindow.Activate();
