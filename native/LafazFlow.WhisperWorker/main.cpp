@@ -1,27 +1,70 @@
-// LafazFlow persistent Whisper worker - proof-of-concept milestone (M3).
-// Loads one whisper.cpp context at startup and serves sequential transcription
-// requests from stdin. Fresh decode state per request; no transcript context
-// leaks between dictations. M4 replaces stdin/stdout with the versioned
-// named-pipe protocol.
+// LafazFlow persistent Whisper worker - M4 named-pipe protocol.
+//
+// The worker is a named-pipe CLIENT. The LafazFlow supervisor creates the
+// pipe server (with a current-user-only security descriptor), starts this
+// process with --pipe <name>, and drives it with versioned binary frames.
+//
+// Frame: [4-byte little-endian payload length][payload]
+// Payload header (80 bytes):
+//   0  byte   version = 1
+//   1  byte   kind    (1..6 request ops; 0x80|op for responses)
+//   2  byte   status  (responses)
+//   3  byte   reserved
+//   4  byte[16] requestId
+//  20  byte[16] sessionId
+//  36  uint32 deadlineMs (requests)
+//  40  byte[32] settings fingerprint
+//  72  uint32 audioFormat (1 = 16 kHz mono s16)
+//  76  uint32 sampleCount
+//  80  ...    data (PCM for Final/Preview; UTF-8 text for Final/Preview
+//              responses; u64 load_ms for Initialize; text for Health)
 
 #include "whisper.h"
 
+#include <windows.h>
+#include <sddl.h>
+
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
-#include <iostream>
+#include <deque>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
 namespace {
 
+constexpr std::uint8_t kProtocolVersion = 1;
+constexpr std::uint32_t kMaxFrameBytes = 16u * 1024u * 1024u;
+constexpr std::uint32_t kHeaderBytes = 80u;
+
+enum Op : std::uint8_t {
+    OpInitialize = 1,
+    OpPreview = 2,
+    OpFinal = 3,
+    OpCancel = 4,
+    OpHealth = 5,
+    OpShutdown = 6
+};
+
+enum Status : std::uint8_t {
+    StatusOk = 0,
+    StatusAborted = 1,
+    StatusInvalidRequest = 2,
+    StatusBusy = 3,
+    StatusInternalError = 4,
+    StatusTimeout = 5,
+    StatusUnavailable = 6
+};
+
+constexpr std::uint32_t kAudioFormatPcm16kMono = 1;
+
 std::atomic<bool> g_abort{false};
 std::atomic<bool> g_shutdown{false};
-std::string g_abort_file;
 
 bool g_use_gpu = true;
 int g_gpu_device = 0;
@@ -42,150 +85,269 @@ int g_vad_min_silence_duration_ms = 100;
 int g_vad_speech_pad_ms = 30;
 float g_vad_samples_overlap = 0.10f;
 
+whisper_context* g_ctx = nullptr;
+std::string g_model_path;
+std::string g_model_name;
+std::string g_fingerprint(32, '\0');
+long long g_uptime_start_ms = 0;
+long long g_completed_requests = 0;
+std::string g_last_failure = "none";
+
+struct Frame {
+    std::uint8_t kind = 0;
+    std::uint8_t status = StatusOk;
+    std::uint8_t request_id[16] = {0};
+    std::uint8_t session_id[16] = {0};
+    std::uint32_t deadline_ms = 0;
+    std::string fingerprint;
+    std::uint32_t audio_format = 0;
+    std::uint32_t sample_count = 0;
+    std::vector<std::uint8_t> data;
+};
+
+std::mutex g_queue_mutex;
+std::condition_variable g_queue_cv;
+std::deque<Frame> g_queue;
+constexpr std::size_t kMaxQueue = 8;
+
 bool AbortCallback(void*) {
     return g_abort.load();
 }
 
-long long ElapsedMs(std::chrono::steady_clock::time_point start) {
+long long ElapsedMs(long long start) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
-               std::chrono::steady_clock::now() - start)
-        .count();
+               std::chrono::steady_clock::now().time_since_epoch())
+               .count() -
+           start;
 }
 
 void PrintUsage() {
     std::fprintf(
         stderr,
-        "usage: lafazflow-whisper-worker --model <path> [--vad-model <path>] "
+        "usage: lafazflow-whisper-worker --pipe <name> --model <path> [--vad-model <path>] "
         "[--threads N] [--prompt <text>] [--max-context N] [--best-of N] "
         "[--temperature X] [--no-fallback] [--no-suppress-nst] "
         "[--no-carry-prompt] [--no-vad] [--vad-params vt,vspd,vsd,vp,vo] "
         "[--gpu-device N] [--cpu] [--version]\n");
 }
 
-struct WavData {
-    std::vector<float> pcm;
-    bool ok = false;
-};
+// Returns 1 on success, 0 on a hard error, 2 on an idle timeout.
+int ReadExact(HANDLE pipe, void* buffer, std::size_t size, DWORD idleTimeoutMs = 250) {
+    auto* bytes = static_cast<std::uint8_t*>(buffer);
+    std::size_t offset = 0;
+    while (offset < size) {
+        OVERLAPPED overlapped = {};
+        overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        DWORD read = 0;
+        BOOL ok = ReadFile(pipe, bytes + offset, static_cast<DWORD>(size - offset), &read, &overlapped);
+        const DWORD error = GetLastError();
+        if (!ok && error == ERROR_IO_PENDING) {
+            const DWORD wait = WaitForSingleObject(overlapped.hEvent, idleTimeoutMs);
+            if (wait == WAIT_TIMEOUT) {
+                CancelIoEx(pipe, &overlapped);
+                WaitForSingleObject(overlapped.hEvent, INFINITE);
+                CloseHandle(overlapped.hEvent);
+                return 2;
+            }
+            ok = GetOverlappedResult(pipe, &overlapped, &read, FALSE);
+        }
+        CloseHandle(overlapped.hEvent);
+        if (!ok) {
+            return 0;
+        }
+        if (read == 0) {
+            return 0;
+        }
+        offset += read;
+    }
+    return 1;
+}
 
-WavData ReadWav16kMono(const std::string& path) {
-    WavData result;
-    std::FILE* file = std::fopen(path.c_str(), "rb");
-    if (!file) {
-        return result;
+bool WriteAll(HANDLE pipe, const void* buffer, std::size_t size) {
+    const auto* bytes = static_cast<const std::uint8_t*>(buffer);
+    std::size_t offset = 0;
+    while (offset < size) {
+        OVERLAPPED overlapped = {};
+        overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        DWORD written = 0;
+        BOOL ok = WriteFile(pipe, bytes + offset, static_cast<DWORD>(size - offset), &written, &overlapped);
+        const DWORD error = GetLastError();
+        if (!ok && error == ERROR_IO_PENDING) {
+            WaitForSingleObject(overlapped.hEvent, INFINITE);
+            ok = GetOverlappedResult(pipe, &overlapped, &written, FALSE);
+        }
+        CloseHandle(overlapped.hEvent);
+        if (!ok) {
+            std::fprintf(stderr, "worker: write failed error=%lu\n", GetLastError());
+            return false;
+        }
+        offset += written;
+    }
+    return true;
+}
+
+void PutU32(std::vector<std::uint8_t>& out, std::size_t offset, std::uint32_t value) {
+    out[offset] = static_cast<std::uint8_t>(value & 0xFF);
+    out[offset + 1] = static_cast<std::uint8_t>((value >> 8) & 0xFF);
+    out[offset + 2] = static_cast<std::uint8_t>((value >> 16) & 0xFF);
+    out[offset + 3] = static_cast<std::uint8_t>((value >> 24) & 0xFF);
+}
+
+std::uint32_t GetU32(const std::vector<std::uint8_t>& in, std::size_t offset) {
+    return static_cast<std::uint32_t>(in[offset])
+         | (static_cast<std::uint32_t>(in[offset + 1]) << 8)
+         | (static_cast<std::uint32_t>(in[offset + 2]) << 16)
+         | (static_cast<std::uint32_t>(in[offset + 3]) << 24);
+}
+
+bool SendResponse(
+    HANDLE pipe,
+    std::uint8_t op,
+    std::uint8_t status,
+    const std::uint8_t request_id[16],
+    const std::uint8_t session_id[16],
+    const std::string& fingerprint,
+    const std::vector<std::uint8_t>& data) {
+    std::vector<std::uint8_t> payload(kHeaderBytes + data.size());
+    payload[0] = kProtocolVersion;
+    payload[1] = static_cast<std::uint8_t>(0x80 | op);
+    payload[2] = status;
+    payload[3] = 0;
+    std::memcpy(payload.data() + 4, request_id, 16);
+    std::memcpy(payload.data() + 20, session_id, 16);
+    PutU32(payload, 36, 0);
+    std::memcpy(payload.data() + 40, fingerprint.data(), 32);
+    PutU32(payload, 72, 0);
+    PutU32(payload, 76, 0);
+    if (!data.empty()) {
+        std::memcpy(payload.data() + kHeaderBytes, data.data(), data.size());
     }
 
-    std::vector<std::uint8_t> bytes;
-    std::uint8_t buffer[65536];
-    std::size_t read = 0;
-    while ((read = std::fread(buffer, 1, sizeof(buffer), file)) > 0) {
-        bytes.insert(bytes.end(), buffer, buffer + read);
-    }
-    std::fclose(file);
-
-    if (bytes.size() < 44 || std::memcmp(bytes.data(), "RIFF", 4) != 0
-        || std::memcmp(bytes.data() + 8, "WAVE", 4) != 0) {
-        return result;
-    }
-
-    auto read32 = [&](std::size_t offset) -> std::uint32_t {
-        return static_cast<std::uint32_t>(bytes[offset])
-             | (static_cast<std::uint32_t>(bytes[offset + 1]) << 8)
-             | (static_cast<std::uint32_t>(bytes[offset + 2]) << 16)
-             | (static_cast<std::uint32_t>(bytes[offset + 3]) << 24);
+    std::uint32_t length = static_cast<std::uint32_t>(payload.size());
+    std::uint8_t header[4] = {
+        static_cast<std::uint8_t>(length & 0xFF),
+        static_cast<std::uint8_t>((length >> 8) & 0xFF),
+        static_cast<std::uint8_t>((length >> 16) & 0xFF),
+        static_cast<std::uint8_t>((length >> 24) & 0xFF)
     };
-    auto read16 = [&](std::size_t offset) -> std::uint16_t {
-        return static_cast<std::uint16_t>(bytes[offset])
-             | (static_cast<std::uint16_t>(bytes[offset + 1]) << 8);
-    };
+    return WriteAll(pipe, header, 4) && WriteAll(pipe, payload.data(), payload.size());
+}
 
-    std::size_t position = 12;
-    std::uint32_t sample_rate = 0;
-    std::uint16_t channels = 0;
-    std::uint16_t bits = 0;
-    std::uint32_t data_size = 0;
-    bool found_data = false;
+bool ParseFrame(const std::vector<std::uint8_t>& payload, Frame& frame) {
+    if (payload.size() < kHeaderBytes || payload[0] != kProtocolVersion) {
+        return false;
+    }
+    frame.kind = payload[1];
+    frame.status = payload[2];
+    std::memcpy(frame.request_id, payload.data() + 4, 16);
+    std::memcpy(frame.session_id, payload.data() + 20, 16);
+    frame.deadline_ms = GetU32(payload, 36);
+    frame.fingerprint.assign(reinterpret_cast<const char*>(payload.data() + 40), 32);
+    frame.audio_format = GetU32(payload, 72);
+    frame.sample_count = GetU32(payload, 76);
+    frame.data.assign(payload.begin() + kHeaderBytes, payload.end());
+    return true;
+}
 
-    while (position + 8 <= bytes.size()) {
-        char id[5] = {0};
-        std::memcpy(id, bytes.data() + position, 4);
-        std::uint32_t chunk_size = read32(position + 4);
-        if (std::strcmp(id, "fmt ") == 0 && position + 8 + 16 <= bytes.size()) {
-            channels = read16(position + 8 + 2);
-            sample_rate = read32(position + 8 + 4);
-            bits = read16(position + 8 + 14);
-        } else if (std::strcmp(id, "data") == 0) {
-            data_size = chunk_size;
-            found_data = true;
+void ReaderThread(HANDLE pipe) {
+    while (!g_shutdown.load()) {
+        std::uint8_t lengthBytes[4] = {0};
+        const int readResult = ReadExact(pipe, lengthBytes, 4);
+        if (readResult == 2) {
+            continue;
+        }
+        if (readResult == 0) {
+            if (g_shutdown.load()) {
+                break;
+            }
             break;
         }
-        position += 8 + chunk_size + (chunk_size % 2);
-    }
+        const std::uint32_t length =
+            static_cast<std::uint32_t>(lengthBytes[0])
+            | (static_cast<std::uint32_t>(lengthBytes[1]) << 8)
+            | (static_cast<std::uint32_t>(lengthBytes[2]) << 16)
+            | (static_cast<std::uint32_t>(lengthBytes[3]) << 24);
+        if (length < kHeaderBytes || length > kMaxFrameBytes) {
+            g_shutdown.store(true);
+            g_queue_cv.notify_all();
+            break;
+        }
 
-    if (!found_data || sample_rate != 16000 || channels != 1 || bits != 16) {
-        return result;
-    }
+        std::vector<std::uint8_t> payload(length);
+        const int payloadRead = ReadExact(pipe, payload.data(), length);
+        if (payloadRead != 1) {
+            g_shutdown.store(true);
+            g_queue_cv.notify_all();
+            break;
+        }
 
-    const std::size_t data_offset = position + 8;
-    if (data_offset + data_size > bytes.size()) {
-        return result;
-    }
+        Frame frame;
+        if (!ParseFrame(payload, frame)) {
+            std::uint8_t zero[16] = {0};
+            SendResponse(pipe, 0, StatusInvalidRequest, zero, zero, g_fingerprint, {});
+            continue;
+        }
+        std::fprintf(stderr, "worker: frame kind=%u len=%zu\n", (unsigned)frame.kind, payload.size());
 
-    result.pcm.resize(data_size / 2);
-    for (std::size_t i = 0; i < result.pcm.size(); i++) {
+        if (frame.kind == OpCancel) {
+            g_abort.store(true);
+            SendResponse(pipe, OpCancel, StatusOk, frame.request_id, frame.session_id, g_fingerprint, {});
+            continue;
+        }
+
+        {
+            std::unique_lock<std::mutex> lock(g_queue_mutex);
+            if (g_queue.size() >= kMaxQueue) {
+                SendResponse(pipe, frame.kind, StatusBusy, frame.request_id, frame.session_id, g_fingerprint, {});
+                continue;
+            }
+            g_queue.push_back(std::move(frame));
+        }
+        g_queue_cv.notify_one();
+    }
+}
+
+bool LoadModel(const std::string& model_path) {
+    if (g_ctx != nullptr) {
+        return true;
+    }
+    whisper_context_params cparams = whisper_context_default_params();
+    cparams.use_gpu = g_use_gpu;
+    cparams.gpu_device = g_gpu_device;
+    g_ctx = whisper_init_from_file_with_params(model_path.c_str(), cparams);
+    if (!g_ctx) {
+        return false;
+    }
+    std::size_t slash = model_path.find_last_of("/\\");
+    g_model_name = slash == std::string::npos ? model_path : model_path.substr(slash + 1);
+    return true;
+}
+
+std::vector<float> PcmFromBytes(const std::vector<std::uint8_t>& bytes, std::uint32_t expectedSamples) {
+    std::vector<float> pcm;
+    const std::size_t availableSamples = bytes.size() / 2;
+    if (availableSamples != expectedSamples) {
+        return pcm;
+    }
+    pcm.resize(availableSamples);
+    for (std::size_t i = 0; i < availableSamples; i++) {
         const std::int16_t sample = static_cast<std::int16_t>(
-            static_cast<std::int16_t>(bytes[data_offset + i * 2])
-            | (static_cast<std::int16_t>(bytes[data_offset + i * 2 + 1]) << 8));
-        result.pcm[i] = static_cast<float>(sample) / 32768.0f;
+            static_cast<std::int16_t>(bytes[i * 2])
+            | (static_cast<std::int16_t>(bytes[i * 2 + 1]) << 8));
+        pcm[i] = static_cast<float>(sample) / 32768.0f;
     }
-    result.ok = true;
-    return result;
+    return pcm;
 }
 
-std::string Trim(std::string line) {
-    // PowerShell pipes can prepend a UTF-8 BOM to the first stdin line.
-    if (line.size() >= 3
-        && static_cast<unsigned char>(line[0]) == 0xEF
-        && static_cast<unsigned char>(line[1]) == 0xBB
-        && static_cast<unsigned char>(line[2]) == 0xBF) {
-        line.erase(0, 3);
-    }
-    std::size_t start = line.find_first_not_of(" \t\r\n");
-    if (start == std::string::npos) {
-        return "";
-    }
-    std::size_t end = line.find_last_not_of(" \t\r\n");
-    return line.substr(start, end - start + 1);
-}
-
-std::string Flatten(const std::string& text) {
-    std::string flat;
-    flat.reserve(text.size());
-    for (char c : text) {
-        flat.push_back(c == '\n' || c == '\r' ? ' ' : c);
-    }
-    return flat;
-}
-
-void Transcribe(whisper_context* ctx, const std::string& id, const std::string& path) {
-    auto wav = ReadWav16kMono(path);
-    if (!wav.ok) {
-        std::printf("E %s invalid_audio\n", id.c_str());
-        std::fflush(stdout);
-        return;
-    }
-
+whisper_full_params BuildParams() {
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.n_threads = g_threads;
     params.language = g_language.c_str();
     params.no_timestamps = true;
-    // Fresh-context isolation for a persistent worker: never reuse past
-    // transcript tokens across requests (equivalent to a fresh decode state).
     params.no_context = true;
     params.suppress_nst = g_suppress_nst;
     params.temperature = g_temperature;
     if (g_no_fallback) {
-        // The CLI sets temperature_inc to 0 when --no-fallback is used; replicate
-        // that so decoding is a single deterministic pass at the initial temperature.
         params.temperature_inc = 0.0f;
     }
     if (g_best_of >= 0) {
@@ -209,22 +371,44 @@ void Transcribe(whisper_context* ctx, const std::string& id, const std::string& 
     }
     params.abort_callback = AbortCallback;
     params.abort_callback_user_data = nullptr;
-    g_abort = false;
+    return params;
+}
 
-    const auto start = std::chrono::steady_clock::now();
-    const int result = whisper_full(ctx, params, wav.pcm.data(), static_cast<int>(wav.pcm.size()));
-    const long long total_ms = ElapsedMs(start);
+void Transcribe(HANDLE pipe, const Frame& frame) {
+    if (g_ctx == nullptr) {
+        std::vector<std::uint8_t> data{'n', 'o', '_', 'm', 'o', 'd', 'e', 'l'};
+        SendResponse(pipe, frame.kind, StatusUnavailable, frame.request_id, frame.session_id, g_fingerprint, data);
+        return;
+    }
+    if (frame.audio_format != kAudioFormatPcm16kMono) {
+        SendResponse(pipe, frame.kind, StatusInvalidRequest, frame.request_id, frame.session_id, g_fingerprint, {});
+        return;
+    }
+    const auto pcm = PcmFromBytes(frame.data, frame.sample_count);
+    if (pcm.empty()) {
+        SendResponse(pipe, frame.kind, StatusInvalidRequest, frame.request_id, frame.session_id, g_fingerprint, {});
+        return;
+    }
 
+    g_abort.store(false);
+    whisper_full_params params = BuildParams();
+    const int result = whisper_full(g_ctx, params, pcm.data(), static_cast<int>(pcm.size()));
     if (result != 0) {
-        std::printf("F %s %s\n", id.c_str(), g_abort.load() ? "aborted" : "decode_failed");
-        std::fflush(stdout);
+        g_last_failure = g_abort.load() ? "aborted" : "decode_failed";
+        if (g_abort.load()) {
+            SendResponse(pipe, frame.kind, StatusAborted, frame.request_id, frame.session_id, g_fingerprint, {});
+        } else {
+            std::string reason = "decode_failed";
+            SendResponse(pipe, frame.kind, StatusInternalError, frame.request_id, frame.session_id, g_fingerprint,
+                std::vector<std::uint8_t>(reason.begin(), reason.end()));
+        }
         return;
     }
 
     std::string text;
-    const int segments = whisper_full_n_segments(ctx);
+    const int segments = whisper_full_n_segments(g_ctx);
     for (int i = 0; i < segments; i++) {
-        const char* segment = whisper_full_get_segment_text(ctx, i);
+        const char* segment = whisper_full_get_segment_text(g_ctx, i);
         if (segment) {
             if (i > 0) {
                 text += ' ';
@@ -232,27 +416,93 @@ void Transcribe(whisper_context* ctx, const std::string& id, const std::string& 
             text += segment;
         }
     }
+    g_completed_requests++;
+    g_last_failure = "none";
+    whisper_reset_timings(g_ctx);
+    SendResponse(pipe, frame.kind, StatusOk, frame.request_id, frame.session_id, g_fingerprint,
+        std::vector<std::uint8_t>(text.begin(), text.end()));
+}
 
-    const whisper_timings* timings = whisper_get_timings(ctx);
-    std::printf("R %s %s\n", id.c_str(), Flatten(text).c_str());
-    std::printf(
-        "M %s load_ms=0 sample_ms=%.0f encode_ms=%.0f decode_ms=%.0f batchd_ms=%.0f prompt_ms=%.0f total_ms=%lld tokens=%d\n",
-        id.c_str(),
-        timings ? timings->sample_ms : 0.0f,
-        timings ? timings->encode_ms : 0.0f,
-        timings ? timings->decode_ms : 0.0f,
-        timings ? timings->batchd_ms : 0.0f,
-        timings ? timings->prompt_ms : 0.0f,
-        static_cast<long long>(total_ms),
-        segments);
-    std::fflush(stdout);
-    whisper_reset_timings(ctx);
+void HandleInitialize(HANDLE pipe, const Frame& frame) {
+    if (frame.fingerprint.size() != 32) {
+        SendResponse(pipe, OpInitialize, StatusInvalidRequest, frame.request_id, frame.session_id, g_fingerprint, {});
+        return;
+    }
+    const auto load_start = std::chrono::steady_clock::now();
+    if (!LoadModel(g_model_path)) {
+        SendResponse(pipe, OpInitialize, StatusInternalError, frame.request_id, frame.session_id, g_fingerprint, {});
+        return;
+    }
+    const auto load_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::steady_clock::now() - load_start)
+                             .count();
+    std::fprintf(stderr, "worker: initialize load_ms=%lld\n", (long long)load_ms);
+    g_fingerprint = frame.fingerprint;
+    std::uint8_t loadBytes[8] = {
+        static_cast<std::uint8_t>(load_ms & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 8) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 16) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 24) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 32) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 40) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 48) & 0xFF),
+        static_cast<std::uint8_t>((load_ms >> 56) & 0xFF)
+    };
+    const bool responseSent = SendResponse(
+        pipe, OpInitialize, StatusOk, frame.request_id, frame.session_id, g_fingerprint,
+        std::vector<std::uint8_t>(loadBytes, loadBytes + 8));
+    std::fprintf(stderr, "worker: initialize response sent=%d\n", responseSent ? 1 : 0);
+}
+
+void EngineLoop(HANDLE pipe) {
+    while (!g_shutdown.load()) {
+        Frame frame;
+        {
+            std::unique_lock<std::mutex> lock(g_queue_mutex);
+            g_queue_cv.wait(lock, [] { return g_shutdown.load() || !g_queue.empty(); });
+            if (g_shutdown.load() && g_queue.empty()) {
+                break;
+            }
+            frame = std::move(g_queue.front());
+            g_queue.pop_front();
+        }
+
+        switch (frame.kind) {
+            case OpInitialize:
+                HandleInitialize(pipe, frame);
+                break;
+            case OpFinal:
+            case OpPreview:
+                Transcribe(pipe, frame);
+                break;
+            case OpHealth: {
+                std::string stats = "uptime_ms=" + std::to_string(ElapsedMs(g_uptime_start_ms))
+                    + " completed=" + std::to_string(g_completed_requests)
+                    + " last_failure=" + g_last_failure
+                    + " model=" + g_model_name
+                    + " backend=" + (g_use_gpu ? "cuda" : "cpu")
+                    + " fingerprint=" + g_fingerprint;
+                SendResponse(pipe, OpHealth, StatusOk, frame.request_id, frame.session_id, g_fingerprint,
+                    std::vector<std::uint8_t>(stats.begin(), stats.end()));
+                break;
+            }
+            case OpShutdown:
+                SendResponse(pipe, OpShutdown, StatusOk, frame.request_id, frame.session_id, g_fingerprint, {});
+                g_shutdown.store(true);
+                g_queue_cv.notify_all();
+                break;
+            default:
+                SendResponse(pipe, frame.kind, StatusInvalidRequest, frame.request_id, frame.session_id, g_fingerprint, {});
+                break;
+        }
+    }
 }
 
 } // namespace
 
 int main(int argc, char** argv) {
     std::string model_path;
+    std::string pipe_name;
 
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -260,7 +510,9 @@ int main(int argc, char** argv) {
             return i + 1 < argc ? std::string(argv[++i]) : std::string();
         };
 
-        if (arg == "--model") {
+        if (arg == "--pipe") {
+            pipe_name = next();
+        } else if (arg == "--model") {
             model_path = next();
         } else if (arg == "--vad-model") {
             g_vad_model = next();
@@ -288,11 +540,9 @@ int main(int argc, char** argv) {
             g_gpu_device = std::atoi(next().c_str());
         } else if (arg == "--cpu") {
             g_use_gpu = false;
-        } else if (arg == "--abort-file") {
-            g_abort_file = next();
         } else if (arg == "--version") {
             std::printf(
-                "lafazflow-whisper-worker 0.1.0 backend=%s whisper=968eebe7\n",
+                "lafazflow-whisper-worker 0.2.0 protocol=1 backend=%s whisper=968eebe7\n",
                 g_use_gpu ? "cuda" : "cpu");
             return 0;
         } else if (arg == "--vad-params") {
@@ -331,95 +581,81 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (model_path.empty()) {
+    if (model_path.empty() || pipe_name.empty()) {
         PrintUsage();
         return 2;
     }
+    g_model_path = model_path;
 
-    if (g_abort_file.empty()) {
-        const char* envAbortFile = std::getenv("LAFAZFLOW_ABORT_FILE");
-        if (envAbortFile) {
-            g_abort_file = envAbortFile;
-        }
-    }
+    g_uptime_start_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch())
+                            .count();
 
-    whisper_context_params cparams = whisper_context_default_params();
-    cparams.use_gpu = g_use_gpu;
-    cparams.gpu_device = g_gpu_device;
+    std::string pipe_path = "\\\\.\\pipe\\" + pipe_name;
 
-    const auto load_start = std::chrono::steady_clock::now();
-    // Use the with-state init: whisper_full's VAD path requires ctx->state.
-    // Per-request isolation is provided by no_context=true (never reuse past
-    // transcript tokens), matching the CLI's single-file semantics.
-    whisper_context* ctx = whisper_init_from_file_with_params(model_path.c_str(), cparams);
-    if (!ctx) {
-        std::fprintf(stderr, "worker: failed to load model '%s'\n", model_path.c_str());
-        return 3;
-    }
-    const long long load_ms = ElapsedMs(load_start);
-
-    std::size_t slash = model_path.find_last_of("/\\");
-    std::string model_name = slash == std::string::npos ? model_path : model_path.substr(slash + 1);
-    std::printf("READY model=%s backend=%s\n", model_name.c_str(), g_use_gpu ? "cuda" : "cpu");
-    std::printf("LOAD %lld\n", load_ms);
-    std::fflush(stdout);
-
-    std::thread abortWatcher;
-    if (!g_abort_file.empty()) {
-        abortWatcher = std::thread([] {
-            while (!g_shutdown.load()) {
-                bool exists = false;
-                {
-                    std::ifstream probe(g_abort_file.c_str());
-                    exists = probe.good();
-                }
-                if (exists) {
-                    g_abort.store(true);
-                    std::remove(g_abort_file.c_str());
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    std::string sddl;
+    HANDLE token = nullptr;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+        DWORD tokenSize = 0;
+        GetTokenInformation(token, TokenUser, nullptr, 0, &tokenSize);
+        std::vector<BYTE> tokenBuffer(tokenSize);
+        if (GetTokenInformation(token, TokenUser, tokenBuffer.data(), tokenSize, &tokenSize)) {
+            const auto* tokenUser = reinterpret_cast<TOKEN_USER*>(tokenBuffer.data());
+            LPWSTR sidString = nullptr;
+            if (ConvertSidToStringSidW(tokenUser->User.Sid, &sidString)) {
+                const int length = WideCharToMultiByte(
+                    CP_UTF8, 0, sidString, -1, nullptr, 0, nullptr, nullptr);
+                std::string sid(length - 1, '\0');
+                WideCharToMultiByte(
+                    CP_UTF8, 0, sidString, -1, sid.data(), length, nullptr, nullptr);
+                LocalFree(sidString);
+                sddl = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;" + sid + ")";
             }
-        });
+        }
+        CloseHandle(token);
     }
 
-    std::string line;
-    while (std::getline(std::cin, line)) {
-        line = Trim(line);
-        if (line.empty()) {
-            continue;
-        }
-        if (line == "Q") {
-            break;
-        }
-        if (line == "PING") {
-            std::printf("PONG\n");
-            std::fflush(stdout);
-            continue;
-        }
-        if (line.rfind("C ", 0) == 0) {
-            g_abort = true;
-            std::printf("A %s\n", line.substr(2).c_str());
-            std::fflush(stdout);
-            continue;
-        }
-        if (line.rfind("T ", 0) == 0) {
-            std::size_t space = line.find(' ', 2);
-            if (space == std::string::npos) {
-                std::fprintf(stderr, "worker: malformed T command\n");
-                continue;
-            }
-            std::string id = line.substr(2, space - 2);
-            std::string path = line.substr(space + 1);
-            Transcribe(ctx, id, path);
-            continue;
-        }
-        std::fprintf(stderr, "worker: unknown command '%s'\n", line.c_str());
+    SECURITY_ATTRIBUTES securityAttributes = {};
+    securityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+    securityAttributes.bInheritHandle = FALSE;
+    if (!sddl.empty()) {
+        ConvertStringSecurityDescriptorToSecurityDescriptorA(
+            sddl.c_str(), 1, &securityAttributes.lpSecurityDescriptor, nullptr);
     }
 
-    g_shutdown.store(true);
-    if (abortWatcher.joinable()) {
-        abortWatcher.join();
+    HANDLE pipe = CreateNamedPipeW(
+        std::wstring(pipe_path.begin(), pipe_path.end()).c_str(),
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+        1,
+        65536,
+        65536,
+        0,
+        &securityAttributes);
+    if (securityAttributes.lpSecurityDescriptor != nullptr) {
+        LocalFree(securityAttributes.lpSecurityDescriptor);
     }
-    whisper_free(ctx);
+    if (pipe == INVALID_HANDLE_VALUE) {
+        std::fprintf(stderr, "worker: failed to create pipe %s (error %lu)\n", pipe_path.c_str(), GetLastError());
+        return 4;
+    }
+    if (!ConnectNamedPipe(pipe, nullptr)) {
+        const DWORD error = GetLastError();
+        if (error != ERROR_PIPE_CONNECTED) {
+            std::fprintf(stderr, "worker: ConnectNamedPipe failed (error %lu)\n", error);
+            CloseHandle(pipe);
+            return 4;
+        }
+    }
+    std::fprintf(stderr, "worker: client connected to pipe\n");
+
+    std::thread reader(ReaderThread, pipe);
+    EngineLoop(pipe);
+
+    reader.join();
+    if (g_ctx != nullptr) {
+        whisper_free(g_ctx);
+    }
+    CloseHandle(pipe);
     return 0;
 }

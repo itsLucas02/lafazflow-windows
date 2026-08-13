@@ -62,7 +62,10 @@ if ($Backend -eq "Cuda") {
 
 $cmd = "call `"$vcvarsPath`" && set `"PATH=$ninjaDirectory;!PATH!`" && $configureCommand && `"$escapedCmake`" --build `"$escapedBuild`" --config Release --parallel && `"$escapedCmake`" --install `"$escapedBuild`" --config Release"
 
-cmd.exe /v:on /s /c $cmd
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+cmd.exe /v:on /s /c $cmd 2>&1 | Out-Null
+$ErrorActionPreference = $previousPreference
 if ($LASTEXITCODE -ne 0) {
     throw "Whisper worker build failed with exit code $LASTEXITCODE."
 }

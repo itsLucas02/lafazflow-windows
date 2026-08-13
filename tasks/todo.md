@@ -115,6 +115,31 @@
 **Rollback readiness:** POC only; production CLI path untouched
 **Next milestone entry conditions:** satisfied — M4 (versioned protocol and worker supervisor) can proceed.
 
+## M4 — Versioned local protocol and worker supervisor
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `WhisperPipeProtocol` codec: versioned, length-prefixed binary frames (80-byte header: version, op/status, request/session IDs, deadline, 32-byte settings fingerprint, audio format, sample count, data); ops Initialize/Preview/Final/Cancel/Health/Shutdown; max frame 16 MB; 16 kHz mono s16 boundary format
+- Worker is now a current-user-only named-pipe SERVER (SDDL `D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;<user>)`) using overlapped I/O with a 250 ms idle poll so a reader thread and writer never deadlock on the blocking-mode serialization
+- `WhisperWorkerSupervisor`: single-flight startup, fingerprint-keyed session reuse, replace-only-after-ready on settings change, readiness/operation/shutdown timeouts, exact-child reap, state machine (Idle/Starting/Loading/Ready/Recovering/Unavailable), privacy-safe WORKER log lines
+- `WhisperWorkerProcess`: hidden child launch with exact PID capture and optional diagnostics capture (worker stderr) for troubleshooting
+- Integration: real worker + supervisor round-trip (Initialize loads the CUDA model once; Final returns text; Health reports completed/backend; Cancel aborts an in-flight decode; reuse after cancel; Shutdown leaves no process)
+
+**Tests (focused 11, full 596, Release build 0 warnings/0 errors)**
+- Codec: request/response round-trips; malformed length; oversized frame; invalid version; unknown op; response-kind rejection; wrong fingerprint length; hex round-trip
+- Supervisor: two concurrent starts → one worker; fingerprint change → replacement worker; worker exit → Recovering; readiness timeout → Unavailable; shutdown reaps
+- Integration (real worker, owner CUDA runtime): full op lifecycle above
+
+**Key findings / evidence-backed notes**
+- .NET 9 removed NamedPipeServerStream security constructors; the low-level handle path had async/serialization issues, so the worker owns the pipe (natural for a native server) with an SDDL descriptor
+- Blocking-mode named pipes serialize I/O per instance; a reader thread blocks writers → overlapped I/O with idle polling is required for concurrent read (Cancel) + write (responses)
+- No network listener exists; the pipe is restricted to the current user
+
+**Traceability:** named pipe (Evidence-backed improvement); single-flight startup (Reference adapted for Windows - Handy single-flight loading); replace-only-after-ready (Reference adapted for Windows); state transitions (Reference adapted for Windows)
+**Rollback readiness:** supervisor is unused by production transcription; CLI path stays authoritative
+**Next milestone entry conditions:** satisfied — M5 (final dictation integration) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
