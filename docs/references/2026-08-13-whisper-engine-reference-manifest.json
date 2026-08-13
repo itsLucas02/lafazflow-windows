@@ -1,0 +1,174 @@
+{
+  "manifest": {
+    "name": "LafazFlow Persistent Whisper Engine Reference Manifest",
+    "version": "1.0",
+    "prepared": "2026-08-13",
+    "timezone": "Asia/Kuala_Lumpur",
+    "purpose": "Machine-readable evidence snapshot for M0 of the persistent Whisper engine roadmap."
+  },
+  "projects": [
+    {
+      "name": "FluidVoice",
+      "repository": "https://github.com/altic-dev/FluidVoice",
+      "pinned_revision": "4ce0584f93efbb5240d07b5039e23b09487b6ce0",
+      "license": "GPL-3.0",
+      "primary_evidence": [
+        "Sources/Fluid/ContentView.swift",
+        "Sources/Fluid/Services/ASRService.swift",
+        "Sources/Fluid/Services/FluidAudioProvider.swift",
+        "Sources/Fluid/Services/WhisperProvider.swift",
+        "Sources/Fluid/Services/AudioEngineRetirementDrain.swift"
+      ],
+      "verified_behavior": [
+        "Delayed startup model preload after UI appears (preloadASRModel after ~1s sleep).",
+        "Readiness single-flight and stop/audio-drain phase measurement in ASRService.",
+        "Persistent ready audio provider with separate streaming/final state and real-time-factor logs.",
+        "Retained model/session with locked readiness state in WhisperProvider.",
+        "Bounded asynchronous audio-resource retirement drain."
+      ],
+      "usage": "Behavior adopted (not copied): startup preload timing, audio-stop drain discipline, final/streaming separation."
+    },
+    {
+      "name": "Handy",
+      "repository": "https://github.com/cjpais/Handy",
+      "pinned_revision": "37a26fd6ab905259d66affea57fff448288ca1aa",
+      "license": "MIT",
+      "primary_evidence": [
+        "src-tauri/src/managers/transcription.rs",
+        "src-tauri/src/audio_toolkit/audio/recorder.rs",
+        "src-tauri/src/actions.rs",
+        "src-tauri/src/transcription_coordinator.rs"
+      ],
+      "verified_behavior": [
+        "Retained LoadedEngine behind Arc<Mutex<Option<LoadedEngine>>>.",
+        "Single-flight model loading and engine lease.",
+        "Panic containment (catch_unwind) and engine drop/reload after a panicked engine.",
+        "Real-time factor measured as audio_secs / compute_secs.",
+        "Recorder drains remaining audio until an end-of-stream sentinel before returning samples.",
+        "Exactly-once final pipeline completion and repeated-input protection in the coordinator."
+      ],
+      "usage": "Primary Windows lifecycle and audio-finalization reference."
+    },
+    {
+      "name": "VoiceInk",
+      "repository": "https://github.com/Beingpax/VoiceInk",
+      "pinned_revision": "7023a6f7e16ba09c3b131fe71f8cc9e55c065f19",
+      "license": "GPL-3.0",
+      "primary_evidence": [
+        "VoiceInk/Services/ModelPrewarmService.swift",
+        "VoiceInk/Transcription/Whisper/WhisperModelManager.swift",
+        "VoiceInk/Transcription/Whisper/WhisperTranscriptionService.swift",
+        "VoiceInk/Transcription/Whisper/LibWhisper.swift",
+        "VoiceInk/Transcription/Engine/VoiceInkEngine.swift"
+      ],
+      "verified_behavior": [
+        "Optional delayed launch/wake prewarm (Task.sleep ~3s) with a user toggle.",
+        "Shared loaded WhisperContext guarded by single-flight (whisperContext == nil check).",
+        "Reuse of an already-loaded matching model context.",
+        "Serialized native context access with request-level decode settings.",
+        "Recording-time loading and pipeline cleanup boundaries."
+      ],
+      "usage": "Simple persistent-model reference; shared-context discipline."
+    },
+    {
+      "name": "whisper.cpp",
+      "repository": "https://github.com/ggml-org/whisper.cpp",
+      "pinned_revision": "592feef04a1802b18cbeffd0fd0eb5d02570c2ec",
+      "license": "MIT",
+      "primary_evidence": [
+        "include/whisper.h",
+        "src/whisper.cpp",
+        "examples/cli/cli.cpp",
+        "ggml/src/ggml-cuda"
+      ],
+      "verified_behavior": [
+        "whisper_init_from_file_with_params_no_state and whisper_init_state (fresh per-request decode state).",
+        "whisper_full_params with abort_callback/abort_callback_user_data fields (request cancellation).",
+        "whisper_get_timings for per-request timing metadata.",
+        "whisper_free_state / whisper_free for per-request and shutdown cleanup.",
+        "CUDA backend (GGML_CUDA) and Silero VAD support.",
+        "whisper_print_system_info for backend readiness diagnostics."
+      ],
+      "usage": "Native worker build source at the pinned revision; MIT-licensed, compatible with LafazFlow GPLv3."
+    }
+  ],
+  "traceability_labels": [
+    "Reference adopted",
+    "Reference adapted for Windows",
+    "Evidence-backed improvement"
+  ],
+  "architecture_decisions": [
+    {
+      "decision": "Preload the engine shortly after app launch",
+      "label": "Reference adopted",
+      "evidence": "FluidVoice ContentView.preloadASRModel (delayed ~1s) and VoiceInk ModelPrewarmService (delayed ~3s)."
+    },
+    {
+      "decision": "Keep the model ready for the app session",
+      "label": "Reference adapted for Windows",
+      "evidence": "Handy retained LoadedEngine; FluidVoice ready providers; VoiceInk shared WhisperContext."
+    },
+    {
+      "decision": "Fresh decode state per request",
+      "label": "Reference adapted for Windows",
+      "evidence": "VoiceInk serialized context/request discipline; whisper.cpp whisper_init_state API."
+    },
+    {
+      "decision": "Drain final microphone samples before transcription",
+      "label": "Reference adopted",
+      "evidence": "Handy recorder end-of-stream drain; FluidVoice stop/audio-drain measurement."
+    },
+    {
+      "decision": "Final transcription preempts live preview",
+      "label": "Reference adapted for Windows",
+      "evidence": "Handy engine lease/coordinator; FluidVoice distinct streaming/final paths."
+    },
+    {
+      "decision": "Automatic engine reload after invalid native state",
+      "label": "Reference adapted for Windows",
+      "evidence": "Handy drops a panicked engine and reloads on next use."
+    },
+    {
+      "decision": "Crash-isolated background worker process",
+      "label": "Evidence-backed improvement",
+      "evidence": "Handy documents Windows Whisper crashes; a separate worker limits a native failure to the worker. Must pass forced-crash tests proving WPF survival and recovery."
+    },
+    {
+      "decision": "Current-user-only named pipe",
+      "label": "Evidence-backed improvement",
+      "evidence": "Needed for local process isolation without a network listener. Must pass unauthorized-client and malformed-message tests."
+    },
+    {
+      "decision": "Sustained-degradation restart rule",
+      "label": "Evidence-backed improvement",
+      "evidence": "Reference tools measure latency/RTF but do not define LafazFlow's exact recovery rule. Must prove fewer slow runs without restart loops."
+    }
+  ],
+  "native_dependency_decision": {
+    "choice": "LafazFlow-owned native worker calling whisper.cpp C API directly at the pinned revision",
+    "rejected_alternatives": [
+      {
+        "option": "Managed binding (e.g., whisper.net-style wrapper)",
+        "reason": "Binding versions follow their own cadence rather than the pinned whisper.cpp revision; in-process bindings cannot provide the required crash boundary because a native CUDA failure would terminate the WPF process."
+      }
+    ],
+    "comparison": {
+      "version_control": "Direct worker pins exact whisper.cpp SHA 592feef04a1802b18cbeffd0fd0eb5d02570c2ec.",
+      "cuda": "GGML_CUDA build with the same backend as the owner's current CUDA CLI.",
+      "vad_parity": "Uses whisper.cpp Silero VAD with identical thresholds.",
+      "abort_support": "whisper_full_params.abort_callback for request cancellation.",
+      "packaging": "Worker binary and matching runtime DLLs are produced by LafazFlow build scripts beside the CLI.",
+      "crash_boundaries": "Worker runs as a separate child process; a native crash can terminate only the worker."
+    }
+  },
+  "whisper_cpp_revision_decision": {
+    "worker_build_revision": "592feef04a1802b18cbeffd0fd0eb5d02570c2ec",
+    "current_cuda_cli_source_revision": "968eebe77225d25e57a3f981da7c696310f0e881",
+    "current_cuda_cli_build_date": "2026-05-17",
+    "evidence_gap": "The owner's current CUDA CLI was built from an unpinned main checkout (source HEAD 968eebe7, May 2026). The worker is pinned to 592feef0. The M1 baseline measures the current CLI exactly as the owner runs it; M3 builds a same-revision reference CLI beside the worker for controlled comparison. No silent replacement of the owner's runtime occurs."
+  },
+  "evidence_gaps": [
+    "Current CUDA CLI revision (968eebe7-era) differs from the pinned worker revision (592feef0); controlled same-revision comparison is planned in M3.",
+    "Bundled CPU CLI revision is taken from the official whisper-bin-x64.zip release at packaging time; the worker will pin 592feef0 for reproducible builds."
+  ]
+}

@@ -4,6 +4,33 @@
 
 **Detailed implementation roadmap:** `docs/superpowers/plans/2026-08-13-persistent-whisper-engine-roadmap.md`
 
+## M0 — Reference evidence pack and licensing gate
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- Reference manifest: `docs/references/2026-08-13-whisper-engine-reference-manifest.json`
+- Provenance matrix and dependency decision: `docs/references/2026-08-13-whisper-engine-provenance-matrix.md`
+- Updated `THIRD_PARTY_NOTICES.md` with whisper.cpp MIT notice and revision provenance
+
+**Reference traceability (labels)**
+- FluidVoice `4ce0584f` (GPL-3.0): startup preload, stop/audio-drain measurement — Reference adopted (behaviour only)
+- Handy `37a26fd6` (MIT): retained engine, panic recovery, end-of-stream drain, RTF — Reference adopted / adapted for Windows
+- VoiceInk `7023a6f7` (GPL-3.0): delayed prewarm, shared context — Reference adopted (behaviour only)
+- whisper.cpp `592feef0` (MIT): context/state, abort callback, CUDA, VAD, timings — build source for the native worker
+- Crash-isolated worker, current-user named pipe, sustained-degradation rule — Evidence-backed improvement
+
+**Key decisions recorded**
+- Native dependency: LafazFlow-owned worker calling whisper.cpp C API directly at pinned `592feef0` (crash boundary decisive vs in-process managed binding).
+- Revision gap documented: current CUDA CLI is an unpinned `968eebe7`-era build (17/05/2026); worker pins `592feef0`; M1 measures the current CLI; M3 adds a same-revision reference CLI for controlled comparison.
+- Licensing gate: no incompatible reuse; MIT worker linking is GPLv3-compatible; no source copied from GPL references.
+
+**Files changed:** 3 (two reference docs, one notices update)
+**Tests:** none required (documentation-only); existing suite untouched
+**Limitations / evidence gaps:** recorded in the manifest (revision delta, CPU CLI release provenance)
+**Rollback readiness:** documentation-only; revert files without code impact
+**Next milestone entry conditions:** satisfied — M1 baseline can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
