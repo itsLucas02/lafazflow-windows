@@ -25,18 +25,20 @@ public partial class MainWindow : Window
         var whisperProcesses = WhisperProcessCoordinator.Shared;
         _hotkeyService = new DoubleShiftHotkeyService(_hotkeyDiagnostics);
         _miniRecorderWindow = new MiniRecorderWindow(_miniRecorderViewModel);
+        var transcriptionService = new WhisperCliTranscriptionService(whisperProcesses);
         _recorderController = new RecorderController(
             _miniRecorderViewModel,
             _miniRecorderWindow,
             _audioCaptureService,
-            new WhisperCliTranscriptionService(whisperProcesses),
+            transcriptionService,
             new ClipboardPasteService(),
             _settingsStore,
             livePreview: new RollingWhisperLiveTranscriptPreviewService(
                 new RollingWhisperLiveTranscriptPreviewOptions(),
                 hotkeyDiagnostics: _hotkeyDiagnostics,
                 processCoordinator: whisperProcesses),
-            hotkeyDiagnostics: _hotkeyDiagnostics);
+            hotkeyDiagnostics: _hotkeyDiagnostics,
+            transcriptionTiming: transcriptionService);
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,

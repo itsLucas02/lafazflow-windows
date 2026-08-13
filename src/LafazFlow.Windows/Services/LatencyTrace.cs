@@ -32,6 +32,24 @@ public sealed class LatencyTrace
 
     public string ErrorKind { get; private set; } = "";
 
+    public long? ModelLoadMs { get; set; }
+
+    public long? InferenceMs { get; set; }
+
+    public long? ResponseTransferMs { get; set; }
+
+    public int? RawCharCount { get; set; }
+
+    public int? FormattedCharCount { get; set; }
+
+    public int? ClipboardCharCount { get; set; }
+
+    public string RawFinalCharCategory { get; set; } = "";
+
+    public string FormattedFinalCharCategory { get; set; } = "";
+
+    public string ClipboardFinalCharCategory { get; set; } = "";
+
     public void Mark(LatencyCheckpoint checkpoint)
     {
         Mark(checkpoint, _getTimestamp());

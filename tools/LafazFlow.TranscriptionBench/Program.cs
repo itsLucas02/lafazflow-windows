@@ -30,11 +30,14 @@ if (!string.IsNullOrWhiteSpace(options.PackName))
     Console.WriteLine($"Regression pack: {options.PackName}");
 }
 
-var runner = new BenchmarkRunner();
-var results = await runner.RunAsync(fixtures, configs, CancellationToken.None);
+var results = options.ProcessMode
+    ? await new BenchmarkProcessRunner().RunAsync(fixtures, configs, options.Repeats, CancellationToken.None)
+    : await new BenchmarkRunner().RunAsync(fixtures, configs, CancellationToken.None);
 var (markdownPath, csvPath) = BenchmarkReportWriter.Write(options.OutputDirectory, results, DateTimeOffset.Now);
+var summaryPath = BenchmarkReportWriter.WriteSummary(options.OutputDirectory, options.Label, results, DateTimeOffset.Now);
 
 Console.WriteLine($"Markdown report: {markdownPath}");
 Console.WriteLine($"CSV report: {csvPath}");
+Console.WriteLine($"Privacy-safe summary: {summaryPath}");
 
 return results.Any(result => result.Succeeded) ? 0 : 1;

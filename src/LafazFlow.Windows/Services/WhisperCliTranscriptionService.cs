@@ -4,7 +4,7 @@ using LafazFlow.Windows.Core;
 
 namespace LafazFlow.Windows.Services;
 
-public sealed class WhisperCliTranscriptionService : ITranscriptionService
+public sealed class WhisperCliTranscriptionService : ITranscriptionService, ITranscriptionTimingProvider
 {
     private static readonly TimeSpan TranscriptionTimeout = TimeSpan.FromMinutes(2);
     private readonly WhisperProcessCoordinator _processCoordinator;
@@ -110,6 +110,46 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         WhisperDecodeOptions decodeOptions,
         CancellationToken cancellationToken)
     {
+        var (text, _) = await RunCoreAsync(
+            whisperCliPath,
+            modelPath,
+            audioPath,
+            initialPrompt,
+            threads,
+            decodeOptions,
+            cancellationToken);
+        return text;
+    }
+
+    public async Task<TranscriptionTimingResult> TranscribeWithTimingAsync(
+        string whisperCliPath,
+        string modelPath,
+        string audioPath,
+        string initialPrompt,
+        int threads,
+        WhisperDecodeOptions decodeOptions,
+        CancellationToken cancellationToken)
+    {
+        var (text, standardError) = await RunCoreAsync(
+            whisperCliPath,
+            modelPath,
+            audioPath,
+            initialPrompt,
+            threads,
+            decodeOptions,
+            cancellationToken);
+        return new TranscriptionTimingResult(text, WhisperTimingParser.Parse(standardError));
+    }
+
+    private async Task<(string Text, string StandardError)> RunCoreAsync(
+        string whisperCliPath,
+        string modelPath,
+        string audioPath,
+        string initialPrompt,
+        int threads,
+        WhisperDecodeOptions decodeOptions,
+        CancellationToken cancellationToken)
+    {
         var pathError = ValidatePaths(whisperCliPath, modelPath, decodeOptions);
         if (pathError is not null)
         {
@@ -156,10 +196,10 @@ public sealed class WhisperCliTranscriptionService : ITranscriptionService
         var textPath = outputBasePath + ".txt";
         if (File.Exists(textPath))
         {
-            return CleanTranscript(await File.ReadAllTextAsync(textPath, cancellationToken));
+            return (CleanTranscript(await File.ReadAllTextAsync(textPath, cancellationToken)), result.StandardError);
         }
 
-        return CleanTranscript(result.StandardOutput);
+        return (CleanTranscript(result.StandardOutput), result.StandardError);
     }
 
     public static string BuildFailureMessage(int exitCode, string stdout, string stderr)

@@ -126,6 +126,106 @@ public sealed class TranscriptionBenchTests
     }
 
     [Fact]
+    public void BenchOptionsParsesRepeatsProcessModeAndLabel()
+    {
+        var options = BenchOptions.Parse(
+            ["--repeats", "5", "--process", "--label", "m1-baseline", "--take", "2"]);
+
+        Assert.Equal(5, options.Repeats);
+        Assert.True(options.ProcessMode);
+        Assert.Equal("m1-baseline", options.Label);
+        Assert.Equal(2, options.Take);
+    }
+
+    [Fact]
+    public void SummaryWriterExcludesTranscriptsAndIncludesPercentiles()
+    {
+        var root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))).FullName;
+        var results = new[]
+        {
+            new BenchmarkResult(
+                "fixture-a",
+                "current-settings",
+                "ggml-large-v3-turbo-q5_0.bin",
+                "Cuda",
+                900,
+                "SECRETTRANSCRIPT123",
+                "SECRETTRANSCRIPT123",
+                "SECRETTRANSCRIPT123",
+                0,
+                0,
+                0,
+                [],
+                null,
+                AudioDurationMs: 6000,
+                InferenceMs: 800,
+                RealtimeFactor: 0.133,
+                IsCold: false,
+                RepeatIndex: 1),
+            new BenchmarkResult(
+                "fixture-a",
+                "current-settings",
+                "ggml-large-v3-turbo-q5_0.bin",
+                "Cuda",
+                1200,
+                "SECRETTRANSCRIPT123",
+                "SECRETTRANSCRIPT123",
+                "SECRETTRANSCRIPT123",
+                0,
+                0,
+                0,
+                [],
+                null,
+                AudioDurationMs: 6000,
+                InferenceMs: 1000,
+                RealtimeFactor: 0.167,
+                IsCold: false,
+                RepeatIndex: 2)
+        };
+
+        var summaryPath = BenchmarkReportWriter.WriteSummary(root, "m1-baseline", results, DateTimeOffset.Now);
+        var summary = File.ReadAllText(summaryPath);
+
+        Assert.DoesNotContain("SECRETTRANSCRIPT123", summary);
+        Assert.Contains("Warm median", summary);
+        Assert.Contains("P95", summary);
+        Assert.Contains("current-settings", summary);
+    }
+
+    [Fact]
+    public void WavDurationReaderComputesDurationFromHeader()
+    {
+        var root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"))).FullName;
+        var wavPath = Path.Combine(root, "one-second.wav");
+        File.WriteAllBytes(wavPath, BuildOneSecondPcmWav());
+
+        var durationMs = WavDurationReader.ReadMilliseconds(wavPath);
+
+        Assert.Equal(1000, durationMs);
+    }
+
+    private static byte[] BuildOneSecondPcmWav()
+    {
+        var sampleCount = 16000;
+        var dataSize = sampleCount * 2;
+        var bytes = new byte[44 + dataSize];
+        Buffer.BlockCopy("RIFF"u8.ToArray(), 0, bytes, 0, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(36 + dataSize), 0, bytes, 4, 4);
+        Buffer.BlockCopy("WAVE"u8.ToArray(), 0, bytes, 8, 4);
+        Buffer.BlockCopy("fmt "u8.ToArray(), 0, bytes, 12, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(16), 0, bytes, 16, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)1), 0, bytes, 20, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)1), 0, bytes, 22, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes(16000), 0, bytes, 24, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(32000), 0, bytes, 28, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)2), 0, bytes, 32, 2);
+        Buffer.BlockCopy(BitConverter.GetBytes((short)16), 0, bytes, 34, 2);
+        Buffer.BlockCopy("data"u8.ToArray(), 0, bytes, 36, 4);
+        Buffer.BlockCopy(BitConverter.GetBytes(dataSize), 0, bytes, 40, 4);
+        return bytes;
+    }
+
+    [Fact]
     public void BenchmarkRunnerTracksStripeAsDefaultKeyTerm()
     {
         Assert.Contains("Stripe", BenchmarkRunner.DefaultKeyTerms);

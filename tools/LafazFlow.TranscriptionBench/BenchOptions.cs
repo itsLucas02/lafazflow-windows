@@ -7,7 +7,10 @@ public sealed record BenchOptions(
     string OutputDirectory,
     IReadOnlySet<string>? ConfigFilter,
     string? PackName,
-    string PacksRoot)
+    string PacksRoot,
+    int Repeats,
+    bool ProcessMode,
+    string Label)
 {
     public static BenchOptions Parse(string[] args)
     {
@@ -20,6 +23,12 @@ public sealed record BenchOptions(
             }
 
             var key = args[index][2..];
+            if (key.Equals("process", StringComparison.OrdinalIgnoreCase))
+            {
+                values[key] = "true";
+                continue;
+            }
+
             if (index + 1 < args.Length && !args[index + 1].StartsWith("--", StringComparison.Ordinal))
             {
                 values[key] = args[++index];
@@ -35,12 +44,16 @@ public sealed record BenchOptions(
         var take = int.TryParse(values.GetValueOrDefault("take"), out var parsedTake)
             ? Math.Max(1, parsedTake)
             : 20;
+        var repeats = int.TryParse(values.GetValueOrDefault("repeats"), out var parsedRepeats)
+            ? Math.Max(1, parsedRepeats)
+            : 3;
         var configFilter = values.TryGetValue("configs", out var configs) && !string.IsNullOrWhiteSpace(configs)
             ? configs
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase)
             : null;
         var packName = values.GetValueOrDefault("pack");
+        var label = values.GetValueOrDefault("label") ?? "";
         var packsRoot = values.GetValueOrDefault("packs-root") ?? RegressionPackResolver.DefaultPacksRoot();
         var recordingsDirectory = !string.IsNullOrWhiteSpace(packName)
             ? RegressionPackResolver.Resolve(packName, packsRoot)
@@ -54,6 +67,9 @@ public sealed record BenchOptions(
             outputDirectory,
             configFilter,
             string.IsNullOrWhiteSpace(packName) ? null : packName,
-            packsRoot);
+            packsRoot,
+            repeats,
+            values.ContainsKey("process"),
+            label);
     }
 }

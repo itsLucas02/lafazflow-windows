@@ -27,6 +27,10 @@ public enum LatencyCheckpoint
     UiHidden,
     CleanupStarted,
     CleanupFinished,
+    AudioDrainStarted,
+    AudioDrainFinished,
+    WaveFinalizeStarted,
+    WaveFinalizeFinished,
     Completed,
     Failed
 }

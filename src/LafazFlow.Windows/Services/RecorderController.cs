@@ -20,6 +20,7 @@ public sealed class RecorderController
     private readonly ITargetTextContextService _targetTextContext;
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private readonly TranscriptionPostProcessor _postProcessor;
+    private readonly ITranscriptionTimingProvider? _transcriptionTiming;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
@@ -43,7 +44,8 @@ public sealed class RecorderController
         ITargetTextContextService? targetTextContext = null,
         IHotkeyDiagnostics? hotkeyDiagnostics = null,
         TranscriptionPostProcessor? postProcessor = null,
-        TimeSpan? transientErrorDismissDelay = null)
+        TimeSpan? transientErrorDismissDelay = null,
+        ITranscriptionTimingProvider? transcriptionTiming = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -59,6 +61,7 @@ public sealed class RecorderController
         _postProcessor = postProcessor ?? new TranscriptionPostProcessor();
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
+        _transcriptionTiming = transcriptionTiming;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
@@ -204,7 +207,13 @@ public sealed class RecorderController
             var queued = false;
             try
             {
+                latencyTrace?.Mark(LatencyCheckpoint.AudioDrainStarted);
                 _audioCapture.Stop();
+                latencyTrace?.Mark(LatencyCheckpoint.AudioDrainFinished);
+                latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeStarted);
+                // M1 approximation: the WAV writer finalizes inside Stop/Dispose. M2 replaces this
+                // with an explicit asynchronous finalization after NAudio's RecordingStopped event.
+                latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeFinished);
                 _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
                 _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
@@ -333,19 +342,52 @@ public sealed class RecorderController
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
             var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
-            var transcript = await _transcription.TranscribeAsync(
-                runtime.CliPath,
-                runtime.ModelPath,
-                job.AudioPath,
-                prompt,
-                job.Settings.WhisperThreads,
-                runtime.DecodeOptions,
-                cancellationToken);
+            string transcript;
+            if (_transcriptionTiming is not null)
+            {
+                var timed = await _transcriptionTiming.TranscribeWithTimingAsync(
+                    runtime.CliPath,
+                    runtime.ModelPath,
+                    job.AudioPath,
+                    prompt,
+                    job.Settings.WhisperThreads,
+                    runtime.DecodeOptions,
+                    cancellationToken);
+                transcript = timed.Text;
+                if (timed.Timing is { } timing)
+                {
+                    if (job.LatencyTrace is { } trace)
+                    {
+                        trace.ModelLoadMs = timing.LoadMs;
+                        trace.InferenceMs = timing.EncodeMs.HasValue || timing.DecodeMs.HasValue
+                            ? (timing.EncodeMs ?? 0) + (timing.DecodeMs ?? 0)
+                            : null;
+                    }
+                }
+            }
+            else
+            {
+                transcript = await _transcription.TranscribeAsync(
+                    runtime.CliPath,
+                    runtime.ModelPath,
+                    job.AudioPath,
+                    prompt,
+                    job.Settings.WhisperThreads,
+                    runtime.DecodeOptions,
+                    cancellationToken);
+            }
+
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperFinished);
             if (string.IsNullOrWhiteSpace(transcript))
             {
                 throw new InvalidOperationException(
                     "No speech was transcribed. Check the microphone input and try again.");
+            }
+
+            if (job.LatencyTrace is { } rawTrace)
+            {
+                rawTrace.RawCharCount = TextCharMetrics.CharacterCount(transcript);
+                rawTrace.RawFinalCharCategory = TextCharMetrics.FinalCharCategory(transcript);
             }
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingStarted);
@@ -356,6 +398,11 @@ public sealed class RecorderController
                 targetContext));
             transcript = processed.Text;
             job.LatencyTrace?.Mark(LatencyCheckpoint.PostProcessingFinished);
+            if (job.LatencyTrace is { } formattedTrace)
+            {
+                formattedTrace.FormattedCharCount = TextCharMetrics.CharacterCount(transcript);
+                formattedTrace.FormattedFinalCharCategory = TextCharMetrics.FinalCharCategory(transcript);
+            }
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateStarted);
             await _window.InvokeAsync(() => _viewModel.AddCompletedTranscript(transcript));
@@ -375,6 +422,11 @@ public sealed class RecorderController
             if (pasteResult is not null)
             {
                 LogPasteResult(pasteResult);
+            }
+            if (job.LatencyTrace is { } clipboardTrace)
+            {
+                clipboardTrace.ClipboardCharCount = TextCharMetrics.CharacterCount(transcript);
+                clipboardTrace.ClipboardFinalCharCategory = TextCharMetrics.FinalCharCategory(transcript);
             }
             job.LatencyTrace?.Mark(LatencyCheckpoint.PasteFinished);
 

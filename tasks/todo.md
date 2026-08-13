@@ -31,6 +31,34 @@
 **Rollback readiness:** documentation-only; revert files without code impact
 **Next milestone entry conditions:** satisfied — M1 baseline can proceed.
 
+## M1 — Reproducible baseline and privacy-safe telemetry
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- Baseline summary: `docs/references/2026-08-13-whisper-engine-m1-baseline.md`
+- `WhisperTimingParser` (whisper.cpp timing block → structured fields) with tests
+- `EngineSettingsFingerprint` (SHA-256 over engine-affecting settings; prompt/vocabulary excluded) with tests
+- `TextCharMetrics` (character counts + final-character categories, no text storage) with tests
+- Latency telemetry: new `LatencyTrace` fields (`audio_drain_ms`, `wave_finalize_ms`, `model_load_ms`, `inference_ms`, `response_transfer_ms`, raw/formatted/clipboard char counts and final categories); formatter/store parser extended, older rows parse with `na`; tests added
+- Timing-aware transcription path: `ITranscriptionTimingProvider` + `WhisperCliTranscriptionService.TranscribeWithTimingAsync`; recorder populates the new trace fields; app wiring updated
+- Benchmark tool: `--process` mode with structured timings, `--repeats`, `--label`, WAV duration reader, privacy-safe summary writer; tests added
+
+**Measured baseline (owner's Quality/CUDA/large-turbo/VAD/16-thread settings, 32 runs)**
+- Warm median 1202 ms; P90 1371 ms; P95 1400 ms; max 1466 ms; cold median 1383 ms
+- Model load median 539 ms; inference median 147 ms; inference RTF median 0.007
+- Failures 0; empty results 0; mean edit distance vs retained corpus 0.004
+
+**Reference traceability**
+- Handy RTF logging, FluidVoice phase logs — Reference adopted
+- LatencyTrace/Diagnostics extension — Reference adapted for Windows
+
+**Files changed:** app telemetry services + latency classes + recorder wiring + bench tool + 5 new test files
+**Tests:** focused 64; full suite 579; Release build 0 warnings/0 errors; `git diff --check` clean
+**Limitations:** `response_transfer_ms` is recorded as a field but measured only when the worker protocol lands (M4/M5); audio-drain/wave-finalize phases are approximate until M2's explicit async finalization; the existing service-mode benchmark overwrites fixture expected transcripts when run against a live corpus (process mode avoids this via temp copies)
+**Rollback readiness:** additive telemetry; parsing is tolerant of older rows; recorder falls back to the plain transcription path when no timing provider is supplied
+**Next milestone entry conditions:** satisfied — M2 (complete-audio stop and WAV finalization) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

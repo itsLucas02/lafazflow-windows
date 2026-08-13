@@ -28,14 +28,25 @@ public static partial class LatencyLogFormatter
             Pair("queue_wait_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.QueueEnqueued, LatencyCheckpoint.QueueStarted)),
             Pair("preview_start_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PreviewStartRequested, LatencyCheckpoint.PreviewStarted)),
             Pair("preview_stop_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PreviewStopRequested, LatencyCheckpoint.PreviewStopped)),
+            Pair("audio_drain_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.AudioDrainStarted, LatencyCheckpoint.AudioDrainFinished)),
+            Pair("wave_finalize_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.WaveFinalizeStarted, LatencyCheckpoint.WaveFinalizeFinished)),
             Pair("whisper_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.WhisperStarted, LatencyCheckpoint.WhisperFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.QueueStarted, LatencyCheckpoint.WhisperFinished)),
+            Pair("model_load_ms", trace.ModelLoadMs),
+            Pair("inference_ms", trace.InferenceMs),
+            Pair("response_transfer_ms", trace.ResponseTransferMs),
             Pair("post_process_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PostProcessingStarted, LatencyCheckpoint.PostProcessingFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.WhisperFinished, LatencyCheckpoint.PostProcessingFinished)),
             Pair("ui_update_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.UiUpdateStarted, LatencyCheckpoint.UiUpdateFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.PostProcessingFinished, LatencyCheckpoint.UiUpdateFinished)),
             Pair("paste_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.PasteStarted, LatencyCheckpoint.PasteFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.UiUpdateFinished, LatencyCheckpoint.PasteFinished)),
+            Pair("raw_chars", trace.RawCharCount),
+            Pair("formatted_chars", trace.FormattedCharCount),
+            Pair("clipboard_chars", trace.ClipboardCharCount),
+            PairText("raw_final_char", trace.RawFinalCharCategory),
+            PairText("formatted_final_char", trace.FormattedFinalCharCategory),
+            PairText("clipboard_final_char", trace.ClipboardFinalCharCategory),
             Pair("ui_hide_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.UiHideStarted, LatencyCheckpoint.UiHidden)),
             Pair("cleanup_ms", trace.ElapsedMilliseconds(LatencyCheckpoint.CleanupStarted, LatencyCheckpoint.CleanupFinished)
                 ?? trace.ElapsedMilliseconds(LatencyCheckpoint.PasteFinished, LatencyCheckpoint.CleanupFinished)),
@@ -47,6 +58,16 @@ public static partial class LatencyLogFormatter
     private static string Pair(string key, long? value)
     {
         return $"{key}={(value.HasValue ? value.Value.ToString() : "na")}";
+    }
+
+    private static string Pair(string key, int? value)
+    {
+        return $"{key}={(value.HasValue ? value.Value.ToString() : "na")}";
+    }
+
+    private static string PairText(string key, string value)
+    {
+        return $"{key}={(string.IsNullOrWhiteSpace(value) ? "na" : SafeValue(value))}";
     }
 
     private static string StatusValue(LatencyStatus status)
