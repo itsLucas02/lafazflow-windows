@@ -89,6 +89,32 @@
 **Rollback readiness:** restore the synchronous stop adapter only if async finalization fails; session isolation retained.
 **Next milestone entry conditions:** satisfied — M3 (native persistent-engine proof of concept) can proceed.
 
+## M3 — Native persistent-engine proof of concept
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `native/LafazFlow.WhisperWorker` (C++17, no WPF dependency) linked against whisper.cpp pinned at `968eebe7` (matches the owner's CUDA CLI revision; explicit revision decision recorded in the M0 manifest)
+- `scripts/build-whisper-worker.ps1` (CUDA/CPU builds, app-local MSVC runtime, `--version` smoke) and `scripts/verify-whisper-worker.ps1` (100-request proof driver with bounded pipe handling)
+- Proof document: `docs/references/2026-08-13-whisper-engine-m3-proof.md`
+
+**Verification (owner's exact Quality/CUDA/large-turbo/VAD/16-thread settings)**
+- 100/100 repeated requests in one process; model reload 0 (all `load_ms=0`)
+- Output equivalence vs current CLI: 100/100 normalized on identical files/settings
+- Invalid audio rejected; cancellation (`F ... aborted`) followed by successful reuse
+- Working set growth 0 bytes over 100 requests; VRAM 897→935 MiB (stable)
+- Warm median 285 ms vs CLI 1202 ms (−76%); warm P95 424 ms vs 1400 ms (−70%); repeated model-load cost removed
+
+**Key findings / evidence-backed notes**
+- VAD runs only in `whisper_full` (requires `ctx->state`) at this revision; worker uses with-state init + `whisper_full` + `no_context=true` for per-request isolation
+- CLI `--no-fallback` ⇒ `temperature_inc = 0`; replicated
+- M3 abort uses a file signal; M4 replaces with the named-pipe Cancel op
+
+**Traceability:** retained engine (Reference adapted for Windows); fresh per-request context (Reference adapted for Windows); VAD/decode parity (Reference adopted); crash-isolated worker (Evidence-backed improvement)
+**Tests:** focused/full .NET suites untouched by M3 (native proof is script-verified); results above
+**Rollback readiness:** POC only; production CLI path untouched
+**Next milestone entry conditions:** satisfied — M4 (versioned protocol and worker supervisor) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

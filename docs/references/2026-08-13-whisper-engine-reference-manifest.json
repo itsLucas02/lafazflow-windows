@@ -162,13 +162,13 @@
     }
   },
   "whisper_cpp_revision_decision": {
-    "worker_build_revision": "592feef04a1802b18cbeffd0fd0eb5d02570c2ec",
+    "worker_build_revision": "968eebe77225d25e57a3f981da7c696310f0e881",
     "current_cuda_cli_source_revision": "968eebe77225d25e57a3f981da7c696310f0e881",
     "current_cuda_cli_build_date": "2026-05-17",
-    "evidence_gap": "The owner's current CUDA CLI was built from an unpinned main checkout (source HEAD 968eebe7, May 2026). The worker is pinned to 592feef0. The M1 baseline measures the current CLI exactly as the owner runs it; M3 builds a same-revision reference CLI beside the worker for controlled comparison. No silent replacement of the owner's runtime occurs."
+    "evidence_gap_resolved": "The worker is pinned to 968eebe7 to match the owner's CUDA CLI source revision exactly (M3 output equivalence: 100/100 normalized). The originally proposed pin 592feef0 was intentionally replaced because parity with the in-use CLI matters more than a different historical SHA; recorded as an explicit roadmap revision decision. No silent replacement of the owner's runtime occurs."
   },
   "evidence_gaps": [
-    "Current CUDA CLI revision (968eebe7-era) differs from the pinned worker revision (592feef0); controlled same-revision comparison is planned in M3.",
-    "Bundled CPU CLI revision is taken from the official whisper-bin-x64.zip release at packaging time; the worker will pin 592feef0 for reproducible builds."
+    "Resolved in M3: worker and owner CUDA CLI now share revision 968eebe7; output equivalence 100/100.",
+    "Bundled CPU CLI revision is taken from the official whisper-bin-x64.zip release at packaging time; the worker build input is pinned to 968eebe7 for reproducible builds."
   ]
 }
