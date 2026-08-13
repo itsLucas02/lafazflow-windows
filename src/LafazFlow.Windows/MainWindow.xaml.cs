@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
@@ -39,6 +40,17 @@ public partial class MainWindow : Window
             _workerEngine = new WorkerTranscriptionEngine(_workerSupervisor);
         }
 
+        var previewService = _workerSupervisor is null
+            ? new RollingWhisperLiveTranscriptPreviewService(
+                new RollingWhisperLiveTranscriptPreviewOptions(),
+                hotkeyDiagnostics: _hotkeyDiagnostics,
+                processCoordinator: whisperProcesses)
+            : new RollingWhisperLiveTranscriptPreviewService(
+                new RollingWhisperLiveTranscriptPreviewOptions(),
+                hotkeyDiagnostics: _hotkeyDiagnostics,
+                processCoordinator: whisperProcesses,
+                workerTranscribeSnapshotAsync: WorkerPreviewTranscribeAsync);
+
         _recorderController = new RecorderController(
             _miniRecorderViewModel,
             _miniRecorderWindow,
@@ -46,10 +58,7 @@ public partial class MainWindow : Window
             transcriptionService,
             new ClipboardPasteService(),
             _settingsStore,
-            livePreview: new RollingWhisperLiveTranscriptPreviewService(
-                new RollingWhisperLiveTranscriptPreviewOptions(),
-                hotkeyDiagnostics: _hotkeyDiagnostics,
-                processCoordinator: whisperProcesses),
+            livePreview: previewService,
             hotkeyDiagnostics: _hotkeyDiagnostics,
             transcriptionTiming: transcriptionService,
             transcriptionEngine: _workerEngine);
@@ -132,6 +141,31 @@ public partial class MainWindow : Window
 
         var configured = new WhisperWorkerSupervisorOptions().WorkerExecutablePath;
         return File.Exists(configured) ? configured : null;
+    }
+
+    private async Task<string?> WorkerPreviewTranscribeAsync(
+        AppSettings settings,
+        byte[] pcmAudio,
+        uint sampleCount,
+        CancellationToken cancellationToken)
+    {
+        if (_workerSupervisor is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var session = await _workerSupervisor.GetReadySessionAsync(settings, cancellationToken);
+            var response = await session.TranscribePreviewAsync(pcmAudio, sampleCount, cancellationToken);
+            return response.Status == WhisperPipeStatus.Ok
+                ? WhisperCliTranscriptionService.CleanTranscript(Encoding.UTF8.GetString(response.Data))
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static void LogWorkerStartupFailure(Exception? error)

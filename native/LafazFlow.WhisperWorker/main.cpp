@@ -295,6 +295,26 @@ void ReaderThread(HANDLE pipe) {
             continue;
         }
 
+        if (frame.kind == OpFinal) {
+            // Final transcription preempts live preview: abort any in-flight
+            // preview decode and drop queued preview work.
+            g_abort.store(true);
+            std::unique_lock<std::mutex> lock(g_queue_mutex);
+            g_queue.erase(
+                std::remove_if(
+                    g_queue.begin(),
+                    g_queue.end(),
+                    [](const Frame& queued) { return queued.kind == OpPreview; }),
+                g_queue.end());
+            if (g_queue.size() >= kMaxQueue) {
+                SendResponse(pipe, OpFinal, StatusBusy, frame.request_id, frame.session_id, g_fingerprint, {});
+                continue;
+            }
+            g_queue.push_back(std::move(frame));
+            g_queue_cv.notify_one();
+            continue;
+        }
+
         {
             std::unique_lock<std::mutex> lock(g_queue_mutex);
             if (g_queue.size() >= kMaxQueue) {

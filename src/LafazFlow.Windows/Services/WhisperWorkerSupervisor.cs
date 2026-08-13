@@ -206,7 +206,12 @@ public sealed class WhisperWorkerSession : IDisposable
     private readonly TimeSpan _operationTimeout;
     private readonly TimeSpan _shutdownTimeout;
     private readonly Guid _sessionId = Guid.NewGuid();
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
+    private readonly object _responsesLock = new();
+    private readonly Dictionary<Guid, TaskCompletionSource<WhisperPipeResponse>> _pendingResponses = [];
     private NamedPipeClientStream? _pipe;
+    private Task? _readerTask;
+    private bool _readerStarted;
     private bool _disposed;
 
     internal WhisperWorkerSession(
@@ -247,6 +252,7 @@ public sealed class WhisperWorkerSession : IDisposable
         using var readinessCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         readinessCts.CancelAfter(_readinessTimeout);
         await _pipe.ConnectAsync(readinessCts.Token);
+        EnsureReaderStarted();
 
         var request = new WhisperPipeRequest(
             WhisperPipeOp.Initialize,
@@ -257,8 +263,7 @@ public sealed class WhisperWorkerSession : IDisposable
             WhisperPipeProtocol.AudioFormatPcm16kMono,
             0,
             []);
-        await WriteRequestAsync(request, readinessCts.Token);
-        var response = await ReadResponseAsync(request.RequestId, readinessCts.Token);
+        var response = await SendAndAwaitAsync(request, readinessCts.Token);
         if (response.Status != WhisperPipeStatus.Ok
             || !string.Equals(
                 WhisperPipeProtocol.FingerprintBytesToHex(response.Fingerprint),
@@ -305,8 +310,7 @@ public sealed class WhisperWorkerSession : IDisposable
             WhisperPipeProtocol.AudioFormatPcm16kMono,
             sampleCount,
             pcmAudio);
-        await WriteRequestAsync(request, operationCts.Token);
-        return await ReadResponseAsync(request.RequestId, operationCts.Token);
+        return await SendAndAwaitAsync(request, operationCts.Token);
     }
 
     public async Task CancelAsync(Guid requestId, CancellationToken cancellationToken)
@@ -338,8 +342,7 @@ public sealed class WhisperWorkerSession : IDisposable
             0,
             0,
             []);
-        await WriteRequestAsync(request, operationCts.Token);
-        var response = await ReadResponseAsync(request.RequestId, operationCts.Token);
+        var response = await SendAndAwaitAsync(request, operationCts.Token);
         return Encoding.UTF8.GetString(response.Data);
     }
 
@@ -363,8 +366,7 @@ public sealed class WhisperWorkerSession : IDisposable
                     0,
                     0,
                     []);
-                await WriteRequestAsync(request, cancellationToken);
-                _ = await ReadResponseAsync(request.RequestId, cancellationToken);
+                _ = await SendAndAwaitAsync(request, cancellationToken);
             }
         }
         catch
@@ -404,41 +406,87 @@ public sealed class WhisperWorkerSession : IDisposable
     private async Task WriteRequestAsync(WhisperPipeRequest request, CancellationToken cancellationToken)
     {
         var frame = WhisperPipeProtocol.EncodeRequest(request);
-        if (_pipe is null)
+        await _writeGate.WaitAsync(cancellationToken);
+        try
         {
-            throw new InvalidOperationException("Whisper worker pipe is not connected.");
-        }
+            if (_pipe is null)
+            {
+                throw new InvalidOperationException("Whisper worker pipe is not connected.");
+            }
 
-        await _pipe.WriteAsync(frame, cancellationToken);
-        await _pipe.FlushAsync(cancellationToken);
+            await _pipe.WriteAsync(frame, cancellationToken);
+            await _pipe.FlushAsync(cancellationToken);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 
-    private async Task<WhisperPipeResponse> ReadResponseAsync(Guid expectedRequestId, CancellationToken cancellationToken)
+    private void EnsureReaderStarted()
     {
-        if (_pipe is null)
+        if (_readerStarted)
         {
-            throw new InvalidOperationException("Whisper worker pipe is not connected.");
+            return;
         }
 
-        for (var attempt = 0; attempt < 8; attempt++)
+        _readerStarted = true;
+        _readerTask = Task.Run(ResponseReaderLoopAsync, CancellationToken.None);
+    }
+
+    private async Task ResponseReaderLoopAsync()
+    {
+        try
         {
-            var payload = await ReadFramePayloadAsync(_pipe, cancellationToken);
-            if (!WhisperPipeProtocol.TryDecodeResponse(payload, out var response, out _))
+            while (true)
             {
-                MarkUnavailable();
-                throw new InvalidOperationException("Invalid response frame from Whisper worker.");
-            }
+                var payload = await ReadFramePayloadAsync(_pipe!, CancellationToken.None);
+                if (!WhisperPipeProtocol.TryDecodeResponse(payload, out var response, out _))
+                {
+                    break;
+                }
 
-            if (response.RequestId == expectedRequestId)
-            {
-                return response;
-            }
+                TaskCompletionSource<WhisperPipeResponse>? tcs;
+                lock (_responsesLock)
+                {
+                    _pendingResponses.Remove(response.RequestId, out tcs);
+                }
 
-            // Interleaved responses (e.g. a Cancel acknowledgement) are dropped.
+                tcs?.TrySetResult(response);
+            }
+        }
+        catch
+        {
         }
 
         MarkUnavailable();
-        throw new InvalidOperationException("Whisper worker responses stopped matching the request.");
+    }
+
+    private async Task<WhisperPipeResponse> SendAndAwaitAsync(
+        WhisperPipeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var tcs = new TaskCompletionSource<WhisperPipeResponse>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_responsesLock)
+        {
+            _pendingResponses[request.RequestId] = tcs;
+        }
+
+        try
+        {
+            await WriteRequestAsync(request, cancellationToken);
+            return await tcs.Task.WaitAsync(cancellationToken);
+        }
+        catch
+        {
+            lock (_responsesLock)
+            {
+                _pendingResponses.Remove(request.RequestId);
+            }
+
+            throw;
+        }
     }
 
     private static async Task<byte[]> ReadFramePayloadAsync(

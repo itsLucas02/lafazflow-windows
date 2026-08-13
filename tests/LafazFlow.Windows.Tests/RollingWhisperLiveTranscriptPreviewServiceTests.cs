@@ -22,6 +22,66 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task WorkerSnapshotPathProducesMonotonicPreview()
+    {
+        var received = new List<string>();
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            workerTranscribeSnapshotAsync: (_, _, samples, _) =>
+                Task.FromResult<string?>($"worker {samples}"));
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await WaitUntilAsync(() => received.Count == 1);
+        await service.StopAsync();
+
+        Assert.Contains("8000", received[0]);
+    }
+
+    [Fact]
+    public async Task WorkerSnapshotPathStitchesMonotonically()
+    {
+        var previews = new Queue<string>(["first part", "part second part"]);
+        var received = new List<string>();
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            workerTranscribeSnapshotAsync: (_, _, _, _) =>
+                Task.FromResult<string?>(previews.Count > 0 ? previews.Dequeue() : null));
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await WaitUntilAsync(() => received.Count == 1);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await WaitUntilAsync(() => received.Count == 2);
+        await service.StopAsync();
+
+        Assert.Equal("First part. Part second part.", received[1]);
+    }
+
+    [Fact]
+    public async Task StoppedWorkerSessionDoesNotDeliverStalePreview()
+    {
+        var received = new List<string>();
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            workerTranscribeSnapshotAsync: async (_, _, _, cancellationToken) =>
+            {
+                await gate.Task.WaitAsync(cancellationToken);
+                return "late text";
+            });
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await Task.Delay(60);
+        await service.StopAsync();
+        gate.TrySetResult();
+        await Task.Delay(80);
+
+        Assert.Empty(received);
+    }
+
+    [Fact]
     public async Task PreviewNeverShrinksWhenRollingWindowDropsEarlierWords()
     {
         var service = CreateService(

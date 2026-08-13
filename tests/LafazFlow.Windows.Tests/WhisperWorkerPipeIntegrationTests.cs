@@ -79,6 +79,14 @@ public sealed class WhisperWorkerPipeIntegrationTests
         var after = await session.TranscribeFinalAsync(shortPcm, shortSamples, CancellationToken.None);
         Assert.Equal(WhisperPipeStatus.Ok, after.Status);
 
+        var (previewPcm, previewSamples) = ReadPcm16kMono(longFixture);
+        var previewTask = session.TranscribePreviewAsync(previewPcm, previewSamples, CancellationToken.None);
+        await Task.Delay(120);
+        var priorityFinal = await session.TranscribeFinalAsync(shortPcm, shortSamples, CancellationToken.None);
+        Assert.Equal(WhisperPipeStatus.Ok, priorityFinal.Status);
+        var previewResult = await previewTask;
+        Assert.Equal(WhisperPipeStatus.Aborted, previewResult.Status);
+
         var processId = session.ProcessId;
         await supervisor.ShutdownAsync();
         Assert.False(IsProcessRunning(processId));

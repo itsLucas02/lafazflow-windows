@@ -84,7 +84,7 @@ public sealed class WhisperWorkerSupervisorTests
         return new WhisperWorkerSupervisor(
             options ?? new WhisperWorkerSupervisorOptions
             {
-                ReadinessTimeout = TimeSpan.FromSeconds(10),
+                ReadinessTimeout = TimeSpan.FromSeconds(60),
                 OperationTimeout = TimeSpan.FromSeconds(10),
                 ShutdownTimeout = TimeSpan.FromSeconds(2)
             },

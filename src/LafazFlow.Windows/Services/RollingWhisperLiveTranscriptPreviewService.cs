@@ -15,6 +15,7 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
     private readonly LiveTranscriptStabilizer _stabilizer = new();
     private readonly RollingWhisperLiveTranscriptPreviewOptions _options;
     private readonly Func<AppSettings, byte[], int, CancellationToken, Task<string>> _transcribeSnapshotAsync;
+    private readonly Func<AppSettings, byte[], uint, CancellationToken, Task<string?>>? _workerTranscribeSnapshotAsync;
     private readonly Action<string> _logMessage;
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private readonly WhisperProcessCoordinator _processCoordinator;
@@ -41,10 +42,12 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         Func<AppSettings, byte[], int, CancellationToken, Task<string>>? transcribeSnapshotAsync = null,
         Action<string>? logMessage = null,
         IHotkeyDiagnostics? hotkeyDiagnostics = null,
-        WhisperProcessCoordinator? processCoordinator = null)
+        WhisperProcessCoordinator? processCoordinator = null,
+        Func<AppSettings, byte[], uint, CancellationToken, Task<string?>>? workerTranscribeSnapshotAsync = null)
     {
         _options = options;
         _transcribeSnapshotAsync = transcribeSnapshotAsync ?? DefaultTranscribeSnapshotAsync;
+        _workerTranscribeSnapshotAsync = workerTranscribeSnapshotAsync;
         _logMessage = logMessage ?? Log;
         _hotkeyDiagnostics = hotkeyDiagnostics ?? new FileHotkeyDiagnostics();
         _processCoordinator = processCoordinator ?? WhisperProcessCoordinator.Shared;
@@ -84,7 +87,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
 
         var sessionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _sessionCancellation = sessionCancellation;
-        _previewLoop = Task.Run(() => RunPreviewLoopAsync(sessionCancellation.Token), CancellationToken.None);
+        _previewLoop = Task.Run(
+            () => RunPreviewLoopAsync(sessionCancellation.Token, onPartialTranscript),
+            CancellationToken.None);
         _hotkeyDiagnostics.Log(new HotkeyDiagnosticWrite(
             Event: "preview_started",
             Accepted: "true",
@@ -187,7 +192,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
         }
     }
 
-    private async Task RunPreviewLoopAsync(CancellationToken cancellationToken)
+    private async Task RunPreviewLoopAsync(
+        CancellationToken cancellationToken,
+        Action<string> onPartialTranscript)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -203,7 +210,13 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             _stats.Attempted++;
             var settings = _settings ?? throw new OperationCanceledException();
             var threads = Math.Clamp(Math.Max(1, settings.WhisperThreads / 2), 1, Environment.ProcessorCount);
-            var preview = await _transcribeSnapshotAsync(settings, snapshot.Audio, threads, cancellationToken);
+            var preview = await TranscribeSnapshotAsync(settings, snapshot.Audio, threads, cancellationToken);
+            if (preview is null)
+            {
+                _stats.CountSuppression("empty");
+                continue;
+            }
+
             if (settings.EnableVocabularyCorrections)
             {
                 preview = VocabularyCorrectionService.Apply(preview, settings.CustomCorrectionRules);
@@ -224,8 +237,27 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
             _displayedPreview = ExtendMonotonically(_displayedPreview, stablePreview);
             _lastPreview = _displayedPreview;
             _stats.Accepted++;
-            _onPartialTranscript?.Invoke(_displayedPreview);
+            onPartialTranscript(_displayedPreview);
         }
+    }
+
+    private async Task<string?> TranscribeSnapshotAsync(
+        AppSettings settings,
+        byte[] pcmAudio,
+        int threads,
+        CancellationToken cancellationToken)
+    {
+        if (_workerTranscribeSnapshotAsync is not null)
+        {
+            var text = await _workerTranscribeSnapshotAsync(
+                settings,
+                pcmAudio,
+                (uint)(pcmAudio.Length / 2),
+                cancellationToken);
+            return text is null ? null : WhisperCliTranscriptionService.CleanTranscript(text);
+        }
+
+        return await _transcribeSnapshotAsync(settings, pcmAudio, threads, cancellationToken);
     }
 
     private static string ExtendMonotonically(string display, string next)

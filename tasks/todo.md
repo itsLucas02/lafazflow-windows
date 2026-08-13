@@ -162,6 +162,29 @@
 **Rollback readiness:** CLI engine remains the fallback; switching the recorder back to the timing/plain path is a one-line change
 **Next milestone entry conditions:** satisfied — M6 (live-preview integration and final priority) can proceed.
 
+## M6 — Live-preview integration and final priority
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- Worker: a `Final` request now preempts an in-flight `Preview` decode (abort) and drops queued preview work; final transcription can never wait behind preview
+- `RollingWhisperLiveTranscriptPreviewService` accepts an optional worker-backed snapshot transcriber; previews run through the persistent worker when available (CLI fallback otherwise); monotonic display stitching (v0.13.2) preserved; stale-session responses are ignored via the per-session callback capture + cancellation token
+- Supervisor session: single background response dispatcher (one reader, responses matched by request id) + serialized writes, so concurrent preview/final requests cannot corrupt the stream; TCS registered before write to avoid a response race
+- MainWindow wires the preview to the worker session (`WorkerPreviewTranscribeAsync`)
+
+**Verification**
+- Integration (real worker): a long Preview is aborted when a Final arrives; the Final returns Ok first; the Preview returns Aborted; worker stays healthy
+- Preview service: worker snapshot path, monotonic stitching, stale-session suppression
+- Focused 24 (M4/M6 protocol+supervisor+preview+integration); full suite 606; Release build 0 warnings/0 errors
+
+**Key findings / evidence-backed notes**
+- NamedPipeClientStream forbids concurrent reads and writes; a single dispatcher loop + write gate is required for correct concurrent ops
+- Response registration must precede the request write to avoid losing fast responses
+
+**Traceability:** final-preempts-preview (Reference adapted for Windows - Handy engine lease/coordinator); coalesce/drop superseded previews (Reference adapted for Windows); monotonic stitching preserved (LafazFlow v0.13.2)
+**Rollback readiness:** preview falls back to the existing CLI path if the worker is absent
+**Next milestone entry conditions:** satisfied — M7 (crash, timeout, retry, and CLI recovery) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
