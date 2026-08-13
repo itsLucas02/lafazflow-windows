@@ -432,6 +432,12 @@ public sealed class RecorderController
                     "No speech was transcribed. Check the microphone input and try again.");
             }
 
+            if (PromptLeakDetector.IsPromptLeak(transcript, prompt))
+            {
+                throw new InvalidOperationException(
+                    "No speech was transcribed. Check the microphone input and try again.");
+            }
+
             RecordHealthSample(job, engineResult);
 
             if (job.LatencyTrace is { } rawTrace)

@@ -360,6 +360,7 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Added `deep seq`, `deepsick`, and `deep sick` variants to the `DeepSeek` corrections while preserving all existing correction behavior.
 - Focused vocabulary/formatter/settings tests pass, 249 tests; full suite expected green; Release build 0 warnings/0 errors; stable package re-published and relaunched.
 - Follow-up: owner still saw occasional `DeepSeq`/`DeepSec` (single tokens, no space). Added `deepseq`, `deepsec`, and `deep sec` variants to the `DeepSeek` entry; regression tests cover `DeepSeq`, `DeepSec`, and `deep sec`; full suite 661 green; stable package re-published and relaunched.
+- Follow-up: owner reported the vocabulary prompt text itself leaking into pasted output ("Custom vocabulary, Individu, Individu, ..."). Root cause is a whisper.cpp prompt-continuation hallucination on weak audio: the initial prompt is seeded into the decode context, and the decoder can emit the prompt's marker followed by a repeated invented word. Added `PromptLeakDetector` (marker + repetition-run and prompt-echo rules) and wired it into the recorder's single paste choke point so prompt text can never reach the clipboard; it surfaces the friendly "No speech was transcribed" message instead. Full suite 671 green; stable package re-published and relaunched.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
