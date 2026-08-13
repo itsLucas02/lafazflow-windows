@@ -963,11 +963,22 @@ public sealed class RecorderControllerTests
             return CurrentPath;
         }
 
-        public void Stop()
+        public async Task<AudioCaptureFinalization> StopAsync()
         {
             StopStarted.TrySetResult();
-            StopGate?.GetAwaiter().GetResult();
+            if (StopGate is not null)
+            {
+                await StopGate;
+            }
+
             StopCompleted.TrySetResult();
+            return new AudioCaptureFinalization(
+                CurrentPath ?? "",
+                SampleCount: 1600,
+                ByteCount: 3200,
+                DurationMilliseconds: 100,
+                AudioCaptureFinalizeState.Finalized,
+                ErrorKind: "");
         }
 
         public void EmitAudioChunk(byte[] audioChunk)

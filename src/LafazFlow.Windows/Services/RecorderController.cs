@@ -208,15 +208,19 @@ public sealed class RecorderController
             try
             {
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainStarted);
-                _audioCapture.Stop();
+                var finalization = await _audioCapture.StopAsync();
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainFinished);
                 latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeStarted);
-                // M1 approximation: the WAV writer finalizes inside Stop/Dispose. M2 replaces this
-                // with an explicit asynchronous finalization after NAudio's RecordingStopped event.
                 latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeFinished);
+                if (finalization.State == AudioCaptureFinalizeState.Failed)
+                {
+                    throw new InvalidOperationException(
+                        $"Recording could not be finalized ({(string.IsNullOrWhiteSpace(finalization.ErrorKind) ? "unknown" : finalization.ErrorKind)}).");
+                }
+
                 _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
-                _ = _queue.Enqueue(new DictationJob(audioPath, targetWindow, settings, latencyTrace), cancellationToken)
+                _ = _queue.Enqueue(new DictationJob(finalization.OutputPath, targetWindow, settings, latencyTrace), cancellationToken)
                     .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
                 queued = true;
             }

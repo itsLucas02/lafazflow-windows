@@ -59,6 +59,36 @@
 **Rollback readiness:** additive telemetry; parsing is tolerant of older rows; recorder falls back to the plain transcription path when no timing provider is supplied
 **Next milestone entry conditions:** satisfied — M2 (complete-audio stop and WAV finalization) can proceed.
 
+## M2 — Complete-audio stop and WAV finalization
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `IAudioCaptureService.Stop()` replaced with async `StopAsync()` returning `AudioCaptureFinalization` (path, sample/byte counts, duration, state, error kind)
+- Explicit capture states: `Idle`, `Recording`, `Stopping`, `Finalized`, `Failed`
+- Stop flow: request stop → keep session callbacks attached → await NAudio `RecordingStopped` → lock session, detach callbacks, finalize writer, publish counts
+- Two-second bounded stop deadline (`audio_drain_timeout`); device errors finalize with `device_error`; writer failures mark `Failed` and block enqueue
+- Session isolation preserved: a stopped session's late callbacks can never write into a later session
+- `WavFileValidator` for header/byte/sample/duration parity
+- Recorder enqueues final transcription only after successful finalization
+
+**Reference traceability**
+- Handy recorder end-of-stream drain — Reference adopted
+- FluidVoice measured stop/audio-drain lifecycle — Reference adapted for Windows (NAudio `RecordingStopped`)
+
+**Tests (focused 39, full 585, Release build 0 warnings/0 errors)**
+- Final buffer arriving after stop request is included
+- Old-session delayed callback cannot write into a new session
+- Rapid sessions keep sample ownership; active-session replacement fails loudly
+- Stop timeout finalizes received audio with `audio_drain_timeout`
+- Writer failure marks `Failed`; device error finalizes with `device_error`
+- Real WAV header/byte/sample/duration parity (100 ms fixture)
+- Real spoken-ending preservation: last-3-word match 24/32 exact, **32/32** case/punctuation-insensitive on the retained real corpus
+
+**Limitations / notes:** the ten live-microphone spoken-ending repetitions are part of M10 owner-local verification; the retained real corpus provides automated ending-word evidence here. CLI transcription remains functional.
+**Rollback readiness:** restore the synchronous stop adapter only if async finalization fails; session isolation retained.
+**Next milestone entry conditions:** satisfied — M3 (native persistent-engine proof of concept) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
