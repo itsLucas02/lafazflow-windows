@@ -170,6 +170,18 @@ public sealed class SettingsWindowXamlTests
     }
 
     [Fact]
+    public void SettingsWindowVocabularyScreenShowsDefaultVocabulary()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("Text=\"Default Vocabulary\"", xaml);
+        Assert.Contains("Text=\"{Binding DefaultVocabularyText}\"", xaml);
+        Assert.Contains("DeepSeek", xaml);
+    }
+
+    [Fact]
     public void SettingsWindowContainsLocalConservativeDictationPolishControl()
     {
         var repoRoot = FindRepoRoot();

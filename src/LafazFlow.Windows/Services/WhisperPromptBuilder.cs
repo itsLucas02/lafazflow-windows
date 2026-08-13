@@ -11,24 +11,40 @@ public static class WhisperPromptBuilder
 
     public static string BuildVocabularyPrompt(string builtInPrompt, string customVocabularyTerms)
     {
-        var customTerms = NormalizeCustomTerms(customVocabularyTerms);
-        if (customTerms.Count == 0)
+        var terms = NormalizeTerms(
+            VocabularyCatalog.DefaultTerms.Concat(SplitCustomTerms(customVocabularyTerms)));
+        if (terms.Count == 0)
         {
             return builtInPrompt.Trim();
         }
 
         var basePrompt = builtInPrompt.Trim();
         var separator = basePrompt.EndsWith('.') ? " " : ". ";
-        return $"{basePrompt}{separator}Custom vocabulary: {string.Join(", ", customTerms)}.";
+        return $"{basePrompt}{separator}Custom vocabulary: {string.Join(", ", terms)}.";
     }
 
-    private static IReadOnlyList<string> NormalizeCustomTerms(string customVocabularyTerms)
+    private static IReadOnlyList<string> SplitCustomTerms(string customVocabularyTerms)
     {
         var terms = new List<string>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var rawLine in customVocabularyTerms.Split(["\r\n", "\n", "\r"], StringSplitOptions.None))
         {
             var term = rawLine.Trim();
+            if (term.Length > 0)
+            {
+                terms.Add(term);
+            }
+        }
+
+        return terms;
+    }
+
+    private static IReadOnlyList<string> NormalizeTerms(IEnumerable<string> rawTerms)
+    {
+        var terms = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var rawTerm in rawTerms)
+        {
+            var term = rawTerm.Trim();
             if (term.Length == 0 || !seen.Add(term))
             {
                 continue;

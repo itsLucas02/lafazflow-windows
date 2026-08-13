@@ -4,71 +4,33 @@ namespace LafazFlow.Windows.Services;
 
 public static partial class VocabularyCorrectionService
 {
-    private static readonly (Regex Pattern, string Replacement)[] DefaultCorrections =
-    [
-        (PhraseRegex("super b's"), "Supabase"),
-        (PhraseRegex("superbase"), "Supabase"),
-        (PhraseRegex("superbiz"), "Supabase"),
-        (PhraseRegex("supabaes"), "Supabase"),
-        (PhraseRegex("supabeas"), "Supabase"),
-        (PhraseRegex("supabease"), "Supabase"),
-        (PhraseRegex("inventabo"), "Contabo"),
-        (PhraseRegex("contabo"), "Contabo"),
-        (PhraseRegex("vircell"), "Vercel"),
-        (PhraseRegex("tail, skill"), "Tailscale"),
-        (PhraseRegex("tail skill"), "Tailscale"),
-        (PhraseRegex("netlify"), "Netlify"),
-        (PhraseRegex("mintlify"), "Mintlify"),
-        (PhraseRegex("contact 7"), "Context7"),
-        (PhraseRegex("contacts 7"), "Context7"),
-        (PhraseRegex("contact seven"), "Context7"),
-        (PhraseRegex("contacts seven"), "Context7"),
-        (PhraseRegex("m c p"), "MCP"),
-        (PhraseRegex("em c p"), "MCP"),
-        (PhraseRegex("vite"), "Vite"),
-        (PhraseRegex("vite js"), "Vite"),
-        (PhraseRegex("maddy breath"), "MediBrave"),
-        (PhraseRegex("medibrief"), "MediBrave"),
-        (PhraseRegex("mad brave"), "MediBrave"),
-        (PhraseRegex("medi brave"), "MediBrave"),
-        (PhraseRegex("maddy brave"), "MediBrave"),
-        (PhraseRegex("lukamine"), "Luqman"),
-        (PhraseRegex("lukman"), "Luqman"),
-        (PhraseRegex("luqmen"), "Luqman"),
-        (PhraseRegex("l-u-q-m-a-n"), "Luqman"),
-        (PhraseRegex("s-n-l-u-q-m-e-n"), "Luqman"),
-        (PhraseRegex("repeteness"), "rapidness"),
-        (PhraseRegex("comit"), "commit"),
-        (PhraseRegex("git come in"), "git commit"),
-        (PhraseRegex("git comes in"), "git commit"),
-        (PhraseRegex("come in and push"), "commit and push"),
-        (PhraseRegex("comes in and push"), "commit and push"),
-        (PhraseRegex("chat cn"), "shadcn"),
-        (PhraseRegex("chatcn"), "shadcn"),
-        (PhraseRegex("shad cn"), "shadcn"),
-        (PhraseRegex("shad c n"), "shadcn"),
-        (PhraseRegex("chet's the end"), "shadcn"),
-        (PhraseRegex("shut cn"), "shadcn"),
-        (PhraseRegex("sh*t's the end"), "shadcn"),
-        (PhraseRegex("shit, cn"), "shadcn"),
-        (PhraseRegex("shut the end"), "shadcn"),
-        (PhraseRegex("sh*t-c-n"), "shadcn"),
-        (PhraseRegex("shut-see-in"), "shadcn"),
-        (PhraseRegex("shat-c-n"), "shadcn"),
-        (PhraseRegex("shetxian"), "shadcn"),
-        (PhraseRegex("components dot json"), "components.json"),
-        (PhraseRegex("radix ui"), "Radix UI"),
-        (PhraseRegex("tailwind css"), "Tailwind CSS"),
-        (PhraseRegex("field group"), "FieldGroup"),
-        (PhraseRegex("input group"), "InputGroup"),
-        (PhraseRegex("sentry"), "Sentry"),
-        (PhraseRegex("github"), "GitHub"),
-        (PhraseRegex("deep seek"), "DeepSeek"),
-        (PhraseRegex("deepseek"), "DeepSeek"),
-        (PhraseRegex("power shell"), "PowerShell"),
-        (PhraseRegex("powershell"), "PowerShell"),
-        (PhraseRegex("cursor"), "Cursor")
-    ];
+    private static readonly (Regex Pattern, string Replacement)[] DefaultCorrections = BuildDefaultCorrections();
+
+    private static (Regex Pattern, string Replacement)[] BuildDefaultCorrections()
+    {
+        var corrections = new List<(Regex Pattern, string Replacement)>();
+        foreach (var entry in VocabularyCatalog.DefaultEntries)
+        {
+            foreach (var variant in entry.HeardVariants)
+            {
+                corrections.Add((PhraseRegex(variant), entry.Term));
+            }
+        }
+
+        // Linguistic/typo corrections that are not vocabulary words and therefore
+        // stay out of the visible Vocabulary screen.
+        corrections.AddRange(
+        [
+            (PhraseRegex("repeteness"), "rapidness"),
+            (PhraseRegex("comit"), "commit"),
+            (PhraseRegex("git come in"), "git commit"),
+            (PhraseRegex("git comes in"), "git commit"),
+            (PhraseRegex("come in and push"), "commit and push"),
+            (PhraseRegex("comes in and push"), "commit and push")
+        ]);
+
+        return corrections.ToArray();
+    }
 
     public static string ApplyDefaults(string text)
     {

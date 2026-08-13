@@ -859,6 +859,18 @@
                     <TextBlock Text="Local vocabulary hints and deterministic correction rules for words that matter to you." Style="{StaticResource SectionSubtitleStyle}" />
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
+                            <TextBlock Text="Default Vocabulary" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="These terms are always added to the local Whisper prompt, so names like DeepSeek are recognized reliably. Add your own terms below."
+                                       Style="{StaticResource HelperTextStyle}" />
+                            <TextBlock Text="{Binding DefaultVocabularyText}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="20"
+                                       Margin="0,0,0,12" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
                             <TextBlock Text="Custom Vocabulary" Style="{StaticResource FieldLabelStyle}" />
                             <TextBlock Text="One term per line. Terms are added to the local Whisper prompt." Style="{StaticResource HelperTextStyle}" />
                             <TextBox Text="{Binding CustomVocabularyTerms, UpdateSourceTrigger=PropertyChanged}"

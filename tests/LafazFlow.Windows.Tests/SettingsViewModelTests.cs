@@ -75,6 +75,18 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void DefaultVocabularyTextExposesBuiltInTermsForVocabularyScreen()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        var viewModel = SettingsViewModel.Load(store);
+
+        Assert.Contains("DeepSeek", viewModel.DefaultVocabularyText);
+        Assert.Contains("Supabase", viewModel.DefaultVocabularyText);
+        Assert.Contains("MediBrave", viewModel.DefaultVocabularyText);
+    }
+
+    [Fact]
     public void LoadCopiesPersistedSettingsIntoEditableProperties()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

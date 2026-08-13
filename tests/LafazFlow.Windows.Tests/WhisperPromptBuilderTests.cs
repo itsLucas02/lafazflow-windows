@@ -6,14 +6,17 @@ namespace LafazFlow.Windows.Tests;
 public sealed class WhisperPromptBuilderTests
 {
     [Fact]
-    public void BuildVocabularyPromptKeepsBuiltInPromptWhenCustomTermsAreEmpty()
+    public void BuildVocabularyPromptIncludesDefaultVocabularyWhenCustomTermsAreEmpty()
     {
         var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(AppSettings.Default with
         {
             CustomVocabularyTerms = ""
         });
 
-        Assert.Equal(AppSettings.DefaultWhisperInitialPrompt, prompt);
+        Assert.StartsWith(AppSettings.DefaultWhisperInitialPrompt, prompt);
+        Assert.Contains("DeepSeek", prompt);
+        Assert.Contains("Supabase", prompt);
+        Assert.Contains("MediBrave", prompt);
     }
 
     [Fact]
@@ -29,7 +32,7 @@ public sealed class WhisperPromptBuilderTests
                 """
         });
 
-        Assert.Contains("Supabase", prompt);
+        Assert.Contains("DeepSeek", prompt);
         Assert.Contains("PDPA, Care Visit, align, inline alert.", prompt);
     }
 
@@ -46,8 +49,25 @@ public sealed class WhisperPromptBuilderTests
                 """
         });
 
+        Assert.Contains("DeepSeek", prompt);
         Assert.Contains("PDPA, Align.", prompt);
         Assert.DoesNotContain("pdpa", prompt);
         Assert.DoesNotContain("align.", prompt);
+    }
+
+    [Fact]
+    public void BuildVocabularyPromptDeduplicatesCustomTermThatMatchesDefault()
+    {
+        var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(AppSettings.Default with
+        {
+            CustomVocabularyTerms = """
+                deepseek
+                Supabase
+                PDPA
+                """
+        });
+
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(prompt, "DeepSeek"));
+        Assert.Contains("LafazFlow, PDPA.", prompt);
     }
 }

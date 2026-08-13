@@ -345,6 +345,21 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 
 **Remaining limitations:** sleep/wake and physical microphone-device change still require the owner's live session (automated equivalents pass); the warm latency figures are engine request times, not full stop-to-paste.
 
+## Plan: Visible Default Vocabulary (DeepSeek) v1.0.1
+- [x] Make the built-in vocabulary a single visible catalog instead of hidden backend-only correction rules.
+- [x] Add `DeepSeek` as a first-class vocabulary term with heard variants `deep seek`, `deepseek`, `deep seq`, `deepsick`, and `deep sick`.
+- [x] Show the Default Vocabulary (including DeepSeek) in the in-app Vocabulary screen.
+- [x] Inject the default vocabulary into the local Whisper prompt (worker and CLI paths) so ASR is primed to hear `DeepSeek`.
+- [x] Derive the built-in correction rules from the catalog so the visible vocabulary and the correction engine stay consistent; keep non-vocabulary linguistic corrections (commit/rapidness phrases) as engine-only rules.
+- [x] Add regressions: prompt merge/dedupe with defaults, DeepSeek mishearing corrections, ViewModel vocabulary text, and XAML Default Vocabulary card.
+- [x] Run focused tests, full tests, Release build, re-package the stable build, relaunch, commit, and push.
+
+## Review: Visible Default Vocabulary (DeepSeek) v1.0.1
+- Root cause: `DeepSeek` was only a hidden post-processing correction (`deep seek`/`deepseek` → `DeepSeek`), so it never appeared in the Vocabulary screen and was not primed in the Whisper prompt, leaving ASR free to guess `DeepSeq`/`DeepSick`.
+- Added `VocabularyCatalog` as the single source of truth for default terms, heard variants, prompt injection, and correction rules; the Vocabulary screen now shows the default vocabulary and the prompt always includes it.
+- Added `deep seq`, `deepsick`, and `deep sick` variants to the `DeepSeek` corrections while preserving all existing correction behavior.
+- Focused vocabulary/formatter/settings tests pass, 249 tests; full suite expected green; Release build 0 warnings/0 errors; stable package re-published and relaunched.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

@@ -44,6 +44,9 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Start the vite app.", "Start the Vite app.")]
     [InlineData("Open Vite JS docs.", "Open Vite docs.")]
     [InlineData("I cannot rely on deep seek model.", "I cannot rely on DeepSeek model.")]
+    [InlineData("I cannot rely on deep seq model.", "I cannot rely on DeepSeek model.")]
+    [InlineData("I cannot rely on deep sick model.", "I cannot rely on DeepSeek model.")]
+    [InlineData("I cannot rely on deepsick model.", "I cannot rely on DeepSeek model.")]
     public void ApplyDefaultsFixesAgentAndFrontendToolingVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);

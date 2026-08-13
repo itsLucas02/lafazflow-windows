@@ -227,6 +227,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         set => SetProperty(ref _customVocabularyTerms, value);
     }
 
+    public string DefaultVocabularyText => string.Join(", ", VocabularyCatalog.DefaultTerms);
+
     public string CustomCorrectionRules
     {
         get => _customCorrectionRules;
