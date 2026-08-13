@@ -32,6 +32,16 @@ public static class MemoryStabilityAnalyzer
         return current - baseline;
     }
 
+    /// <summary>
+    /// Verification exit policy: only a Stable verdict passes. Growing and
+    /// Uncertain both fail closed so missing checkpoint data can never be
+    /// mistaken for proof of stability.
+    /// </summary>
+    public static bool PassesVerificationGate(MemoryStabilityVerdict verdict)
+    {
+        return verdict == MemoryStabilityVerdict.Stable;
+    }
+
     public static MemoryStabilityResult Classify(
         long workingSetBaselineBytes,
         long workingSetFinalBytes,

@@ -130,4 +130,29 @@ public sealed class MemoryStabilityAnalyzerTests
         Assert.Null(result.VramGrowthMiB);
         Assert.Contains("nvidia-smi unavailable", result.Reason);
     }
+
+    [Theory]
+    [InlineData(MemoryStabilityVerdict.Stable, true)]
+    [InlineData(MemoryStabilityVerdict.Growing, false)]
+    [InlineData(MemoryStabilityVerdict.Uncertain, false)]
+    public void VerificationGatePassesOnlyForStable(MemoryStabilityVerdict verdict, bool expected)
+    {
+        Assert.Equal(expected, MemoryStabilityAnalyzer.PassesVerificationGate(verdict));
+    }
+
+    [Fact]
+    public void UncertainVerdictFromMissingCheckpointsFailsTheGate()
+    {
+        var result = MemoryStabilityAnalyzer.Classify(
+            400L * 1024 * 1024,
+            402L * 1024 * 1024,
+            1000,
+            1001,
+            WorkingSetToleranceBytes,
+            VramToleranceMiB,
+            []);
+
+        Assert.Equal(MemoryStabilityVerdict.Uncertain, result.Verdict);
+        Assert.False(MemoryStabilityAnalyzer.PassesVerificationGate(result.Verdict));
+    }
 }

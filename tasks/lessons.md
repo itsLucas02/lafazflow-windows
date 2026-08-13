@@ -383,3 +383,15 @@
 ## Capture memory baselines after warmup for steady-state stability
 - Pattern: The worker verifier sampled working set immediately after the model loaded, so its growth figure mixed the one-time first-inference allocation (~195 MiB) with steady-state behavior and could not prove post-warmup stability.
 - Rule: When measuring native/CUDA engine stability, run warmup requests first, then refresh the process and record working-set/VRAM baselines, checkpoint memory during the measured run, and report post-warmup growth separately from readiness and warmup allocation. Define a documented tolerance-based rule (not "exactly flat") and test the classifier deterministically; a checkpoint spike above tolerance is evidence of growth, not noise to hide.
+
+## Verification gates must fail closed on uncertain results
+- Pattern: The worker verifier's exit condition was `verdict != Growing`, so an `Uncertain` result (for example, no memory checkpoints captured) incorrectly passed as success and could be mistaken for proof of stability.
+- Rule: Extract the verdict-to-exit mapping into a tiny testable function and require exactly `Stable` to pass. When a measurement cannot be made, the gate must fail with the verdict and reason preserved; never treat missing data as evidence of stability.
+
+## Derive package provenance from the binaries actually selected
+- Pattern: The M10 portable ZIP contained the owner-local CUDA `whisper-cli.exe`, but the shipped third-party notices still said the bundled CLI came from the official CPU release and that the CUDA CLI was "not redistributed" — prose contradicted the real artifact.
+- Rule: Generate a machine-readable artifact manifest at packaging time from the binaries actually selected (SHA-256 per file, CLI source, source revision or release identity, worker revision), embed it in the package, and keep notices accurate for every packaging path. Never state an unknown revision as known, and never write private absolute paths into the manifest.
+
+## Avoid case-insensitive PowerShell variable collisions with script parameters
+- Pattern: A manifest script used `$cliRevision = $CliRevision` then `$cliRevision = $null` inside an `if`; the manifest still showed an empty string. PowerShell variables are case-insensitive, so the local alias collided with the `[string]$CliRevision` parameter whose type constraint coerced the `$null` back to `""`.
+- Rule: Use parameter names and local variable names that differ beyond letter casing (for example, `$CliRevision` vs `$effectiveCliRevision`), and test manifest generation deterministically instead of trusting serialized output.

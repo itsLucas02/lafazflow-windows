@@ -556,6 +556,8 @@ Declare sustained degradation only when three of the latest five eligible runs a
 
 **Rollback:** Republish the last verified CLI-based stable build or select CLI compatibility execution while preserving the exact current settings and captured diagnostics.
 
+**Closure record (14/08/2026):** M10 exit gates passed. Final closure remediation derived package provenance from the binaries actually selected (`scripts/New-LafazFlowArtifactManifest.ps1` + embedded `LafazFlow-artifact-manifest.json`), corrected `THIRD_PARTY_NOTICES.md` so the packaged Local CUDA CLI's redistribution and revision (`968eebe7`) are stated accurately, and made the memory-verification gate fail closed (`Stable` only; `Growing`/`Uncertain` fail). M0–M10 are complete; **M11 remains unstarted and requires separate explicit owner approval**.
+
 ### M11 — Optional public release
 
 This milestone is explicitly outside current implementation approval.

@@ -18,8 +18,10 @@ The upstream project is licensed under the GNU General Public License version 3.
 This project bundles or builds against [whisper.cpp](https://github.com/ggml-org/whisper.cpp), licensed under the MIT License:
 
 - The persistent Whisper engine worker (`lafazflow-whisper-worker.exe`) is built from whisper.cpp revision `968eebe77225d25e57a3f981da7c696310f0e881` (the same source revision as the owner-local CUDA `whisper-cli.exe` below; M3 adopted it deliberately so the worker and the in-use CLI share identical source).
-- The bundled CPU `whisper-cli.exe` in release packages comes from the official whisper.cpp Windows binary release (`whisper-bin-x64.zip`); its revision is recorded in the release artifact manifest at packaging time.
-- The owner-local CUDA `whisper-cli.exe` is built from a local whisper.cpp checkout at `968eebe77225d25e57a3f981da7c696310f0e881` (May 2026) and is not redistributed.
+- Release packages include exactly one `whisper-cli.exe`, selected at packaging time:
+  - **Local CUDA CLI** — when packaged with the owner-local CUDA build (`-WhisperCliLocalPath`), the package redistributes that binary, which is built from whisper.cpp revision `968eebe77225d25e57a3f981da7c696310f0e881` (May 2026).
+  - **Official CPU CLI** — otherwise, the package includes the official whisper.cpp Windows binary release (`whisper-bin-x64.zip`) from the GitHub release; its release identity is recorded at packaging time.
+- Every package embeds `LafazFlow-artifact-manifest.json`, which records which CLI source was selected, the source revision or release identity, and the SHA-256 of each shipped binary (`whisper-cli.exe`, `lafazflow-whisper-worker.exe`, `LafazFlow.Windows.exe`). That manifest is authoritative for the binaries in the package.
 
 MIT License
 

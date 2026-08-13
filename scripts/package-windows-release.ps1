@@ -51,10 +51,16 @@ if ($LASTEXITCODE -ne 0)
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
+$cliSource = ""
+$cliRevision = ""
+$cliReleaseIdentity = ""
 if ($WhisperCliLocalPath -and (Test-Path $WhisperCliLocalPath))
 {
-    Write-Host "Using local whisper-cli: $WhisperCliLocalPath"
+    Write-Host "Using local CUDA whisper-cli: $WhisperCliLocalPath"
     Copy-Item -LiteralPath $WhisperCliLocalPath -Destination $appDir
+    $cliSource = "LocalCuda"
+    $cliRevision = "968eebe77225d25e57a3f981da7c696310f0e881"
+    $cliReleaseIdentity = ""
 }
 else
 {
@@ -75,6 +81,9 @@ else
     Get-ChildItem -Path $expandDir -Recurse -File -Include "whisper-cli.exe", "*.dll" |
         Copy-Item -Destination $appDir
     Remove-Item -LiteralPath $expandDir -Recurse -Force
+    $cliSource = "OfficialCpu"
+    $cliRevision = ""
+    $cliReleaseIdentity = "$($latest.tag_name) $($asset.browser_download_url)"
 }
 
 $bundledCli = Join-Path $appDir "whisper-cli.exe"
@@ -142,6 +151,35 @@ Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $appDir
 Copy-Item -LiteralPath (Join-Path $repoRoot "LICENSE") -Destination $appDir
 Copy-Item -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.md") -Destination $appDir
 Copy-Item -LiteralPath (Join-Path $repoRoot "docs\windows-runtime-setup.md") -Destination $appDir
+
+Write-Host "Generating artifact manifest..."
+$manifestScript = Join-Path $PSScriptRoot "New-LafazFlowArtifactManifest.ps1"
+$manifestArgs = @(
+    "-AppPath", (Join-Path $appDir "LafazFlow.Windows.exe"),
+    "-CliPath", $bundledCli,
+    "-CliSource", $cliSource,
+    "-Version", $Version,
+    "-Runtime", $Runtime,
+    "-Configuration", $Configuration,
+    "-OutputPath", (Join-Path $appDir "LafazFlow-artifact-manifest.json")
+)
+if ($workerIncluded)
+{
+    $manifestArgs += @("-WorkerPath", (Join-Path $appDir "lafazflow-whisper-worker.exe"))
+}
+if ($cliRevision)
+{
+    $manifestArgs += @("-CliRevision", $cliRevision)
+}
+if ($cliReleaseIdentity)
+{
+    $manifestArgs += @("-CliReleaseIdentity", $cliReleaseIdentity)
+}
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $manifestScript @manifestArgs
+if ($LASTEXITCODE -ne 0)
+{
+    throw "Artifact manifest generation failed with exit code $LASTEXITCODE."
+}
 
 Write-Host "Running release safety checks..."
 $violations = @()

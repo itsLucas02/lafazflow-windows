@@ -168,7 +168,11 @@ PrintMemoryReport(
     stability);
 
 var allSucceeded = samples.Count > 0 && samples.All(sample => sample.Succeeded);
-return allSucceeded && orphan is null && stability.Verdict != MemoryStabilityVerdict.Growing ? 0 : 1;
+return allSucceeded
+    && orphan is null
+    && MemoryStabilityAnalyzer.PassesVerificationGate(stability.Verdict)
+    ? 0
+    : 1;
 
 static async Task<(long WorkingSetBytes, long? VramMiB)> CaptureMemoryAsync(int processId)
 {

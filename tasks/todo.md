@@ -363,6 +363,27 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Follow-up: owner reported the vocabulary prompt text itself leaking into pasted output ("Custom vocabulary, Individu, Individu, ..."). Root cause is a whisper.cpp prompt-continuation hallucination on weak audio: the initial prompt is seeded into the decode context, and the decoder can emit the prompt's marker followed by a repeated invented word. Added `PromptLeakDetector` (marker + repetition-run and prompt-echo rules) and wired it into the recorder's single paste choke point so prompt text can never reach the clipboard; it surfaces the friendly "No speech was transcribed" message instead. Full suite 671 green; stable package re-published and relaunched.
 - Follow-up: the same prompt hallucination also leaked into the live preview shell while speaking. The preview path (`RollingWhisperLiveTranscriptPreviewService`) now runs the same `PromptLeakDetector` against the built prompt and suppresses leaked snapshots before they can be displayed or stitched (counted as an empty suppression). Regression tests cover both the worker-snapshot and CLI-fallback preview paths. Full suite 673 green; stable package re-published and relaunched.
 
+## Closure remediation — package provenance and memory-verification gate
+
+**Status:** Complete (exit gate passed)
+
+### Finding 1 — package provenance is now derived from the selected binary
+
+- `scripts/New-LafazFlowArtifactManifest.ps1` generates a privacy-safe machine-readable artifact manifest from the binaries actually selected at packaging time (app exe, worker exe, CLI exe): schema version, package identity, per-file SHA-256, CLI source (`LocalCuda` / `OfficialCpu`), CLI source revision or release identity, worker revision (cross-checked against `lafazflow-whisper-worker.exe --version`), and no local absolute paths.
+- `scripts/package-windows-release.ps1` records which CLI branch it took and embeds `LafazFlow-artifact-manifest.json` inside the portable ZIP; the manifest is authoritative for that package.
+- `THIRD_PARTY_NOTICES.md` no longer claims the packaged CLI is always the official CPU release or that the owner-local CUDA CLI is "not redistributed". It now states that Local CUDA packaging redistributes the CUDA CLI built from `968eebe77225d25e57a3f981da7c696310f0e881`, that Official CPU packaging includes the `whisper-bin-x64.zip` release, and that each package embeds the authoritative manifest.
+- Rebuilt the M10 portable ZIP via the Local CUDA path: manifest records `cli.source = LocalCuda`, `cli.revision = 968eebe7...` (full), `worker.revision = 968eebe7...` with `reported_version = 968eebe7` parsed from the binary; packaged `whisper-cli.exe` SHA-256 `7c8c874a...` matches the manifest; worker SHA-256 and app SHA-256 also match. ZIP contains app exe, worker exe, CLI exe, corrected notices, manifest, README, LICENSE, runtime setup doc; no recordings, transcripts, logs, settings, models, prompts, credentials, or private absolute paths (the only `C:\Models` mention is the documented default model install directory in README).
+
+### Finding 2 — Uncertain memory verdicts now fail closed
+
+- `MemoryStabilityAnalyzer.PassesVerificationGate(verdict)` returns true only for `Stable`; `Growing` and `Uncertain` both fail.
+- The verifier exit gate now requires `PassesVerificationGate`, so missing checkpoint data can never be treated as proof of stability.
+- Deterministic tests cover Stable → pass, Growing → fail, Uncertain → fail, and the missing-checkpoint Uncertain path.
+
+**Verification:** focused manifest + gate + worker lifecycle tests green; full suite 680 green; Release build 0 warnings/0 errors; `git diff --check` clean; Local CUDA portable ZIP rebuilt and inspected (contents, manifest, hashes, notices, privacy).
+
+**Closure:** M0–M10 persistent Whisper engine roadmap gates are complete. M11 (public release) remains unstarted and requires separate explicit owner approval.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
