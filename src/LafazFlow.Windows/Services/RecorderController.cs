@@ -21,6 +21,7 @@ public sealed class RecorderController
     private readonly IHotkeyDiagnostics _hotkeyDiagnostics;
     private readonly TranscriptionPostProcessor _postProcessor;
     private readonly ITranscriptionTimingProvider? _transcriptionTiming;
+    private readonly ITranscriptionEngine? _transcriptionEngine;
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly DictationQueueProcessor _queue;
@@ -45,7 +46,8 @@ public sealed class RecorderController
         IHotkeyDiagnostics? hotkeyDiagnostics = null,
         TranscriptionPostProcessor? postProcessor = null,
         TimeSpan? transientErrorDismissDelay = null,
-        ITranscriptionTimingProvider? transcriptionTiming = null)
+        ITranscriptionTimingProvider? transcriptionTiming = null,
+        ITranscriptionEngine? transcriptionEngine = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -62,6 +64,7 @@ public sealed class RecorderController
         _getForegroundWindow = getForegroundWindow ?? GetForegroundWindow;
         _transientErrorDismissDelay = transientErrorDismissDelay ?? TimeSpan.FromMilliseconds(2500);
         _transcriptionTiming = transcriptionTiming;
+        _transcriptionEngine = transcriptionEngine;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
@@ -220,7 +223,14 @@ public sealed class RecorderController
 
                 _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
-                _ = _queue.Enqueue(new DictationJob(finalization.OutputPath, targetWindow, settings, latencyTrace), cancellationToken)
+                _ = _queue.Enqueue(
+                    new DictationJob(
+                        finalization.OutputPath,
+                        targetWindow,
+                        settings,
+                        latencyTrace,
+                        Guid.NewGuid()),
+                    cancellationToken)
                     .ContinueWith(_ => runCancellation?.Dispose(), TaskScheduler.Default);
                 queued = true;
             }
@@ -347,7 +357,27 @@ public sealed class RecorderController
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
             var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
             string transcript;
-            if (_transcriptionTiming is not null)
+            if (_transcriptionEngine is not null)
+            {
+                var engineResult = await _transcriptionEngine.TranscribeAsync(
+                    job.AudioPath,
+                    job.Settings,
+                    job.DictationId,
+                    cancellationToken);
+                if (!engineResult.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        engineResult.FailureKind ?? "Transcription engine failed.");
+                }
+
+                transcript = engineResult.Text;
+                if (job.LatencyTrace is { } engineTrace)
+                {
+                    engineTrace.ModelLoadMs = engineResult.ModelLoadMs;
+                    engineTrace.InferenceMs = engineResult.InferenceMs;
+                }
+            }
+            else if (_transcriptionTiming is not null)
             {
                 var timed = await _transcriptionTiming.TranscribeWithTimingAsync(
                     runtime.CliPath,
@@ -413,6 +443,7 @@ public sealed class RecorderController
             job.LatencyTrace?.Mark(LatencyCheckpoint.UiUpdateFinished);
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.PasteStarted);
+            job.DeliveryCommitted = true;
             ClipboardPasteResult? pasteResult = null;
             await _window.InvokeAsync(async () =>
             {

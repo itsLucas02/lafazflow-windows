@@ -755,6 +755,99 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task FinalDictationUsesTranscriptionEngineAndPastesExactlyOnce()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult(
+                WhisperCliTranscriptionService.CleanTranscript("hello world"),
+                true,
+                null,
+                null,
+                null)));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            transcriptionEngine: engine);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        var request = Assert.Single(engine.Requests);
+        Assert.Equal("first.wav", request.AudioPath);
+        Assert.NotEqual(Guid.Empty, request.DictationId);
+        Assert.Equal(["Hello world. "], paste.Texts);
+    }
+
+    [Fact]
+    public async Task EmptyEngineResultDoesNotPaste()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            transcriptionEngine: engine);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Empty(paste.Texts);
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.Contains("No speech", viewModel.StatusDetail);
+    }
+
+    [Fact]
+    public async Task FailedEngineResultDoesNotPaste()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", false, "worker_unavailable", null, null)));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            transcriptionEngine: engine);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Empty(paste.Texts);
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.Contains("worker_unavailable", viewModel.StatusDetail);
+    }
+
+    [Fact]
     public async Task CompletedDictationSkipsCustomCorrectionRulesWhenCorrectionsAreDisabled()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -984,6 +1077,29 @@ public sealed class RecorderControllerTests
         public void EmitAudioChunk(byte[] audioChunk)
         {
             AudioChunkAvailable?.Invoke(audioChunk);
+        }
+    }
+
+    private sealed class FakeTranscriptionEngine : ITranscriptionEngine
+    {
+        private readonly Func<string, AppSettings, Guid, Task<TranscriptionEngineResult>> _transcribe;
+
+        public FakeTranscriptionEngine(
+            Func<string, AppSettings, Guid, Task<TranscriptionEngineResult>> transcribe)
+        {
+            _transcribe = transcribe;
+        }
+
+        public List<(string AudioPath, AppSettings Settings, Guid DictationId)> Requests { get; } = [];
+
+        public Task<TranscriptionEngineResult> TranscribeAsync(
+            string audioPath,
+            AppSettings settings,
+            Guid dictationId,
+            CancellationToken cancellationToken)
+        {
+            Requests.Add((audioPath, settings, dictationId));
+            return _transcribe(audioPath, settings, dictationId);
         }
     }
 

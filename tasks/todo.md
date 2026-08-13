@@ -140,6 +140,28 @@
 **Rollback readiness:** supervisor is unused by production transcription; CLI path stays authoritative
 **Next milestone entry conditions:** satisfied — M5 (final dictation integration) can proceed.
 
+## M5 — Final dictation integration
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `ITranscriptionEngine` contract + `CliTranscriptionEngine` (existing one-shot CLI behind the same contract) + `WorkerTranscriptionEngine` (supervisor-backed final transcription)
+- `WavPcmReader` converts finalized WAV → 16 kHz mono s16 PCM for the pipe boundary
+- Recorder routes final dictation through the engine when available; empty/failed results never paste; exactly-once paste preserved
+- `DictationJob` now carries an immutable `DictationId` (recording → paste) and `DeliveryCommitted`, set immediately before clipboard/paste
+- MainWindow wires the worker engine when the worker executable is present, starts worker preparation fire-and-forget in `InitializeShell` (hotkey/tray never blocked), and reaps the worker on app exit
+
+**Verification**
+- Focused tests 38; full suite 603; Release build 0 warnings/0 errors
+- Recorder: engine used with dictation id; exactly one paste on success; no paste on empty/failed result
+- Worker engine integration: final transcription of retained audio matches expected normalized text
+- Startup smoke: app launches, worker process starts and reaches `WORKER state=ready` with the owner's fingerprint, no crash events, no orphan processes after cleanup
+- Text pipeline parity: worker engine applies `CleanTranscript` before post-processing so punctuation/casing behavior matches the CLI path (no regression)
+
+**Traceability:** engine-neutral contract (Reference adapted for Windows - Handy/FluidVoice engine abstraction); startup preparation non-blocking (Reference adopted - FluidVoice preload); dictation id + delivery commit (Evidence-backed improvement for exactly-once)
+**Rollback readiness:** CLI engine remains the fallback; switching the recorder back to the timing/plain path is a one-line change
+**Next milestone entry conditions:** satisfied — M6 (live-preview integration and final priority) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

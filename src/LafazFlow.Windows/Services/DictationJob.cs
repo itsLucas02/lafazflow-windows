@@ -6,4 +6,8 @@ public sealed record DictationJob(
     string AudioPath,
     IntPtr TargetWindow,
     AppSettings Settings,
-    LatencyTrace? LatencyTrace = null);
+    LatencyTrace? LatencyTrace = null,
+    Guid DictationId = default)
+{
+    public bool DeliveryCommitted { get; set; }
+}

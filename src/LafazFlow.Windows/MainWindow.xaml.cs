@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
@@ -16,6 +17,8 @@ public partial class MainWindow : Window
     private readonly SettingsStore _settingsStore = new();
     private readonly RecorderController _recorderController;
     private readonly TrayIconService _trayIcon;
+    private readonly WhisperWorkerSupervisor? _workerSupervisor;
+    private readonly WorkerTranscriptionEngine? _workerEngine;
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
@@ -26,6 +29,16 @@ public partial class MainWindow : Window
         _hotkeyService = new DoubleShiftHotkeyService(_hotkeyDiagnostics);
         _miniRecorderWindow = new MiniRecorderWindow(_miniRecorderViewModel);
         var transcriptionService = new WhisperCliTranscriptionService(whisperProcesses);
+        var workerExecutable = ResolveWorkerExecutable();
+        if (workerExecutable is not null)
+        {
+            _workerSupervisor = new WhisperWorkerSupervisor(new WhisperWorkerSupervisorOptions
+            {
+                WorkerExecutablePath = workerExecutable
+            });
+            _workerEngine = new WorkerTranscriptionEngine(_workerSupervisor);
+        }
+
         _recorderController = new RecorderController(
             _miniRecorderViewModel,
             _miniRecorderWindow,
@@ -38,7 +51,8 @@ public partial class MainWindow : Window
                 hotkeyDiagnostics: _hotkeyDiagnostics,
                 processCoordinator: whisperProcesses),
             hotkeyDiagnostics: _hotkeyDiagnostics,
-            transcriptionTiming: transcriptionService);
+            transcriptionTiming: transcriptionService,
+            transcriptionEngine: _workerEngine);
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,
@@ -68,6 +82,19 @@ public partial class MainWindow : Window
         _miniRecorderViewModel.State = RecordingState.Idle;
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
+        if (_workerSupervisor is not null)
+        {
+            _ = Task.Run(() => _workerSupervisor.GetReadySessionAsync(
+                _settingsStore.Load(),
+                CancellationToken.None), CancellationToken.None)
+                .ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        LogWorkerStartupFailure(task.Exception);
+                    }
+                }, TaskScheduler.Default);
+        }
         _trayIcon.ShowStartupNotification();
     }
 
@@ -83,8 +110,45 @@ public partial class MainWindow : Window
         _trayIcon.Dispose();
         _hotkeyService.Dispose();
         _audioCaptureService.Dispose();
+        if (_workerSupervisor is not null)
+        {
+            var supervisor = _workerSupervisor;
+            var shutdownTask = Task.Run(() => supervisor.ShutdownAsync(), CancellationToken.None);
+            shutdownTask.Wait(TimeSpan.FromSeconds(8));
+            supervisor.Dispose();
+        }
+
         _settingsWindow?.Close();
         _miniRecorderWindow.Close();
+    }
+
+    private static string? ResolveWorkerExecutable()
+    {
+        var appLocal = Path.Combine(AppContext.BaseDirectory, "lafazflow-whisper-worker.exe");
+        if (File.Exists(appLocal))
+        {
+            return appLocal;
+        }
+
+        var configured = new WhisperWorkerSupervisorOptions().WorkerExecutablePath;
+        return File.Exists(configured) ? configured : null;
+    }
+
+    private static void LogWorkerStartupFailure(Exception? error)
+    {
+        try
+        {
+            var logRoot = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "LafazFlow",
+                "Logs");
+            BoundedLogFileWriter.AppendLine(
+                Path.Combine(logRoot, "lafazflow.log"),
+                $"[{DateTimeOffset.Now:O}] WORKER startup failed: {error?.Message}");
+        }
+        catch
+        {
+        }
     }
 
     private void OnDoubleShiftPressed(long hotkeyTimestamp)

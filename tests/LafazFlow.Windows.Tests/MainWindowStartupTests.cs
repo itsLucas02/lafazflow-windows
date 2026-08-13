@@ -56,6 +56,44 @@ public sealed class MainWindowStartupTests
         Assert.Contains("_hotkeyService.Start();", initBody);
     }
 
+    [Fact]
+    public void ShellInitializationStartsWorkerWithoutBlockingStartup()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
+        var initStart = code.IndexOf("public void InitializeShell", StringComparison.Ordinal);
+        var initEnd = code.IndexOf("private void OnLoaded", StringComparison.Ordinal);
+        var initBody = code[initStart..initEnd];
+
+        Assert.Contains("Task.Run", initBody);
+        Assert.Contains("GetReadySessionAsync", initBody);
+        Assert.Contains("CancellationToken.None", initBody);
+    }
+
+    [Fact]
+    public void RecorderReceivesWorkerEngineWhenAvailable()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
+
+        Assert.Contains("_workerEngine = new WorkerTranscriptionEngine", code);
+        Assert.Contains("transcriptionEngine: _workerEngine", code);
+        Assert.Contains("ResolveWorkerExecutable", code);
+    }
+
+    [Fact]
+    public void DeliveryIsCommittedImmediatelyBeforePaste()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "Services", "RecorderController.cs"));
+        var pasteIndex = code.IndexOf("LatencyCheckpoint.PasteStarted", StringComparison.Ordinal);
+        var pasteStart = code.IndexOf("PasteAsync", pasteIndex, StringComparison.Ordinal);
+        var deliveryIndex = code.IndexOf("job.DeliveryCommitted = true;", StringComparison.Ordinal);
+
+        Assert.True(deliveryIndex > 0);
+        Assert.True(deliveryIndex < pasteStart);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
