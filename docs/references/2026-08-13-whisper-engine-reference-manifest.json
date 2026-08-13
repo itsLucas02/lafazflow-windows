@@ -73,7 +73,10 @@
     {
       "name": "whisper.cpp",
       "repository": "https://github.com/ggml-org/whisper.cpp",
+      "snapshot_role": "M0 reference snapshot for API evidence only (context/state, abort, CUDA, VAD, timings).",
       "pinned_revision": "592feef04a1802b18cbeffd0fd0eb5d02570c2ec",
+      "final_build_revision": "968eebe77225d25e57a3f981da7c696310f0e881",
+      "final_build_revision_note": "Adopted deliberately in M3 so the worker shares the owner's in-use CUDA CLI source revision; output equivalence proven 100/100 normalized. The M0 snapshot revision was not silently replaced; the change is an explicit roadmap revision decision.",
       "license": "MIT",
       "primary_evidence": [
         "include/whisper.h",
@@ -89,7 +92,7 @@
         "CUDA backend (GGML_CUDA) and Silero VAD support.",
         "whisper_print_system_info for backend readiness diagnostics."
       ],
-      "usage": "Native worker build source at the pinned revision; MIT-licensed, compatible with LafazFlow GPLv3."
+      "usage": "API evidence at the M0 snapshot (592feef0); the shipped worker is built from the final revision 968eebe7. MIT-licensed, compatible with LafazFlow GPLv3."
     }
   ],
   "traceability_labels": [
@@ -153,7 +156,7 @@
       }
     ],
     "comparison": {
-      "version_control": "Direct worker pins exact whisper.cpp SHA 592feef04a1802b18cbeffd0fd0eb5d02570c2ec.",
+      "version_control": "Direct worker pins exact whisper.cpp SHA 968eebe77225d25e57a3f981da7c696310f0e881 (final; M0 originally proposed 592feef04a1802b18cbeffd0fd0eb5d02570c2ec and M3 replaced it to match the owner's CUDA CLI revision).",
       "cuda": "GGML_CUDA build with the same backend as the owner's current CUDA CLI.",
       "vad_parity": "Uses whisper.cpp Silero VAD with identical thresholds.",
       "abort_support": "whisper_full_params.abort_callback for request cancellation.",

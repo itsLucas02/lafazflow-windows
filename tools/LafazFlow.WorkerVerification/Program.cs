@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
+using LafazFlow.WorkerVerification;
 
 var options = VerifyOptions.Parse(args);
 var cliBaseline = CliBaselineLoader.Load(options.CliBaselinePath);
@@ -45,22 +46,30 @@ var loadStopwatch = Stopwatch.StartNew();
 var session = await supervisor.GetReadySessionAsync(settings, CancellationToken.None);
 loadStopwatch.Stop();
 
-long workingSetBefore = 0;
-long? vramBeforeMiB = null;
-try
+// Phase 1: initial model-load/readiness allocation (captured before warmup).
+var (workingSetAfterReady, vramAfterReadyMiB) = await CaptureMemoryAsync(session.ProcessId);
+
+var warmups = Math.Max(1, options.Warmup);
+for (var index = 0; index < warmups; index++)
 {
-    using var workerProcess = Process.GetProcessById(session.ProcessId);
-    workingSetBefore = workerProcess.WorkingSet64;
-    vramBeforeMiB = await NvidiaSmiUsedMiBAsync();
-}
-catch
-{
+    var fixturePath = fixtures[index % fixtures.Length];
+    var warmupResult = await engine.TranscribeAsync(fixturePath, settings, Guid.NewGuid(), CancellationToken.None);
+    if (!warmupResult.Succeeded)
+    {
+        Console.Error.WriteLine($"Warmup request failed: {warmupResult.FailureKind}");
+        return 3;
+    }
 }
 
+// Phase 2: post-warmup baseline. Baselines are captured only after warmup so
+// first-inference native/CUDA allocation is excluded from steady-state growth.
+var (workingSetAfterWarmup, vramAfterWarmupMiB) = await CaptureMemoryAsync(session.ProcessId);
+
 var samples = new List<RequestSample>();
-var warmups = Math.Max(1, options.Warmup);
-var totalRequests = warmups + (fixtures.Length * options.Repeats);
-for (var index = 0; index < totalRequests; index++)
+var checkpoints = new List<MemoryCheckpoint>();
+var measuredTotal = fixtures.Length * options.Repeats;
+var checkpointInterval = Math.Max(1, options.CheckpointInterval);
+for (var index = 0; index < measuredTotal; index++)
 {
     var fixturePath = fixtures[index % fixtures.Length];
     var expectedPath = Path.ChangeExtension(fixturePath, ".txt");
@@ -72,11 +81,6 @@ for (var index = 0; index < totalRequests; index++)
     var requestStopwatch = Stopwatch.StartNew();
     var result = await engine.TranscribeAsync(fixturePath, settings, Guid.NewGuid(), CancellationToken.None);
     requestStopwatch.Stop();
-
-    if (index < warmups)
-    {
-        continue;
-    }
 
     var normalizedResult = Normalize(result.Text);
     var normalizedExpected = Normalize(expected);
@@ -107,33 +111,45 @@ for (var index = 0; index < totalRequests; index++)
             $"recall={WordRecall(normalizedResult, normalizedExpected):0.00} " +
             $"raw=[{result.Text}]");
     }
+
+    // Phase 3: memory checkpoints during the run, not only at the end.
+    var measuredCount = index + 1;
+    if (measuredCount % checkpointInterval == 0 || measuredCount == measuredTotal)
+    {
+        var (checkpointWorkingSet, checkpointVram) = await CaptureMemoryAsync(session.ProcessId);
+        checkpoints.Add(new MemoryCheckpoint(measuredCount, checkpointWorkingSet, checkpointVram));
+    }
 }
 
-long? vramAfterMiB = null;
-long workingSetAfter = 0;
-try
-{
-    using var workerProcess = Process.GetProcessById(session.ProcessId);
-    workerProcess.Refresh();
-    workingSetAfter = workerProcess.WorkingSet64;
-    vramAfterMiB = await NvidiaSmiUsedMiBAsync();
-}
-catch
-{
-}
+var finalCheckpoint = checkpoints[^1];
+var workingSetAfter = finalCheckpoint.WorkingSetBytes;
+var vramAfterMiB = finalCheckpoint.VramMiB;
 
 await supervisor.ShutdownAsync();
 var orphan = TryGetWorkerAlive(session.ProcessId);
+
+var stability = MemoryStabilityAnalyzer.Classify(
+    workingSetAfterWarmup,
+    workingSetAfter,
+    vramAfterWarmupMiB,
+    vramAfterMiB,
+    options.WorkingSetToleranceBytes,
+    options.VramToleranceMiB,
+    checkpoints);
 
 var summary = BuildSummary(
     options,
     settings,
     samples,
     loadStopwatch.ElapsedMilliseconds,
-    workingSetBefore,
+    workingSetAfterReady,
+    vramAfterReadyMiB,
+    workingSetAfterWarmup,
+    vramAfterWarmupMiB,
     workingSetAfter,
-    vramBeforeMiB,
     vramAfterMiB,
+    checkpoints,
+    stability,
     orphan is null);
 Directory.CreateDirectory(options.OutputDirectory);
 var summaryPath = Path.Combine(
@@ -142,9 +158,59 @@ var summaryPath = Path.Combine(
 await File.WriteAllTextAsync(summaryPath, JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine($"Worker verification summary: {summaryPath}");
 Console.WriteLine(JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
+Console.WriteLine();
+PrintMemoryReport(
+    workingSetAfterReady,
+    vramAfterReadyMiB,
+    workingSetAfterWarmup,
+    vramAfterWarmupMiB,
+    checkpoints,
+    stability);
 
 var allSucceeded = samples.Count > 0 && samples.All(sample => sample.Succeeded);
-return allSucceeded && orphan is null ? 0 : 1;
+return allSucceeded && orphan is null && stability.Verdict != MemoryStabilityVerdict.Growing ? 0 : 1;
+
+static async Task<(long WorkingSetBytes, long? VramMiB)> CaptureMemoryAsync(int processId)
+{
+    try
+    {
+        using var workerProcess = Process.GetProcessById(processId);
+        workerProcess.Refresh();
+        var vram = await NvidiaSmiUsedMiBAsync();
+        return (workerProcess.WorkingSet64, vram);
+    }
+    catch
+    {
+        return (0, null);
+    }
+}
+
+static void PrintMemoryReport(
+    long workingSetAfterReady,
+    long? vramAfterReadyMiB,
+    long workingSetAfterWarmup,
+    long? vramAfterWarmupMiB,
+    IReadOnlyList<MemoryCheckpoint> checkpoints,
+    MemoryStabilityResult stability)
+{
+    Console.WriteLine("Memory report (privacy-safe):");
+    Console.WriteLine($"  Initial model-load/readiness: working set {workingSetAfterReady} bytes, VRAM {vramAfterReadyMiB?.ToString() ?? "n/a"} MiB");
+    Console.WriteLine($"  After warmup (steady-state baseline): working set {workingSetAfterWarmup} bytes, VRAM {vramAfterWarmupMiB?.ToString() ?? "n/a"} MiB");
+    Console.WriteLine($"  Warmup allocation: working set {workingSetAfterWarmup - workingSetAfterReady} bytes, VRAM {WarmupVramDelta(vramAfterReadyMiB, vramAfterWarmupMiB)} MiB");
+    foreach (var checkpoint in checkpoints)
+    {
+        Console.WriteLine($"  Checkpoint @{checkpoint.RequestIndex}: working set {checkpoint.WorkingSetBytes} bytes, VRAM {checkpoint.VramMiB?.ToString() ?? "n/a"} MiB");
+    }
+
+    Console.WriteLine($"  Post-warmup working-set growth: {stability.WorkingSetGrowthBytes} bytes");
+    Console.WriteLine($"  Post-warmup VRAM growth: {stability.VramGrowthMiB?.ToString() ?? "n/a"} MiB");
+    Console.WriteLine($"  Stability verdict: {stability.Verdict} — {stability.Reason}");
+}
+
+static long WarmupVramDelta(long? before, long? after)
+{
+    return before.HasValue && after.HasValue ? after.Value - before.Value : 0;
+}
 
 static string Normalize(string text)
 {
@@ -263,10 +329,14 @@ static object BuildSummary(
     AppSettings settings,
     IReadOnlyList<RequestSample> samples,
     long loadMs,
-    long workingSetBefore,
+    long workingSetAfterReady,
+    long? vramAfterReadyMiB,
+    long workingSetAfterWarmup,
+    long? vramAfterWarmupMiB,
     long workingSetAfter,
-    long? vramBeforeMiB,
     long? vramAfterMiB,
+    IReadOnlyList<MemoryCheckpoint> checkpoints,
+    MemoryStabilityResult stability,
     bool noOrphanProcess)
 {
     var successful = samples.Where(sample => sample.Succeeded).Select(sample => sample.WallMs).OrderBy(value => value).ToArray();
@@ -303,11 +373,31 @@ static object BuildSummary(
         wall_ms_p95 = Percentile(successful, 0.95),
         wall_ms_max = successful.Length == 0 ? 0 : successful[^1],
         rtf_median = durations.Length == 0 ? 0 : durations[durations.Length / 2],
-        working_set_before_bytes = workingSetBefore,
+        working_set_after_ready_bytes = workingSetAfterReady,
+        vram_after_ready_mib = vramAfterReadyMiB,
+        working_set_after_warmup_bytes = workingSetAfterWarmup,
+        vram_after_warmup_mib = vramAfterWarmupMiB,
+        warmup_working_set_allocation_bytes = workingSetAfterWarmup - workingSetAfterReady,
+        warmup_vram_allocation_mib = vramAfterReadyMiB.HasValue && vramAfterWarmupMiB.HasValue
+            ? vramAfterWarmupMiB.Value - vramAfterReadyMiB.Value
+            : (long?)null,
         working_set_after_bytes = workingSetAfter,
-        working_set_growth_bytes = workingSetAfter - workingSetBefore,
-        vram_before_mib = vramBeforeMiB,
+        working_set_checkpoints = checkpoints.Select(checkpoint => new
+        {
+            request_index = checkpoint.RequestIndex,
+            working_set_bytes = checkpoint.WorkingSetBytes,
+            vram_mib = checkpoint.VramMiB
+        }),
         vram_after_mib = vramAfterMiB,
+        post_warmup_working_set_growth_bytes = stability.WorkingSetGrowthBytes,
+        post_warmup_vram_growth_mib = stability.VramGrowthMiB,
+        memory_stability = new
+        {
+            verdict = stability.Verdict.ToString(),
+            reason = stability.Reason,
+            working_set_tolerance_bytes = options.WorkingSetToleranceBytes,
+            vram_tolerance_mib = options.VramToleranceMiB
+        },
         orphan_process_left = !noOrphanProcess
     };
 }
@@ -348,6 +438,9 @@ internal sealed record VerifyOptions(
     string SettingsPath,
     string CliBaselinePath,
     string Backend,
+    int CheckpointInterval,
+    long WorkingSetToleranceBytes,
+    long VramToleranceMiB,
     string OutputDirectory,
     string Label)
 {
@@ -383,6 +476,15 @@ internal sealed record VerifyOptions(
             values.GetValueOrDefault("cli-baseline")
                 ?? Path.Combine(localAppData, "LafazFlow", "Benchmarks", "lafazflow-transcription-bench-20260813-214637.csv"),
             values.GetValueOrDefault("backend") ?? "Cuda",
+            int.TryParse(values.GetValueOrDefault("checkpoint-interval"), out var checkpointInterval)
+                ? Math.Max(1, checkpointInterval)
+                : 25,
+            (int.TryParse(values.GetValueOrDefault("ws-tolerance-mib"), out var wsTolerance)
+                ? Math.Max(1, wsTolerance)
+                : 64) * 1024L * 1024L,
+            int.TryParse(values.GetValueOrDefault("vram-tolerance-mib"), out var vramTolerance)
+                ? Math.Max(1, vramTolerance)
+                : 64,
             values.GetValueOrDefault("out") ?? Path.Combine(localAppData, "LafazFlow", "Benchmarks"),
             values.GetValueOrDefault("label") ?? "");
     }

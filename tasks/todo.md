@@ -17,12 +17,12 @@
 - FluidVoice `4ce0584f` (GPL-3.0): startup preload, stop/audio-drain measurement — Reference adopted (behaviour only)
 - Handy `37a26fd6` (MIT): retained engine, panic recovery, end-of-stream drain, RTF — Reference adopted / adapted for Windows
 - VoiceInk `7023a6f7` (GPL-3.0): delayed prewarm, shared context — Reference adopted (behaviour only)
-- whisper.cpp `592feef0` (MIT): context/state, abort callback, CUDA, VAD, timings — build source for the native worker
+- whisper.cpp `592feef0` (MIT): context/state, abort callback, CUDA, VAD, timings — M0 reference snapshot for API evidence (final worker build revision is `968eebe7`, adopted in M3; see "Key decisions recorded")
 - Crash-isolated worker, current-user named pipe, sustained-degradation rule — Evidence-backed improvement
 
 **Key decisions recorded**
-- Native dependency: LafazFlow-owned worker calling whisper.cpp C API directly at pinned `592feef0` (crash boundary decisive vs in-process managed binding).
-- Revision gap documented: current CUDA CLI is an unpinned `968eebe7`-era build (17/05/2026); worker pins `592feef0`; M1 measures the current CLI; M3 adds a same-revision reference CLI for controlled comparison.
+- Native dependency: LafazFlow-owned worker calling whisper.cpp C API directly. M0 originally proposed the pinned snapshot `592feef0`; M3 deliberately adopted the final build revision `968eebe7` so the worker shares the owner's in-use CUDA CLI source revision (crash boundary decisive vs in-process managed binding).
+- Revision gap resolved in M3: the original gap was that the owner's CUDA CLI was a `968eebe7`-era build (17/05/2026) while M0 proposed pinning the worker at `592feef0`. M3 closed it by building the worker from `968eebe7` and proving 100/100 normalized output equivalence against the owner's CLI. M1 measured the CLI exactly as the owner runs it.
 - Licensing gate: no incompatible reuse; MIT worker linking is GPLv3-compatible; no source copied from GPL references.
 
 **Files changed:** 3 (two reference docs, one notices update)
@@ -289,6 +289,61 @@
 - Worker request timing, RTF, and VRAM stability measurement — Reference adapted for Windows (Handy/FluidVoice measurement patterns)
 - Pipe-disconnect self-exit — Reference adapted for Windows (Handy drops/reloads engines; upstream pipe-error handling proven by the new orphan regression test)
 **Rollback readiness:** the CLI engine remains the fallback; disabling the worker engine returns the app to the one-shot CLI path with identical settings
+
+## Post-M10 audit corrections
+
+**Status:** Complete (exit gate passed)
+
+### Correction 1 — whisper.cpp provenance consistency
+
+The shipped worker is built from whisper.cpp revision `968eebe77225d25e57a3f981da7c696310f0e881` (confirmed by `C:\Tools\whisper.cpp-pinned-968eebe7`, `lafazflow-whisper-worker.exe --version`, and the M3 implementation evidence). The M0 evidence snapshot at `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` is preserved as the planning-time reference for API study and is never claimed as the worker build source.
+
+**What changed**
+- `docs/references/2026-08-13-whisper-engine-provenance-matrix.md`: the whisper.cpp row and API evidence are labelled "M0 reference snapshot"; the final build revision `968eebe7` is stated explicitly; the version-control comparison and revision-decision section distinguish the two hashes; evidence gap 1 is marked resolved in M3; exit-gate wording updated.
+- `docs/references/2026-08-13-whisper-engine-reference-manifest.json`: the whisper.cpp entry gains `snapshot_role` and `final_build_revision` fields; the native-dependency comparison now names `968eebe7` as the final pin with the M0 → M3 change recorded; existing `whisper_cpp_revision_decision` retained.
+- `docs/superpowers/plans/2026-08-13-persistent-whisper-engine-roadmap.md`: the pinned-references table marks `592feef0` as the M0 evidence snapshot and adds a revision note explaining M3's adoption of `968eebe7`.
+- `THIRD_PARTY_NOTICES.md`: the worker's MIT attribution now names `968eebe7` (the revision actually linked); the owner-local CUDA CLI bullet states the same revision and is not redistributed.
+- `tasks/todo.md` M0 section: labels `592feef0` as the M0 reference snapshot and records the M3 resolution instead of an open revision gap.
+
+**Verification:** `lafazflow-whisper-worker.exe --version` prints `whisper=968eebe7`; grep audit finds no active claim that the shipped worker is built from `592feef0`.
+
+### Correction 2 — post-warmup memory-stability verification
+
+The old verifier recorded the working-set baseline before warmup, so its growth figure included normal first-inference allocation. The verifier now:
+
+1. Starts the worker and waits for Ready.
+2. Executes the configured warmup requests.
+3. Refreshes the worker process and records working-set and VRAM baselines **only after warmup**.
+4. Executes the measured request set.
+5. Captures working-set and VRAM checkpoints during the run (every `--checkpoint-interval` requests).
+6. Records final working-set and VRAM.
+7. Calculates post-warmup growth.
+8. Classifies stability with `MemoryStabilityAnalyzer` (evidence-based rule: Stable when post-warmup growth and every checkpoint stay within documented tolerances; any working-set or VRAM checkpoint above tolerance is Growing; missing checkpoint data is Uncertain).
+
+The report separates initial model-load/readiness allocation, warmup allocation, post-warmup measured growth, working-set checkpoints, VRAM checkpoints, and the final stability verdict. Tolerances are configurable (`--ws-tolerance-mib`, `--vram-tolerance-mib`, defaults 64 MiB) and are not "exactly flat" requirements.
+
+**Live result (owner machine, Quality/CUDA/large-turbo-q5_0/VAD/16-thread, retained M1 fixtures, 100 measured post-warmup requests, 2 warmup requests):**
+
+| Memory phase | Working set | VRAM |
+| --- | ---: | ---: |
+| Initial model-load/readiness | 317,325,312 bytes | 1,832 MiB |
+| After warmup (steady-state baseline) | 512,331,776 bytes | 1,870 MiB |
+| Warmup allocation | +195,006,464 bytes | +38 MiB |
+| Checkpoint @25 | 526,401,536 bytes | 1,870 MiB |
+| Checkpoint @50 | 527,269,888 bytes | 1,870 MiB |
+| Checkpoint @75 | 527,273,984 bytes | 1,870 MiB |
+| Checkpoint @100 (final) | 528,060,416 bytes | 1,870 MiB |
+| **Post-warmup growth** | **+15,728,640 bytes (~15 MiB)** | **0 MiB** |
+
+**Stability conclusion:** Stable. Post-warmup working-set growth (15 MiB over 100 requests) is well inside the 64 MiB tolerance and all checkpoints are stable; VRAM is flat at 0 MiB post-warmup. This confirms steady-state allocation after the one-time first-inference warmup allocation.
+
+**Live reliability (same run):** 100/100 measured requests succeeded; 0 failures; 0 empty results; 100/100 ending words preserved; text matches 75/100 vs retained transcripts and 75/100 vs the M1 CLI baseline (the only recurring difference is one fixture's "road map" → "roadmap" tokenization); mean word recall 0.981; mean edit distance 0.0018; warm median 228 ms, P90 440 ms, P95 453 ms, max 770 ms; RTF median 0.013; worker exits cleanly with no orphan.
+
+**Performance vs one-shot baseline (measured 14/08/2026):** warm median 1284 ms → 228 ms (−82%); warm P95 1538 ms → 453 ms (**−71%**, target ≥30% met).
+
+**Verification:** 8 deterministic `MemoryStabilityAnalyzer` tests (growth math, stable within tolerance, negative growth, working-set exceedance, VRAM exceedance, checkpoint spike, no-checkpoint uncertainty, VRAM-unavailable) plus worker lifecycle/recovery integration tests; focused 34 green; full suite 652 green; Release build 0 warnings/0 errors; `git diff --check` clean; portable ZIP contains the corrected `THIRD_PARTY_NOTICES.md` (worker revision `968eebe7`) and no private data beyond the app's own bundled sound cues.
+
+**Remaining limitations:** sleep/wake and physical microphone-device change still require the owner's live session (automated equivalents pass); the warm latency figures are engine request times, not full stop-to-paste.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.

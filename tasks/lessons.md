@@ -375,3 +375,11 @@
 ## Prove orphan prevention with a disconnect regression test
 - Pattern: The native worker exited cleanly on an explicit shutdown request, but when its client (the WPF app) was hard-killed, the reader thread broke out of its loop without setting the shutdown flag, so the engine loop waited forever and the worker lingered holding the 1 GB model — exactly the orphan the roadmap forbids.
 - Rule: Never trust "the pipe will clean things up"; test both sides of the lifecycle. Kill the worker to prove app recovery, and close the client without a shutdown request to prove the worker self-exits. Any loop that exits on a read failure must set its shared shutdown flag and wake the worker threads.
+
+## Do not conflate reference snapshots with final dependency revisions
+- Pattern: The M0 evidence pack pinned whisper.cpp at `592feef0` for API study, then M3 deliberately rebuilt the worker from `968eebe7` to match the owner's in-use CUDA CLI. Several documents still said the shipped worker was "built from" the M0 snapshot, which made license attribution and provenance claims wrong even though the code was correct.
+- Rule: Keep the planning-time reference snapshot and the final build revision as separate, explicit facts. When a dependency revision changes deliberately, record the change as a roadmap decision, preserve both full hashes, update active "built from" claims and license attribution, and audit every manifest/notice/build script so no stale "shipped from <old SHA>" wording survives.
+
+## Capture memory baselines after warmup for steady-state stability
+- Pattern: The worker verifier sampled working set immediately after the model loaded, so its growth figure mixed the one-time first-inference allocation (~195 MiB) with steady-state behavior and could not prove post-warmup stability.
+- Rule: When measuring native/CUDA engine stability, run warmup requests first, then refresh the process and record working-set/VRAM baselines, checkpoint memory during the measured run, and report post-warmup growth separately from readiness and warmup allocation. Define a documented tolerance-based rule (not "exactly flat") and test the classifier deterministically; a checkpoint spike above tolerance is evidence of growth, not noise to hide.

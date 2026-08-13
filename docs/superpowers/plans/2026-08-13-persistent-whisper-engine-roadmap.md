@@ -25,7 +25,9 @@ Implementation must use these revisions as the initial evidence snapshot. Before
 | [FluidVoice](https://github.com/altic-dev/FluidVoice/tree/4ce0584f93efbb5240d07b5039e23b09487b6ce0) | `4ce0584f93efbb5240d07b5039e23b09487b6ce0` | Startup preload, provider readiness, audio-stop benchmarks, final/streaming managers, audio retirement/drain discipline |
 | [Handy](https://github.com/cjpais/Handy/tree/37a26fd6ab905259d66affea57fff448288ca1aa) | `37a26fd6ab905259d66affea57fff448288ca1aa` | Retained loaded engine, model idle policy, panic recovery, real-time factor, stop/end-of-stream drain, final-work coordination |
 | [VoiceInk](https://github.com/Beingpax/VoiceInk/tree/7023a6f7e16ba09c3b131fe71f8cc9e55c065f19) | `7023a6f7e16ba09c3b131fe71f8cc9e55c065f19` | Optional launch/wake prewarm, shared Whisper context, serialized context access, request settings, model lifecycle |
-| [whisper.cpp](https://github.com/ggml-org/whisper.cpp/tree/592feef04a1802b18cbeffd0fd0eb5d02570c2ec) | `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` | Native context/state APIs, abort callback, CUDA/VAD parameters, timings, cleanup, worker build source |
+| [whisper.cpp](https://github.com/ggml-org/whisper.cpp/tree/592feef04a1802b18cbeffd0fd0eb5d02570c2ec) | `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` (M0 evidence snapshot) | Native context/state APIs, abort callback, CUDA/VAD parameters, timings, cleanup — API evidence used at planning time |
+
+> **Revision note:** the M0 snapshot above is the reference used for API evidence. M3 deliberately adopted the **final worker build revision** `968eebe77225d25e57a3f981da7c696310f0e881` so the persistent worker shares the exact source revision of the owner's in-use CUDA CLI; M3 proved 100/100 normalized output equivalence at that revision. See `docs/references/2026-08-13-whisper-engine-provenance-matrix.md` and `docs/references/2026-08-13-whisper-engine-m3-proof.md`.
 
 ### Required traceability labels
 

@@ -16,7 +16,9 @@ This evidence pack satisfies M0 of the persistent Whisper engine roadmap. Every 
 | FluidVoice | `4ce0584f93efbb5240d07b5039e23b09487b6ce0` | GPL-3.0 | `ContentView.swift`, `ASRService.swift`, `FluidAudioProvider.swift`, `WhisperProvider.swift`, `AudioEngineRetirementDrain.swift` |
 | Handy | `37a26fd6ab905259d66affea57fff448288ca1aa` | MIT | `managers/transcription.rs`, `audio_toolkit/audio/recorder.rs`, `actions.rs`, `transcription_coordinator.rs` |
 | VoiceInk | `7023a6f7e16ba09c3b131fe71f8cc9e55c065f19` | GPL-3.0 | `ModelPrewarmService.swift`, `WhisperModelManager.swift`, `WhisperTranscriptionService.swift`, `LibWhisper.swift`, `VoiceInkEngine.swift` |
-| whisper.cpp | `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` | MIT | `include/whisper.h`, `src/whisper.cpp`, `examples/cli/cli.cpp`, `ggml/src/ggml-cuda` |
+| whisper.cpp (M0 reference snapshot) | `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` | MIT | `include/whisper.h`, `src/whisper.cpp`, `examples/cli/cli.cpp`, `ggml/src/ggml-cuda` |
+
+The M0 reference snapshot above is the revision used for API evidence at planning time. The shipped worker is built from the **final build revision** `968eebe77225d25e57a3f981da7c696310f0e881`, adopted deliberately in M3 so the worker and the owner's in-use CUDA CLI share the same source revision (see "whisper.cpp revision decision" below).
 
 All listed paths were verified to exist at their pinned revisions on 13/08/2026.
 
@@ -55,7 +57,7 @@ All listed paths were verified to exist at their pinned revisions on 13/08/2026.
 
 ### whisper.cpp (MIT)
 
-Verified at `592feef0`: `whisper_init_from_file_with_params_no_state`, `whisper_init_state`, `whisper_full_params.abort_callback`, `whisper_get_timings`, `whisper_free_state`, `whisper_free`, CUDA backend (`GGML_CUDA`), Silero VAD, and `whisper_print_system_info`.
+Verified at the M0 reference snapshot `592feef0`: `whisper_init_from_file_with_params_no_state`, `whisper_init_state`, `whisper_full_params.abort_callback`, `whisper_get_timings`, `whisper_free_state`, `whisper_free`, CUDA backend (`GGML_CUDA`), Silero VAD, and `whisper_print_system_info`. The final worker build at `968eebe7` retains the same APIs used by the implementation; M3 re-verified the specific APIs the worker calls at the build revision before the proof run.
 
 ## Architecture decision traceability
 
@@ -79,7 +81,7 @@ Verified at `592feef0`: `whisper_init_from_file_with_params_no_state`, `whisper_
 
 | Criterion | Direct LafazFlow-owned worker | Maintained binding |
 | --- | --- | --- |
-| Version control | Exact pinned SHA `592feef0` | Tracks the binding's own cadence |
+| Version control | Exact pinned SHA `968eebe7` (final build revision; M0 originally proposed `592feef0`) | Tracks the binding's own cadence |
 | CUDA | `GGML_CUDA` build identical to the owner's CUDA CLI | Depends on binding-provided native assets |
 | VAD parity | whisper.cpp Silero VAD with identical thresholds | Varies by wrapper |
 | Abort support | `whisper_full_params.abort_callback` | Usually exposed, but through wrapper layers |
@@ -90,9 +92,10 @@ The crash boundary is the decisive criterion and is consistent with the roadmap'
 
 ## whisper.cpp revision decision
 
-- **Worker build input:** pinned `592feef04a1802b18cbeffd0fd0eb5d02570c2ec`.
-- **Current owner CUDA CLI:** built 17/05/2026 from source checkout `968eebe77225d25e57a3f981da7c696310f0e881` (unpinned `main`, May 2026).
-- **Baseline policy:** M1 measures the current CLI exactly as the owner runs it. M3 builds a same-revision reference CLI beside the worker for controlled before/after comparison. No silent replacement of the owner's runtime.
+- **M0 reference snapshot:** `592feef04a1802b18cbeffd0fd0eb5d02570c2ec` — the revision reviewed at planning time for API evidence. This document does not rewrite history: M0 proposed this snapshot.
+- **Final worker build revision:** `968eebe77225d25e57a3f981da7c696310f0e881` — the revision the shipped `lafazflow-whisper-worker.exe` is actually built from.
+- **Why M3 changed the revision:** the owner's in-use CUDA CLI was built 17/05/2026 from a local whisper.cpp checkout at `968eebe7`. M3 deliberately adopted the same revision so the worker and the owner's CLI share identical source, making output parity a controlled, meaningful comparison. M3 proved 100/100 normalized output equivalence and zero repeated model loads at `968eebe7`.
+- **Baseline policy (unchanged):** M1 measures the current CLI exactly as the owner runs it. No silent replacement of the owner's runtime occurs; the revision change is recorded as an explicit roadmap decision rather than an undocumented substitution.
 
 ## Licensing gate
 
@@ -104,11 +107,11 @@ The crash boundary is the decisive criterion and is consistent with the roadmap'
 
 ## Evidence gaps (documented, not silently ignored)
 
-1. Current CUDA CLI revision (`968eebe7`-era) differs from the pinned worker revision (`592feef0`). Handled by a controlled same-revision comparison in M3.
-2. Bundled CPU CLI comes from the official `whisper-bin-x64.zip` release at packaging time; the worker pins `592feef0` for reproducible builds.
+1. **Resolved in M3:** the original gap was that the owner's CUDA CLI (`968eebe7`-era) differed from the initially proposed worker pin (`592feef0`). M3 closed it by adopting `968eebe7` as the worker build revision and proving 100/100 normalized output equivalence against the owner's CLI.
+2. Bundled CPU CLI comes from the official `whisper-bin-x64.zip` release at packaging time; the worker build input is pinned to `968eebe7` for reproducible builds.
 
 ## Exit gate status
 
 - Every M1–M10 design choice has a pinned source reference or a documented evidence gap: **pass**.
 - Licensing review identifies no incompatible reuse: **pass**.
-- No implementation starts from an unpinned upstream branch: **pass** for the worker; the owner's existing CLI is preserved as-is for baseline and recovery.
+- No implementation starts from an unpinned upstream branch: **pass** for the worker (built from pinned `968eebe7`); the owner's existing CLI is preserved as-is for baseline and recovery.

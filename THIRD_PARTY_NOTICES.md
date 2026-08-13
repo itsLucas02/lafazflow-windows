@@ -17,9 +17,9 @@ The upstream project is licensed under the GNU General Public License version 3.
 
 This project bundles or builds against [whisper.cpp](https://github.com/ggml-org/whisper.cpp), licensed under the MIT License:
 
-- The persistent Whisper engine worker (`lafazflow-whisper-worker.exe`) is built from whisper.cpp revision `592feef04a1802b18cbeffd0fd0eb5d02570c2ec`.
+- The persistent Whisper engine worker (`lafazflow-whisper-worker.exe`) is built from whisper.cpp revision `968eebe77225d25e57a3f981da7c696310f0e881` (the same source revision as the owner-local CUDA `whisper-cli.exe` below; M3 adopted it deliberately so the worker and the in-use CLI share identical source).
 - The bundled CPU `whisper-cli.exe` in release packages comes from the official whisper.cpp Windows binary release (`whisper-bin-x64.zip`); its revision is recorded in the release artifact manifest at packaging time.
-- The owner-local CUDA `whisper-cli.exe` is built from a local whisper.cpp checkout (source HEAD `968eebe77225d25e57a3f981da7c696310f0e881`, May 2026) and is not redistributed.
+- The owner-local CUDA `whisper-cli.exe` is built from a local whisper.cpp checkout at `968eebe77225d25e57a3f981da7c696310f0e881` (May 2026) and is not redistributed.
 
 MIT License
 
