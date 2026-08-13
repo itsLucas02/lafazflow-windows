@@ -106,6 +106,60 @@ public sealed class WhisperWorkerPipeIntegrationTests
         Assert.False(IsProcessRunning(processId));
     }
 
+    [Fact]
+    public async Task WorkerExitsWhenClientDisconnectsWithoutShutdownRequest()
+    {
+        if (!Available)
+        {
+            return;
+        }
+
+        var settings = AppSettings.Default with
+        {
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda,
+            ModelPath = ModelPath,
+            QualityModelPath = ModelPath,
+            VadModelPath = VadModelPath,
+            EnableVad = true,
+            WhisperThreads = 16
+        };
+
+        var supervisor = new WhisperWorkerSupervisor(new WhisperWorkerSupervisorOptions
+        {
+            WorkerExecutablePath = WorkerPath,
+            ReadinessTimeout = TimeSpan.FromSeconds(90),
+            OperationTimeout = TimeSpan.FromMinutes(2),
+            ShutdownTimeout = TimeSpan.FromSeconds(5)
+        });
+        var session = await supervisor.GetReadySessionAsync(settings, CancellationToken.None);
+        var processId = session.ProcessId;
+
+        // Closing the pipe without an explicit shutdown request simulates the
+        // WPF app being killed: the worker must detect the broken pipe and exit
+        // instead of lingering as an orphan holding the loaded model.
+        supervisor.Dispose();
+
+        await WaitUntilAsync(() => !IsProcessRunning(processId), TimeSpan.FromSeconds(10));
+        Assert.False(IsProcessRunning(processId));
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (condition())
+            {
+                return;
+            }
+
+            await Task.Delay(50);
+        }
+
+        throw new TimeoutException("Condition was not met in time.");
+    }
+
     private static string Normalize(string text)
     {
         var cleaned = System.Text.RegularExpressions.Regex.Replace(

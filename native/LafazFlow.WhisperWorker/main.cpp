@@ -257,9 +257,10 @@ void ReaderThread(HANDLE pipe) {
             continue;
         }
         if (readResult == 0) {
-            if (g_shutdown.load()) {
-                break;
-            }
+            // The client disconnected (pipe broken). Wake the engine loop so the
+            // process exits instead of lingering as an orphan holding the model.
+            g_shutdown.store(true);
+            g_queue_cv.notify_all();
             break;
         }
         const std::uint32_t length =

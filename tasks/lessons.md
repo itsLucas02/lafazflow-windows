@@ -367,3 +367,11 @@
 ## Keep task-completion sources single-shot in shared stubs
 - Pattern: A transcription stub called `SetResult()` on the same completion source for every queued job; the second call threw "task to a final state" inside the recorder, which swallowed it as a silent job failure during tests.
 - Rule: In stubs that run per job, use `TrySetResult()` (or gate on a specific input) so repeated invocations are harmless; otherwise failures surface far from their cause as missing pastes.
+
+## Test text equivalence against real corpora, not only exact strings
+- Pattern: A worker equivalence check normalized text by stripping punctuation but splitting on spaces only; retained `.txt` transcripts end with a trailing newline, so every comparison failed even when the words were identical. A second pass compared against the M1 CLI CSV, which contains quoted fields with embedded newlines that a line-based CSV reader misparsed, silently dropping rows.
+- Rule: Normalize by splitting on all whitespace, and parse quoted CSV records with a state machine that keeps newlines inside quotes. Report strict matches alongside word recall and normalized edit distance so a single tokenization difference ("road map" vs "roadmap") is visible instead of looking like a wholesale quality loss.
+
+## Prove orphan prevention with a disconnect regression test
+- Pattern: The native worker exited cleanly on an explicit shutdown request, but when its client (the WPF app) was hard-killed, the reader thread broke out of its loop without setting the shutdown flag, so the engine loop waited forever and the worker lingered holding the 1 GB model — exactly the orphan the roadmap forbids.
+- Rule: Never trust "the pipe will clean things up"; test both sides of the lifecycle. Kill the worker to prove app recovery, and close the client without a shutdown request to prove the worker self-exits. Any loop that exits on a read failure must set its shared shutdown flag and wake the worker threads.

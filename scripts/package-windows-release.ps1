@@ -5,6 +5,7 @@ param(
     [string]$Runtime = "win-x64",
     [string]$OutputRoot = "",
     [string]$WhisperCliLocalPath = "",
+    [string]$WorkerLocalPath = "C:\Tools\lafazflow-whisper-worker\bin\lafazflow-whisper-worker.exe",
     [string]$InnoSetupCompilerPath = ""
 )
 
@@ -82,6 +83,23 @@ if (-not (Test-Path $bundledCli))
     throw "whisper-cli.exe is missing from the package."
 }
 
+$workerIncluded = $false
+if ($WorkerLocalPath -and (Test-Path -LiteralPath $WorkerLocalPath))
+{
+    Write-Host "Including native Whisper worker: $WorkerLocalPath"
+    Copy-Item -LiteralPath $WorkerLocalPath -Destination (Join-Path $appDir "lafazflow-whisper-worker.exe")
+    $workerDirectory = Split-Path -Parent $WorkerLocalPath
+    Get-ChildItem -LiteralPath $workerDirectory -Filter "*.dll" -ErrorAction SilentlyContinue |
+        ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $appDir $_.Name) -Force
+        }
+    $workerIncluded = $true
+}
+else
+{
+    Write-Host "Native Whisper worker was not found at '$WorkerLocalPath'; package will use the CLI path only."
+}
+
 Write-Host "Smoke-checking bundled whisper-cli.exe..."
 $smokeToken = [guid]::NewGuid().ToString("N")
 $smokeOut = Join-Path $env:TEMP "whisper-smoke-$smokeToken-out.txt"
@@ -98,6 +116,26 @@ Remove-Item -LiteralPath $smokeOut, $smokeErr -Force -ErrorAction SilentlyContin
 if ($smokeProcess.ExitCode -ne 0)
 {
     throw "Bundled whisper-cli.exe failed its --help smoke check (exit code $($smokeProcess.ExitCode))."
+}
+
+if ($workerIncluded)
+{
+    Write-Host "Smoke-checking bundled lafazflow-whisper-worker.exe..."
+    $workerSmokeOut = Join-Path $env:TEMP "worker-smoke-$([guid]::NewGuid().ToString('N'))-out.txt"
+    $workerSmokeErr = Join-Path $env:TEMP "worker-smoke-$([guid]::NewGuid().ToString('N'))-err.txt"
+    $workerSmoke = Start-Process `
+        -FilePath (Join-Path $appDir "lafazflow-whisper-worker.exe") `
+        -ArgumentList "--version" `
+        -WindowStyle Hidden `
+        -Wait `
+        -PassThru `
+        -RedirectStandardOutput $workerSmokeOut `
+        -RedirectStandardError $workerSmokeErr
+    Remove-Item -LiteralPath $workerSmokeOut, $workerSmokeErr -Force -ErrorAction SilentlyContinue
+    if ($workerSmoke.ExitCode -ne 0)
+    {
+        throw "Bundled lafazflow-whisper-worker.exe failed its --version smoke check (exit code $($workerSmoke.ExitCode))."
+    }
 }
 
 Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $appDir

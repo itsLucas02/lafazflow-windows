@@ -260,6 +260,36 @@
 **Rollback readiness:** status is additive; hiding the new cards or reverting the notification gating leaves engine behavior unchanged
 **Next milestone entry conditions:** satisfied — M10 (full verification and owner-local rollout) can proceed.
 
+## M10 — Full verification and owner-local rollout
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `tools/LafazFlow.WorkerVerification`: reproducible native-worker verification tool — starts the real worker, warms up, times N warm final requests, compares text against retained transcripts and the M1 one-shot CLI baseline, checks ending-word preservation, word recall, edit distance, working set and nvidia-smi VRAM, and confirms no orphan after shutdown
+- `scripts/verify-whisper-worker.ps1` rewritten to drive the pipe-based worker through the verification tool (the old stdin protocol was obsolete after M4)
+- `scripts/package-windows-release.ps1` now bundles the native worker + VC runtimes and smoke-checks `lafazflow-whisper-worker.exe --version` and `whisper-cli.exe --help`; safety checks unchanged
+- Native orphan fix: when the client disconnects without a shutdown request, the worker's reader thread now sets the shutdown flag and wakes the engine loop so the process exits instead of lingering with the model loaded
+
+**Verification (owner machine, Quality/CUDA/large-turbo-q5_0/VAD/16-thread settings, retained M1 fixtures)**
+- Native builds: CUDA and CPU workers rebuilt from pinned whisper.cpp `968eebe7`; both report READY and transcribe correctly; CPU smoke confirms no CUDA/VRAM use (100 MiB flat)
+- One-shot CLI baseline re-measured today: warm median 1284 ms, P90 1499 ms, P95 1538 ms, max 1698 ms; model load 569 ms; 0 failures/empties
+- Worker: 100/100 final requests succeeded, 0 failures, 0 empties, 100/100 ending words preserved (25 runs per fixture); warm median 214-291 ms, P90 421 ms, P95 430-448 ms, max 462-588 ms; RTF median 0.013; VRAM 997 → 1035 MiB (+38 MiB over 100 requests); no orphan process
+- Warm P95 improvement vs today's CLI baseline: 448 ms vs 1538 ms = **-70.9%** (target ≥30% met); warm median 291 ms vs 1284 ms = **-77.3%** (repeated model-load cost gone)
+- Text equivalence: 75/100 exact-normalized matches vs retained transcripts and vs M1 CLI baseline; the only recurring difference is one fixture tokenizing "road map" as "roadmap" (no missing words; mean word recall 0.981; mean edit distance 0.0018 vs CLI 0.004)
+- Reliability: 154 focused tests green including real-worker forced kill → failed request → `RestartSessionAsync` → recovered final; new integration test proves the worker exits when the client disconnects without a shutdown request; exactly-once paste, timeout, malformed-response, CLI recovery, audio-drain, rapid back-to-back, and preview-preemption tests green
+- Full suite: 644 tests green twice; Release build 0 warnings/0 errors; `git diff --check` clean; credential scan clean
+- Packaging dry run: portable ZIP contains app, pinned CUDA `whisper-cli.exe`, native worker + ggml/VC runtimes, README, LICENSE, `THIRD_PARTY_NOTICES.md`, `windows-runtime-setup.md`; safety checks reject user audio/logs/settings/models
+- Live rollout: packaged exe launches hidden (no window handle), worker reaches Ready with the owner's fingerprint; hard-killing the app leaves no orphan worker; no new Windows crash events; the stable build is running for the owner's normal hands-free dictation
+
+**Limitations / owner validation still needed**
+- Windows sleep/wake and physical microphone-device change require the owner's live session; the automated equivalents (worker disconnect/recovery, mic-removal and drain-timeout capture tests) pass
+- The owner should dictate normally with the running build; warm numbers above are machine-measured request latency (stop-to-paste adds audio drain, queue, formatting, and paste)
+
+**Reference traceability**
+- Worker request timing, RTF, and VRAM stability measurement — Reference adapted for Windows (Handy/FluidVoice measurement patterns)
+- Pipe-disconnect self-exit — Reference adapted for Windows (Handy drops/reloads engines; upstream pipe-error handling proven by the new orphan regression test)
+**Rollback readiness:** the CLI engine remains the fallback; disabling the worker engine returns the app to the one-shot CLI path with identical settings
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
