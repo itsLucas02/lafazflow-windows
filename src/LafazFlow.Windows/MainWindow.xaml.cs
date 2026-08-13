@@ -19,7 +19,7 @@ public partial class MainWindow : Window
     private readonly RecorderController _recorderController;
     private readonly TrayIconService _trayIcon;
     private readonly WhisperWorkerSupervisor? _workerSupervisor;
-    private readonly WorkerTranscriptionEngine? _workerEngine;
+    private readonly ITranscriptionEngine? _workerEngine;
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
@@ -37,7 +37,11 @@ public partial class MainWindow : Window
             {
                 WorkerExecutablePath = workerExecutable
             });
-            _workerEngine = new WorkerTranscriptionEngine(_workerSupervisor);
+            _workerEngine = new RecoveringTranscriptionEngine(
+                new WorkerTranscriptionEngine(_workerSupervisor),
+                new CliTranscriptionEngine(transcriptionService, transcriptionService),
+                (settings, cancellationToken) =>
+                    _workerSupervisor.RestartSessionAsync(settings, cancellationToken));
         }
 
         var previewService = _workerSupervisor is null

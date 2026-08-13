@@ -86,6 +86,36 @@ public sealed class WhisperWorkerSupervisor : IDisposable
         }
     }
 
+    public async Task<WhisperWorkerSession> RestartSessionAsync(
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        await _startGate.WaitAsync(cancellationToken);
+        try
+        {
+            var previous = _session;
+            _session = null;
+            if (previous is not null)
+            {
+                previous.Unavailable -= OnSessionUnavailable;
+                previous.Dispose();
+            }
+
+            SetState(WhisperWorkerState.Recovering);
+            var replacement = await StartSessionAsync(
+                settings,
+                EngineSettingsFingerprint.Compute(settings),
+                cancellationToken);
+            _session = replacement;
+            SetState(WhisperWorkerState.Ready);
+            return replacement;
+        }
+        finally
+        {
+            _startGate.Release();
+        }
+    }
+
     private async Task<WhisperWorkerSession> StartSessionAsync(
         AppSettings settings,
         string fingerprintHex,

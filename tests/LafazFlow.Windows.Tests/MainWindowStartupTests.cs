@@ -76,7 +76,9 @@ public sealed class MainWindowStartupTests
         var repoRoot = FindRepoRoot();
         var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
 
-        Assert.Contains("_workerEngine = new WorkerTranscriptionEngine", code);
+        Assert.Contains("new RecoveringTranscriptionEngine", code);
+        Assert.Contains("new WorkerTranscriptionEngine(_workerSupervisor)", code);
+        Assert.Contains("RestartSessionAsync", code);
         Assert.Contains("transcriptionEngine: _workerEngine", code);
         Assert.Contains("ResolveWorkerExecutable", code);
     }

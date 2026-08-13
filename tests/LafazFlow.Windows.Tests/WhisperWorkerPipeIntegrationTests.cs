@@ -87,6 +87,20 @@ public sealed class WhisperWorkerPipeIntegrationTests
         var previewResult = await previewTask;
         Assert.Equal(WhisperPipeStatus.Aborted, previewResult.Status);
 
+        var crashedProcessId = session.ProcessId;
+        using (var crashedProcess = System.Diagnostics.Process.GetProcessById(crashedProcessId))
+        {
+            crashedProcess.Kill();
+        }
+
+        await Task.Delay(300);
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            session.TranscribeFinalAsync(shortPcm, shortSamples, CancellationToken.None));
+
+        var restarted = await supervisor.RestartSessionAsync(settings, CancellationToken.None);
+        var recovered = await restarted.TranscribeFinalAsync(shortPcm, shortSamples, CancellationToken.None);
+        Assert.Equal(WhisperPipeStatus.Ok, recovered.Status);
+
         var processId = session.ProcessId;
         await supervisor.ShutdownAsync();
         Assert.False(IsProcessRunning(processId));

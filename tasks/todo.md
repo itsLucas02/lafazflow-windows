@@ -185,6 +185,27 @@
 **Rollback readiness:** preview falls back to the existing CLI path if the worker is absent
 **Next milestone entry conditions:** satisfied — M7 (crash, timeout, retry, and CLI recovery) can proceed.
 
+## M7 — Crash, timeout, retry, and CLI recovery
+
+**Status:** Complete (exit gate passed)
+
+**Deliverables**
+- `TranscriptionRecoveryPolicy`: retryable (aborted, worker_unavailable/timeout/busy/internalerror/invalidrequest, pipe_broken) vs not retryable (invalid audio, missing model/VAD, invalid settings, user cancellation, delivery committed)
+- `RecoveringTranscriptionEngine`: one replacement-worker retry (same fingerprint), then one identical-settings CLI recovery attempt; never retries after delivery commit; returns the failure on terminal failure
+- `WorkerTranscriptionEngine` maps pipe/process failures to typed kinds (timeout, unavailable, pipe_broken) and rethrows user cancellation
+- `WhisperWorkerSupervisor.RestartSessionAsync`: recovery-locked (single-flight gate) restart that reaps the old worker and starts a replacement with the same settings
+- Recorder: delivery commit is set immediately before paste; empty/failed results never paste; audio retained per the diagnostics setting on failure
+- MainWindow wires the recovering engine (worker primary + CLI fallback)
+
+**Verification**
+- Policy tests (retryable/non-retryable/committed/cancelled); recovering-engine tests (success no-restart, worker retry, CLI fallback, terminal failure, non-retryable skip)
+- Real-worker integration: kill the worker mid-session → final fails → `RestartSessionAsync` → recovered final returns Ok; shutdown leaves no process
+- Focused 55; full suite 624 green across three consecutive runs; Release build 0 warnings/0 errors
+
+**Traceability:** panic/drop-and-reload (Reference adapted for Windows - Handy); bounded retry + CLI recovery (Evidence-backed improvement with policy tests); exactly-once via delivery commit (Evidence-backed improvement)
+**Rollback readiness:** CLI engine remains the fallback; recovery is logged and testable
+**Next milestone entry conditions:** satisfied — M8 (sustained performance-degradation monitor) can proceed.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

@@ -498,17 +498,17 @@ public sealed class RecorderControllerTests
             CreateSettingsStore(),
             CreateSoundCueService(new RecordingSoundCuePlayer()),
             () => (IntPtr)111,
-            transientErrorDismissDelay: TimeSpan.FromMilliseconds(10));
+            transientErrorDismissDelay: TimeSpan.FromMilliseconds(250));
 
         controller.StartRecording();
         await controller.ToggleAsync();
         await controller.WaitForPendingTranscriptionsAsync();
 
-        Assert.Equal(RecordingState.Error, viewModel.State);
+        await WaitUntilAsync(() => viewModel.State == RecordingState.Error);
         Assert.Equal("No speech", viewModel.StatusText);
         Assert.Empty(paste.Texts);
 
-        await Task.Delay(100);
+        await WaitUntilAsync(() => viewModel.State == RecordingState.Idle);
 
         Assert.Equal(RecordingState.Idle, viewModel.State);
         Assert.Equal("", viewModel.StatusText);
@@ -1210,6 +1210,22 @@ public sealed class RecorderControllerTests
         {
             return textBeforeCaret;
         }
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (condition())
+            {
+                return;
+            }
+
+            await Task.Delay(10);
+        }
+
+        throw new TimeoutException("Condition was not met in time.");
     }
 
     private sealed class RecordingSoundCuePlayer : ISoundCuePlayer
