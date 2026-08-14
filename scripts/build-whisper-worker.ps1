@@ -40,18 +40,31 @@ if ($Backend -eq "Cuda") {
 }
 
 $vcvarsPath = ""
-$vcRoots = @(
-    "C:\Program Files (x86)\Microsoft Visual Studio\2022",
-    "C:\Program Files\Microsoft Visual Studio\2022"
-)
-foreach ($root in $vcRoots) {
-    if (-not $vcvarsPath -and (Test-Path -LiteralPath $root)) {
-        $candidate = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
-            ForEach-Object { Join-Path $_.FullName "VC\Auxiliary\Build\vcvars64.bat" } |
-            Where-Object { Test-Path -LiteralPath $_ } |
-            Select-Object -First 1
-        if ($candidate) {
+$vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path -LiteralPath $vswhere) {
+    $vsInstall = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null |
+        Select-Object -First 1
+    if ($vsInstall -and (Test-Path -LiteralPath $vsInstall)) {
+        $candidate = Join-Path $vsInstall "VC\Auxiliary\Build\vcvars64.bat"
+        if (Test-Path -LiteralPath $candidate) {
             $vcvarsPath = $candidate
+        }
+    }
+}
+if (-not $vcvarsPath) {
+    $vcRoots = @(
+        "C:\Program Files (x86)\Microsoft Visual Studio\2022",
+        "C:\Program Files\Microsoft Visual Studio\2022"
+    )
+    foreach ($root in $vcRoots) {
+        if (-not $vcvarsPath -and (Test-Path -LiteralPath $root)) {
+            $candidate = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName "VC\Auxiliary\Build\vcvars64.bat" } |
+                Where-Object { Test-Path -LiteralPath $_ } |
+                Select-Object -First 1
+            if ($candidate) {
+                $vcvarsPath = $candidate
+            }
         }
     }
 }

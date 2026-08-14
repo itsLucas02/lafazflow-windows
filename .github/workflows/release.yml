@@ -67,10 +67,36 @@ jobs:
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
+      - name: Ensure MSVC C++ build tools
+        shell: pwsh
+        run: |
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          $found = $false
+          if (Test-Path $vswhere) {
+            $install = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+            if ($install) {
+              $found = Test-Path (Join-Path $install "VC\Auxiliary\Build\vcvars64.bat")
+            }
+          }
+          if (-not $found) {
+            Write-Host "Installing Visual Studio Build Tools with the C++ workload..."
+            choco install visualstudio2022buildtools --no-progress -y `
+              --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet --wait --norestart"
+          } else {
+            Write-Host "MSVC C++ tools already available."
+          }
+
       - name: Build CPU Whisper worker from pinned revision
         shell: pwsh
         run: |
-          $env:Path = "C:\Program Files\CMake\bin;$env:Path"
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -latest -products * -property installationPath 2>$null | Select-Object -First 1
+          if ($vsInstall) {
+            $cmakeRoot = Join-Path $vsInstall "Common7\IDE\CommonExtensions\Microsoft\CMake"
+            if (Test-Path (Join-Path $cmakeRoot "CMake\bin")) { $env:Path = "$cmakeRoot\CMake\bin;$env:Path" }
+            if (Test-Path (Join-Path $cmakeRoot "Ninja")) { $env:Path = "$cmakeRoot\Ninja;$env:Path" }
+          }
+          if (Test-Path "C:\Program Files\CMake\bin") { $env:Path = "C:\Program Files\CMake\bin;$env:Path" }
           ./scripts/build-whisper-worker.ps1 `
             -Backend Cpu `
             -SourceDirectory (Resolve-Path "whisper.cpp-src") `
