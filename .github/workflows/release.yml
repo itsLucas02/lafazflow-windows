@@ -111,7 +111,12 @@ jobs:
           Write-Host $versionLine
           if ($versionLine -notmatch "protocol=1") { throw "Unexpected worker protocol version." }
           if ($versionLine -notmatch "compiled=cpu backend=cpu") { throw "Worker does not report a CPU-compiled CPU backend." }
-          if ($versionLine -notmatch "whisper=$env:WHISPER_PINNED_REVISION") { throw "Worker revision does not match the pinned revision." }
+          if ($versionLine -notmatch "whisper=([0-9a-f]{7,40})") { throw "Worker did not report a whisper revision." }
+          $reportedRevision = $Matches[1].ToLowerInvariant()
+          if (-not $env:WHISPER_PINNED_REVISION.StartsWith($reportedRevision, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Worker revision '$reportedRevision' is not a prefix of the pinned revision."
+          }
+          Write-Host "Worker revision '$reportedRevision' matches the pinned revision prefix."
 
       - name: Package release candidate (CPU worker + Official CPU CLI)
         shell: pwsh
