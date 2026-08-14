@@ -34,7 +34,20 @@ function Get-Sha256([string]$path) {
     if (-not (Test-Path -LiteralPath $path)) {
         throw "File not found for hashing: $path"
     }
-    return (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant()
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [System.IO.File]::OpenRead($path)
+        try {
+            $hash = $sha256.ComputeHash($stream)
+            return [System.BitConverter]::ToString($hash).Replace("-", "").ToLowerInvariant()
+        }
+        finally {
+            $stream.Dispose()
+        }
+    }
+    finally {
+        $sha256.Dispose()
+    }
 }
 
 function Test-Hex40([string]$value) {

@@ -416,6 +416,7 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Write `docs/releases/v1.1.0.md` release notes with precise performance claims and limitations.
 - [x] Run full tests, Release build, worker integration/recovery, version-consistency, CPU package smoke, installer verification, diff check, credential/private-data scanning, and ZIP/installer payload inspection.
 - [x] Build and relaunch the owner-local v1.1.0 CUDA package from the committed HEAD with explicit provenance; confirm UI version, product commit, CUDA worker readiness, and no orphans.
+- [x] Fix manifest hashing for CI: the artifact manifest now computes SHA-256 with pure .NET (no `Get-FileHash` dependency) after the GitHub runner reported the cmdlet unavailable; full suite re-verified.
 - [ ] Create and push tag `v1.1.0`, run the tag-triggered workflow, and publish the release — requires the owner's single final approval.
 
 ## Review: LafazFlow v1.1.0 public release candidate
