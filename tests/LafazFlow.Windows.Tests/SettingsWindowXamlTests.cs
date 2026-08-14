@@ -94,6 +94,7 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Text=\"{Binding EngineWarmLatencyText}\"", xaml);
         Assert.Contains("Text=\"{Binding EngineLastRecoveryText}\"", xaml);
         Assert.Contains("Text=\"{Binding EngineIdText}\"", xaml);
+        Assert.Contains("Text=\"{Binding EngineActiveBackendText}\"", xaml);
     }
 
     [Fact]

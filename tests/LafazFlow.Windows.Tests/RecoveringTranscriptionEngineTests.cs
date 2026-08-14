@@ -119,6 +119,25 @@ public sealed class RecoveringTranscriptionEngineTests
         Assert.Equal(1, fallbackCalls);
     }
 
+    [Fact]
+    public async Task BackendMismatchSkipsWorkerRestartAndUsesCliFallback()
+    {
+        var restarts = 0;
+        var fallbackCalls = 0;
+        var engine = CreateEngine(
+            primary: new StubEngine(Failure("worker_backend_mismatch")),
+            fallback: new StubEngine(Success("cli"), calls: () => fallbackCalls++),
+            restart: () => restarts++);
+
+        var result = await engine.TranscribeAsync("a.wav", AppSettings.Default, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("cli", result.Text);
+        Assert.True(result.WasRetried);
+        Assert.Equal(0, restarts);
+        Assert.Equal(1, fallbackCalls);
+    }
+
     private static RecoveringTranscriptionEngine CreateEngine(
         ITranscriptionEngine primary,
         ITranscriptionEngine fallback,

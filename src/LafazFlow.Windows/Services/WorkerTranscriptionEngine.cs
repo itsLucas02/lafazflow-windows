@@ -28,6 +28,15 @@ public sealed class WorkerTranscriptionEngine : ITranscriptionEngine
             }
 
             var session = await _supervisor.GetReadySessionAsync(settings, cancellationToken);
+            await session.GetBackendAsync(cancellationToken);
+            if (!WhisperBackendPolicy.IsWorkerCompatible(
+                    settings,
+                    session.CompiledBackend,
+                    session.RuntimeBackend))
+            {
+                return new TranscriptionEngineResult("", false, "worker_backend_mismatch", null, null);
+            }
+
             var response = await session.TranscribeFinalAsync(wav.Pcm, wav.SampleCount, cancellationToken);
             return response.Status switch
             {

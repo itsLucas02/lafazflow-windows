@@ -39,12 +39,24 @@ if ($Backend -eq "Cuda") {
     }
 }
 
-$vcvarsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-if (-not (Test-Path -LiteralPath $vcvarsPath)) {
-    $vcvarsPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+$vcvarsPath = ""
+$vcRoots = @(
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022",
+    "C:\Program Files\Microsoft Visual Studio\2022"
+)
+foreach ($root in $vcRoots) {
+    if (-not $vcvarsPath -and (Test-Path -LiteralPath $root)) {
+        $candidate = Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
+            ForEach-Object { Join-Path $_.FullName "VC\Auxiliary\Build\vcvars64.bat" } |
+            Where-Object { Test-Path -LiteralPath $_ } |
+            Select-Object -First 1
+        if ($candidate) {
+            $vcvarsPath = $candidate
+        }
+    }
 }
-if (-not (Test-Path -LiteralPath $vcvarsPath)) {
-    throw "MSVC vcvars64.bat was not found."
+if (-not $vcvarsPath) {
+    throw "MSVC vcvars64.bat was not found under Visual Studio 2022."
 }
 
 $cmake = (Get-Command cmake).Source
@@ -84,20 +96,18 @@ if (-not (Test-Path -LiteralPath $workerPath)) {
     throw "Build completed but lafazflow-whisper-worker.exe was not found."
 }
 
-if ($Backend -eq "Cuda") {
-    $vcToolsRoot = Join-Path (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $vcvarsPath))) "Redist\MSVC"
-    $vcRuntimeDirectory = Get-ChildItem $vcToolsRoot -Directory -ErrorAction SilentlyContinue |
-        ForEach-Object { Join-Path $_.FullName "x64\Microsoft.VC143.CRT" } |
-        Where-Object { Test-Path -LiteralPath (Join-Path $_ "msvcp140.dll") }
-    $vcRuntimeDirectory = $vcRuntimeDirectory | Select-Object -First 1
-    if (-not $vcRuntimeDirectory) {
-        throw "The matching x64 VC143 runtime was not found."
-    }
+$vcToolsRoot = Join-Path (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $vcvarsPath))) "Redist\MSVC"
+$vcRuntimeDirectory = Get-ChildItem $vcToolsRoot -Directory -ErrorAction SilentlyContinue |
+    ForEach-Object { Join-Path $_.FullName "x64\Microsoft.VC143.CRT" } |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_ "msvcp140.dll") }
+$vcRuntimeDirectory = $vcRuntimeDirectory | Select-Object -First 1
+if (-not $vcRuntimeDirectory) {
+    throw "The matching x64 VC143 runtime was not found."
+}
 
-    $workerDirectory = Split-Path -Parent $workerPath
-    Get-ChildItem $vcRuntimeDirectory -Filter "*.dll" | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $workerDirectory $_.Name) -Force
-    }
+$workerDirectory = Split-Path -Parent $workerPath
+Get-ChildItem $vcRuntimeDirectory -Filter "*.dll" | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $workerDirectory $_.Name) -Force
 }
 
 $smokeOut = Join-Path $env:TEMP "worker-smoke-out.txt"

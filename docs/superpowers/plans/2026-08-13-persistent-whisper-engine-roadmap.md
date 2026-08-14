@@ -564,12 +564,14 @@ This milestone is explicitly outside current implementation approval.
 
 After successful local observation:
 
-- [ ] Summarize real-use performance and recovery evidence.
-- [ ] Select semantic version based on user-visible scope.
-- [ ] Update README/runtime documentation and release notes.
-- [ ] Verify clean-machine CPU package and document optional CUDA configuration.
-- [ ] Obtain explicit owner approval to tag and publish.
-- [ ] Run the existing GitHub release workflow and verify installer/portable artifacts.
+- [x] Summarize real-use performance and recovery evidence (see `docs/releases/v1.1.0.md`).
+- [x] Select semantic version based on user-visible scope: **v1.1.0** (backward-compatible substantial features; v1.0.1 understates, v2.0.0 is unnecessary).
+- [x] Update README/runtime documentation and release notes.
+- [x] Verify clean-machine CPU package and document optional CUDA configuration.
+- [ ] Obtain explicit owner approval to tag and publish (single final approval).
+- [ ] Run the tag-triggered GitHub release workflow and verify installer/portable artifacts.
+
+**Preparation record (14/08/2026):** v1.1.0 release candidate prepared — version bumped project/installer/package to 1.1.0 with commit-embedded product version; the release workflow now builds the pinned-revision CPU persistent worker and Official CPU CLI recovery path, validates tag/project version agreement, generates the artifact manifest, and publishes only on an approved `v1.1.0` tag; backend compatibility verified (CUDA settings never silently downgraded to a CPU worker; CLI compatibility fallback is explicit); README/runtime setup/release notes updated; local CPU and owner-local CUDA packages verified. The `v1.1.0` tag has NOT been created and the release has NOT been published.
 
 ## 7. Cross-cutting engineering rules
 

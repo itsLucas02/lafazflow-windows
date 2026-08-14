@@ -55,6 +55,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _engineWarmLatencyText = "n/a";
     private string _engineLastRecoveryText = "No recovery yet";
     private string _engineIdText = "";
+    private string _engineActiveBackendText = "Unknown";
     private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
@@ -386,6 +387,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _engineIdText;
         private set => SetProperty(ref _engineIdText, value);
+    }
+
+    public string EngineActiveBackendText
+    {
+        get => _engineActiveBackendText;
+        private set => SetProperty(ref _engineActiveBackendText, value);
     }
 
     public string SettingsFolder => Path.Combine(
@@ -735,9 +742,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
 
         var fingerprintHex = EngineSettingsFingerprint.Compute(_sourceSettings);
-        var snapshot = _voiceEngineStatus.Snapshot(fingerprintHex);
+        var snapshot = _voiceEngineStatus.Snapshot(fingerprintHex, _sourceSettings);
         EngineStatusText = snapshot.StatusText;
         EngineStatusDetail = $"{BackendName(_sourceSettings.WhisperBackend)} · {ActiveModelFileName(_sourceSettings)}";
+        EngineActiveBackendText = snapshot.ActiveBackendText;
         EngineUptimeText = snapshot.UptimeText;
         EngineColdLatencyText = snapshot.ColdLatencyText;
         EngineWarmLatencyText = snapshot.WarmLatencyText;

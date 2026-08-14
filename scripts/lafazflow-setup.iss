@@ -1,7 +1,7 @@
 #define MyAppName "LafazFlow"
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.1.0"
 #endif
 #ifndef MyAppSource
   #define MyAppSource "."

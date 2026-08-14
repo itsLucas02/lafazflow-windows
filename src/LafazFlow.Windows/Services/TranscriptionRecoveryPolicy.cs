@@ -34,6 +34,7 @@ public static class TranscriptionRecoveryPolicy
                 or "worker_internalerror"
                 or "worker_invalidresponse"
                 or "pipe_broken" => TranscriptionRecoveryAction.RetryWorker,
+            "worker_backend_mismatch" => TranscriptionRecoveryAction.RetryCli,
             "invalid_audio"
                 or "model_missing"
                 or "vad_missing"

@@ -278,6 +278,10 @@ public sealed class WhisperWorkerSession : IDisposable
 
     public bool IsReady { get; private set; }
 
+    public WhisperBackend? CompiledBackend { get; private set; }
+
+    public WhisperBackend? RuntimeBackend { get; private set; }
+
     public async Task InitializeAsync(AppSettings settings, CancellationToken cancellationToken)
     {
         _pipe = new NamedPipeClientStream(
@@ -383,6 +387,47 @@ public sealed class WhisperWorkerSession : IDisposable
             []);
         var response = await SendAndAwaitAsync(request, operationCts.Token);
         return Encoding.UTF8.GetString(response.Data);
+    }
+
+    /// <summary>
+    /// Queries the worker's health once and caches the compiled and runtime
+    /// backends it reports so the app can verify it never silently uses a
+    /// worker whose backend cannot satisfy the selected settings.
+    /// </summary>
+    public async Task GetBackendAsync(CancellationToken cancellationToken)
+    {
+        if (CompiledBackend.HasValue && RuntimeBackend.HasValue)
+        {
+            return;
+        }
+
+        var health = await HealthAsync(cancellationToken);
+        CompiledBackend = ParseBackend(health, "compiled");
+        RuntimeBackend = ParseBackend(health, "backend");
+    }
+
+    private static WhisperBackend? ParseBackend(string health, string key)
+    {
+        var prefix = key + "=";
+        var index = health.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        if (index < 0)
+        {
+            return null;
+        }
+
+        var start = index + prefix.Length;
+        var end = start;
+        while (end < health.Length && (char.IsLetterOrDigit(health[end]) || health[end] == '_'))
+        {
+            end++;
+        }
+
+        var value = health[start..end];
+        return value.Equals("cuda", StringComparison.OrdinalIgnoreCase)
+            ? WhisperBackend.Cuda
+            : value.Equals("cpu", StringComparison.OrdinalIgnoreCase)
+                ? WhisperBackend.Cpu
+                : null;
     }
 
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

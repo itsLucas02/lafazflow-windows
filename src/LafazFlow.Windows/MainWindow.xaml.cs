@@ -185,6 +185,15 @@ public partial class MainWindow : Window
         try
         {
             var session = await _workerSupervisor.GetReadySessionAsync(settings, cancellationToken);
+            await session.GetBackendAsync(cancellationToken);
+            if (!WhisperBackendPolicy.IsWorkerCompatible(
+                    settings,
+                    session.CompiledBackend,
+                    session.RuntimeBackend))
+            {
+                return null;
+            }
+
             var response = await session.TranscribePreviewAsync(pcmAudio, sampleCount, cancellationToken);
             return response.Status == WhisperPipeStatus.Ok
                 ? WhisperCliTranscriptionService.CleanTranscript(Encoding.UTF8.GetString(response.Data))

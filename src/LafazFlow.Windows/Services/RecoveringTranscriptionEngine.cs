@@ -25,11 +25,22 @@ public sealed class RecoveringTranscriptionEngine : ITranscriptionEngine
         CancellationToken cancellationToken)
     {
         var first = await _primary.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
-        if (first.Succeeded
-            || TranscriptionRecoveryPolicy.Decide(first.FailureKind, false, false)
-                == TranscriptionRecoveryAction.None)
+        var action = TranscriptionRecoveryPolicy.Decide(first.FailureKind, false, false);
+        if (first.Succeeded || action == TranscriptionRecoveryAction.None)
         {
             return first;
+        }
+
+        if (action == TranscriptionRecoveryAction.RetryCli)
+        {
+            // The worker cannot satisfy the selected backend (for example CUDA
+            // settings with a CPU-compiled worker); restarting it would not
+            // help, so go straight to the identical-settings CLI compatibility
+            // path without retrying the worker.
+            var compatCliResult = await _fallback.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
+            return compatCliResult.Succeeded
+                ? compatCliResult with { WasRetried = true }
+                : first;
         }
 
         await _restartAsync(settings, first.FailureKind ?? "worker_unavailable", cancellationToken);

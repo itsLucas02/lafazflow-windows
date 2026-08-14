@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Pipes;
+using System.Text;
 using LafazFlow.Windows.Core;
 using LafazFlow.Windows.Services;
 
@@ -9,18 +10,26 @@ internal sealed class FakeWorkerProcessFactory
 {
     private readonly Action _onStart;
     private readonly bool _respondToInitialize;
+    private readonly string _compiledBackend;
+    private readonly string _runtimeBackend;
 
-    public FakeWorkerProcessFactory(Action onStart, bool respondToInitialize = true)
+    public FakeWorkerProcessFactory(
+        Action onStart,
+        bool respondToInitialize = true,
+        string compiledBackend = "cuda",
+        string runtimeBackend = "cuda")
     {
         _onStart = onStart;
         _respondToInitialize = respondToInitialize;
+        _compiledBackend = compiledBackend;
+        _runtimeBackend = runtimeBackend;
     }
 
     public FakeWorkerProcess? LatestProcess { get; private set; }
 
     public FakeWorkerProcess Create()
     {
-        LatestProcess = new FakeWorkerProcess(_onStart, _respondToInitialize);
+        LatestProcess = new FakeWorkerProcess(_onStart, _respondToInitialize, _compiledBackend, _runtimeBackend);
         return LatestProcess;
     }
 }
@@ -29,14 +38,22 @@ internal sealed class FakeWorkerProcess : IWhisperWorkerProcess
 {
     private readonly Action _onStart;
     private readonly bool _respondToInitialize;
+    private readonly string _compiledBackend;
+    private readonly string _runtimeBackend;
     private NamedPipeServerStream? _server;
     private Task? _serveTask;
     private bool _disconnected;
 
-    public FakeWorkerProcess(Action onStart, bool respondToInitialize)
+    public FakeWorkerProcess(
+        Action onStart,
+        bool respondToInitialize,
+        string compiledBackend,
+        string runtimeBackend)
     {
         _onStart = onStart;
         _respondToInitialize = respondToInitialize;
+        _compiledBackend = compiledBackend;
+        _runtimeBackend = runtimeBackend;
     }
 
     public int Id { get; private set; } = Random.Shared.Next(1000, 9999);
@@ -123,13 +140,17 @@ internal sealed class FakeWorkerProcess : IWhisperWorkerProcess
             }
             else if (request.Op == WhisperPipeOp.Health)
             {
+                var healthText = "uptime_ms=1 completed=1 last_failure=none model=fake "
+                    + "compiled=" + _compiledBackend
+                    + " backend=" + _runtimeBackend
+                    + " fingerprint=";
                 await WriteResponseAsync(new WhisperPipeResponse(
                     WhisperPipeOp.Health,
                     WhisperPipeStatus.Ok,
                     request.RequestId,
                     request.SessionId,
                     fingerprint,
-                    "uptime_ms=1 completed=1 last_failure=none model=fake backend=cuda fingerprint="u8.ToArray()));
+                    Encoding.UTF8.GetBytes(healthText)));
             }
             else if (request.Op == WhisperPipeOp.Shutdown)
             {

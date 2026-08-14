@@ -7,6 +7,7 @@ LafazFlow is a private, offline-first dictation app for Windows. This guide cove
 - Windows 10 or Windows 11 (64-bit).
 - A working microphone.
 - No .NET installation and no account. Releases are self-contained, and dictation stays on your PC.
+- The standard public package works on ordinary computers with a CPU — no NVIDIA GPU required. CUDA is optional.
 
 ## Install
 
@@ -32,6 +33,16 @@ Go to **Settings > Models** and choose a model:
 
 Click **Download** and wait for it to finish. Models are stored in your user folder, so no administrator access is needed. Everything after that works offline.
 
+## How the engine works
+
+LafazFlow runs a small background **voice engine** (a persistent Whisper worker) that starts when the app starts:
+
+- The selected model is loaded **once** and stays ready, so later dictations are noticeably faster than starting a fresh transcription process each time.
+- When you stop speaking, the app drains the complete recording before transcribing, so the final words are not lost.
+- If the engine ever crashes, LafazFlow restarts it automatically and recovers the dictation without pasting anything twice.
+- Your final dictation always takes priority over the live preview, and the vocabulary prompt can never leak into your document.
+- The engine can use **CPU** (the default public package) or **NVIDIA CUDA** (optional, for the Quality profile on a compatible GPU). LafazFlow never silently switches CUDA settings to CPU — if a CUDA runtime is missing, it either uses the CUDA compatibility path or tells you what to install.
+
 ## Dictate
 
 1. Click into the app where you want text (an editor, browser, chat, document).
@@ -44,7 +55,9 @@ Click **Download** and wait for it to finish. Models are stored in your user fol
 - **"Microphone input was silent"** — open Windows Settings > Privacy > Microphone, make sure access is on, and check that the correct input device and volume are selected.
 - **Model download fails** — check your internet connection and retry, or import a local `.bin` model via **Settings > Models > Import local model**.
 - **Sound cues missing or quiet** — adjust them in **Settings > Sound**.
-- **Higher quality mode** — **Settings > Dictation** offers a Quality profile. CUDA acceleration requires an NVIDIA GPU and a CUDA-enabled `whisper-cli.exe`; the default CPU profile works everywhere.
+- **Higher quality mode** — **Settings > Dictation** offers a Quality profile. CUDA acceleration requires an NVIDIA GPU and a CUDA-enabled worker/CLI; the default CPU profile works everywhere. See **Settings > Vocabulary/Diagnostics** for the active engine backend.
+- **SmartScreen warning** — the app is currently unsigned, so Windows may show "Windows protected your PC". Click *More info* then *Run anyway*. This is normal for new open-source software.
+- **"Voice engine needs attention"** — open **Settings > Diagnostics** to see the engine state and active backend, or restart LafazFlow. The engine recovers automatically from crashes.
 - **Recordings and logs** are only kept when you enable *Keep recordings for diagnostics* in **Settings > Diagnostics**.
 
 ## Privacy

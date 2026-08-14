@@ -7,6 +7,7 @@ param(
     [string]$WhisperCliLocalPath = "",
     [string]$WhisperCliRevision = "",
     [string]$WorkerRevision = "",
+    [string]$WhisperCpuReleaseTag = "",
     [string]$WorkerLocalPath = "C:\Tools\lafazflow-whisper-worker\bin\lafazflow-whisper-worker.exe",
     [string]$InnoSetupCompilerPath = ""
 )
@@ -70,10 +71,20 @@ if ($WhisperCliLocalPath -and (Test-Path $WhisperCliLocalPath))
 }
 else
 {
-    Write-Host "Downloading latest whisper.cpp Windows binary release..."
-    $latest = Invoke-RestMethod `
-        -Uri "https://api.github.com/repos/ggerganov/whisper.cpp/releases/latest" `
-        -Headers @{ "User-Agent" = "LafazFlow-release-packager" }
+    if ($WhisperCpuReleaseTag)
+    {
+        Write-Host "Downloading pinned whisper.cpp release $WhisperCpuReleaseTag..."
+        $latest = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/ggerganov/whisper.cpp/releases/tags/$WhisperCpuReleaseTag" `
+            -Headers @{ "User-Agent" = "LafazFlow-release-packager" }
+    }
+    else
+    {
+        Write-Host "Downloading latest whisper.cpp Windows binary release..."
+        $latest = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/ggerganov/whisper.cpp/releases/latest" `
+            -Headers @{ "User-Agent" = "LafazFlow-release-packager" }
+    }
     $asset = $latest.assets | Where-Object { $_.name -eq "whisper-bin-x64.zip" } | Select-Object -First 1
     if (-not $asset)
     {

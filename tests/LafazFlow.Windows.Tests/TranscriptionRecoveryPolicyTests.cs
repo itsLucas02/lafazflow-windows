@@ -18,6 +18,14 @@ public sealed class TranscriptionRecoveryPolicyTests
             TranscriptionRecoveryPolicy.Decide(failureKind, userCancelled: false, deliveryCommitted: false));
     }
 
+    [Fact]
+    public void BackendMismatchRequestsCliRecoveryWithoutWorkerRestart()
+    {
+        Assert.Equal(
+            TranscriptionRecoveryAction.RetryCli,
+            TranscriptionRecoveryPolicy.Decide("worker_backend_mismatch", userCancelled: false, deliveryCommitted: false));
+    }
+
     [Theory]
     [InlineData("invalid_audio")]
     [InlineData("model_missing")]

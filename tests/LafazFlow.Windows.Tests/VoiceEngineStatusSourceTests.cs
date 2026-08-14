@@ -13,9 +13,67 @@ public sealed class VoiceEngineStatusSourceTests
         var snapshot = source.Snapshot("ABC123");
 
         Assert.Equal("Using compatibility engine", snapshot.StatusText);
+        Assert.Equal("Unknown", snapshot.ActiveBackendText);
         Assert.Equal("Not ready yet", snapshot.UptimeText);
         Assert.Equal("No recovery yet", snapshot.LastRecoveryText);
         Assert.Equal("Engine ABC123", snapshot.EngineIdText);
+    }
+
+    [Fact]
+    public void ActiveBackendReportsCliCompatibilityWhenNoWorker()
+    {
+        var source = new VoiceEngineStatusSource(new PerformanceHealthMonitor());
+        var settings = AppSettings.Default;
+
+        var snapshot = source.Snapshot("ABC123", settings);
+
+        Assert.Equal(
+            $"CLI compatibility ({WhisperBackendPolicy.RequiredBackend(settings)})",
+            snapshot.ActiveBackendText);
+    }
+
+    [Fact]
+    public async Task ActiveBackendReportsPersistentWorkerWhenCompatible()
+    {
+        var factory = new FakeWorkerProcessFactory(
+            () => { },
+            compiledBackend: "cuda",
+            runtimeBackend: "cuda");
+        using var supervisor = CreateSupervisor(factory);
+        var source = new VoiceEngineStatusSource(new PerformanceHealthMonitor());
+        source.AttachSupervisor(supervisor);
+        var settings = CudaSettings;
+
+        var session = await supervisor.GetReadySessionAsync(settings, CancellationToken.None);
+        await session.GetBackendAsync(CancellationToken.None);
+
+        var snapshot = source.Snapshot(EngineSettingsFingerprint.Compute(settings), settings);
+
+        Assert.Equal("Persistent worker (Cuda)", snapshot.ActiveBackendText);
+        await supervisor.ShutdownAsync();
+    }
+
+    [Fact]
+    public async Task ActiveBackendReportsCliCompatibilityOnBackendMismatch()
+    {
+        var factory = new FakeWorkerProcessFactory(
+            () => { },
+            compiledBackend: "cpu",
+            runtimeBackend: "cpu");
+        using var supervisor = CreateSupervisor(factory);
+        var source = new VoiceEngineStatusSource(new PerformanceHealthMonitor());
+        source.AttachSupervisor(supervisor);
+        var settings = CudaSettings;
+
+        var session = await supervisor.GetReadySessionAsync(settings, CancellationToken.None);
+        await session.GetBackendAsync(CancellationToken.None);
+
+        var snapshot = source.Snapshot(EngineSettingsFingerprint.Compute(settings), settings);
+
+        Assert.Equal(
+            "CLI compatibility (Cuda) — worker backend mismatch",
+            snapshot.ActiveBackendText);
+        await supervisor.ShutdownAsync();
     }
 
     [Fact]
@@ -215,4 +273,12 @@ public sealed class VoiceEngineStatusSourceTests
             false,
             DateTimeOffset.UtcNow);
     }
+
+    private static AppSettings CudaSettings => AppSettings.Default with
+    {
+        TranscriptionProfile = TranscriptionProfile.Quality,
+        WhisperBackend = WhisperBackend.Cuda,
+        EnableVad = true,
+        WhisperThreads = 16
+    };
 }

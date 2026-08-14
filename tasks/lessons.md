@@ -403,3 +403,11 @@
 ## Embed the build commit in the product version for rollout traceability
 - Pattern: The app reported only `v1.0.0`, so the running build could not be tied to the repository commit that produced it, and rollout claims were not verifiable.
 - Rule: Capture `git rev-parse HEAD` at build time into `AssemblyInformationalVersion` (for example `1.0.0+<full hash>`) and surface the short hash in the UI; then the running executable's product version identifies the exact commit and can be verified from the file's version info.
+
+## Never silently run a CPU worker for CUDA settings
+- Pattern: The app used whichever worker binary was packaged without checking what backend it was compiled for; a CPU-only build could be launched with Quality/CUDA settings and silently degrade to CPU while the UI claimed CUDA.
+- Rule: The worker must report both its compiled backend and its runtime backend; the app must verify them against the selected settings, route an incompatible worker to the identical-settings CLI compatibility path (or fail clearly with setup guidance), and surface the active backend in Diagnostics. A release workflow must build the worker it packages from the pinned revision and verify its reported backend.
+
+## Public packages must be self-contained and provenance-pinned
+- Pattern: A release workflow that downloaded an unrecorded "latest" CLI and never built the persistent worker would have produced an outdated, GPU-requiring or incomplete public package.
+- Rule: For public releases, build the CPU worker from the pinned whisper.cpp revision on the CI runner, pin the Official CPU CLI release identity, generate the artifact manifest from the actual binaries, and verify tag/project version agreement before publishing. Keep the owner-local CUDA package separate and never publish it as the standard CPU package.

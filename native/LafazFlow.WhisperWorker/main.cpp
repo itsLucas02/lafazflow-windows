@@ -85,6 +85,12 @@ int g_vad_min_silence_duration_ms = 100;
 int g_vad_speech_pad_ms = 30;
 float g_vad_samples_overlap = 0.10f;
 
+#ifdef LAFAZFLOW_WORKER_CUDA_BUILD
+const char* g_compiled_backend = "cuda";
+#else
+const char* g_compiled_backend = "cpu";
+#endif
+
 whisper_context* g_ctx = nullptr;
 std::string g_model_path;
 std::string g_model_name;
@@ -501,6 +507,7 @@ void EngineLoop(HANDLE pipe) {
                     + " completed=" + std::to_string(g_completed_requests)
                     + " last_failure=" + g_last_failure
                     + " model=" + g_model_name
+                    + " compiled=" + g_compiled_backend
                     + " backend=" + (g_use_gpu ? "cuda" : "cpu")
                     + " fingerprint=" + g_fingerprint;
                 SendResponse(pipe, OpHealth, StatusOk, frame.request_id, frame.session_id, g_fingerprint,
@@ -522,6 +529,11 @@ void EngineLoop(HANDLE pipe) {
 } // namespace
 
 int main(int argc, char** argv) {
+    // A CPU-compiled worker can never run CUDA; force the runtime backend to
+    // CPU up front so --version and health always report what is possible.
+    if (std::string(g_compiled_backend) != "cuda") {
+        g_use_gpu = false;
+    }
     std::string model_path;
     std::string pipe_name;
 
@@ -563,8 +575,8 @@ int main(int argc, char** argv) {
             g_use_gpu = false;
         } else if (arg == "--version") {
             std::printf(
-                "lafazflow-whisper-worker 0.2.0 protocol=1 backend=%s whisper=968eebe7\n",
-                g_use_gpu ? "cuda" : "cpu");
+                "lafazflow-whisper-worker 0.2.0 protocol=1 compiled=%s backend=%s whisper=968eebe7\n",
+                g_compiled_backend, g_use_gpu ? "cuda" : "cpu");
             return 0;
         } else if (arg == "--vad-params") {
             std::string raw = next();

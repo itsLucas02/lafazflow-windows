@@ -9,6 +9,7 @@ public sealed record RecoveryRecord(
 
 public sealed record VoiceEngineStatusSnapshot(
     string StatusText,
+    string ActiveBackendText,
     string UptimeText,
     string ColdLatencyText,
     string WarmLatencyText,
@@ -54,16 +55,41 @@ public sealed class VoiceEngineStatusSource
         RaiseChanged();
     }
 
-    public VoiceEngineStatusSnapshot Snapshot(string fingerprintHex)
+    public VoiceEngineStatusSnapshot Snapshot(string fingerprintHex, AppSettings? settings = null)
     {
         var diagnostics = _monitor.DiagnosticSamples(fingerprintHex).ToList();
         return new VoiceEngineStatusSnapshot(
             StatusText(diagnostics),
+            ActiveBackendText(settings),
             UptimeText(),
             LatencyText(diagnostics, cold: true),
             LatencyText(diagnostics, cold: false),
             RecoveryText(),
             EngineIdText(fingerprintHex));
+    }
+
+    private string ActiveBackendText(AppSettings? settings)
+    {
+        if (settings is null)
+        {
+            return "Unknown";
+        }
+
+        var required = WhisperBackendPolicy.RequiredBackend(settings);
+        if (_supervisor is null)
+        {
+            return $"CLI compatibility ({required})";
+        }
+
+        if (_supervisor.Session is not { } session
+            || (!session.CompiledBackend.HasValue && !session.RuntimeBackend.HasValue))
+        {
+            return "Checking engine backend";
+        }
+
+        return WhisperBackendPolicy.IsWorkerCompatible(settings, session.CompiledBackend, session.RuntimeBackend)
+            ? $"Persistent worker ({session.RuntimeBackend})"
+            : $"CLI compatibility ({required}) — worker backend mismatch";
     }
 
     private string StatusText(IReadOnlyList<HealthSample> diagnostics)

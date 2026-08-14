@@ -6,18 +6,57 @@ on:
     tags:
       - "v*"
 
+# Version-pin policy: every GitHub Action is pinned to an immutable commit SHA
+# (tag shown in a trailing comment). The project's own scripts are pinned by the
+# repository checkout itself. Third-party binaries are pinned by recorded
+# release identity (whisper.cpp v1.9.2 whisper-bin-x64.zip) rather than an
+# unrecorded "latest".
 permissions:
   contents: write
+  actions: write
+
+env:
+  WHISPER_PINNED_REVISION: 968eebe77225d25e57a3f981da7c696310f0e881
+  WHISPER_CPU_RELEASE_TAG: v1.9.2
 
 jobs:
   release:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Validate tag matches project version (tag-triggered only)
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -ne "tag") {
+            Write-Host "Manual dispatch: building a release candidate without publishing."
+            exit 0
+          }
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch "^v\d+\.\d+\.\d+$") {
+            throw "Tag '$tag' is not a semantic vX.Y.Z tag."
+          }
+          $csproj = Get-Content -Raw "src/LafazFlow.Windows/LafazFlow.Windows.csproj"
+          if ($csproj -notmatch "<Version>([^<]+)</Version>") {
+            throw "Could not read the project version."
+          }
+          $projectVersion = $Matches[1].Trim()
+          $expectedVersion = $tag -replace "^v", ""
+          if ($projectVersion -ne $expectedVersion) {
+            throw "Tag '$tag' does not match project version '$projectVersion'. Refusing to publish a mismatched release."
+          }
+          Write-Host "Tag '$tag' matches project version '$projectVersion'."
+
+      - name: Checkout pinned whisper.cpp source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: ggml-org/whisper.cpp
+          ref: 968eebe77225d25e57a3f981da7c696310f0e881
+          path: whisper.cpp-src
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: "9.0.x"
 
@@ -28,17 +67,52 @@ jobs:
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Package release
+      - name: Build CPU Whisper worker from pinned revision
+        shell: pwsh
+        run: |
+          $env:Path = "C:\Program Files\CMake\bin;$env:Path"
+          ./scripts/build-whisper-worker.ps1 `
+            -Backend Cpu `
+            -SourceDirectory (Resolve-Path "whisper.cpp-src") `
+            -InstallDirectory "C:\Tools\lafazflow-whisper-worker-cpu" `
+            -BuildDirectory "C:\Tools\whisper-worker-build-cpu"
+
+      - name: Verify CPU worker provenance
+        shell: pwsh
+        run: |
+          $worker = "C:\Tools\lafazflow-whisper-worker-cpu\bin\lafazflow-whisper-worker.exe"
+          $versionLine = & $worker --version
+          Write-Host $versionLine
+          if ($versionLine -notmatch "protocol=1") { throw "Unexpected worker protocol version." }
+          if ($versionLine -notmatch "compiled=cpu backend=cpu") { throw "Worker does not report a CPU-compiled CPU backend." }
+          if ($versionLine -notmatch "whisper=$env:WHISPER_PINNED_REVISION") { throw "Worker revision does not match the pinned revision." }
+
+      - name: Package release candidate (CPU worker + Official CPU CLI)
         shell: pwsh
         run: |
           $version = ""
           if ($env:GITHUB_REF_TYPE -eq "tag") {
             $version = $env:GITHUB_REF_NAME -replace "^v", ""
           }
-          ./scripts/package-windows-release.ps1 -Version $version -InnoSetupCompilerPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          ./scripts/package-windows-release.ps1 `
+            -Version $version `
+            -WorkerLocalPath "C:\Tools\lafazflow-whisper-worker-cpu\bin\lafazflow-whisper-worker.exe" `
+            -WorkerRevision $env:WHISPER_PINNED_REVISION `
+            -WhisperCpuReleaseTag $env:WHISPER_CPU_RELEASE_TAG `
+            -InnoSetupCompilerPath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 
-      - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+      - name: Upload candidate artifacts (manual dispatch, no release)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lafazflow-release-candidate
+          path: |
+            artifacts/release/*.zip
+            artifacts/release/*.exe
+
+      - name: Publish GitHub release (tag-triggered only)
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: |
             artifacts/release/*.zip

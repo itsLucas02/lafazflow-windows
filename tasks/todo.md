@@ -408,6 +408,24 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 
 **Closure:** M0–M10 may close only after these checks pass; M11 remains unstarted and requires separate explicit owner approval.
 
+## Plan: LafazFlow v1.1.0 public release candidate (M11 preparation)
+- [x] Bump project, installer, package filenames, and tests from 1.0.0 to 1.1.0; add a deterministic version-consistency test.
+- [x] Expose the worker's compiled and runtime backend; verify worker backend against selected settings; never silently downgrade CUDA to a CPU worker; add explicit CLI compatibility recovery (`worker_backend_mismatch` → `RetryCli`) with clear CUDA setup guidance.
+- [x] Harden `.github/workflows/release.yml`: tag-triggered publication only, manual-dispatch candidate artifacts without publishing, tag/project version validation, pinned whisper.cpp `968eebe7` checkout, reproducible CPU worker build, worker provenance verification, pinned Official CPU CLI release identity (v1.9.2), explicit worker provenance, artifact manifest, portable ZIP + Inno installer, and pinned Actions SHAs.
+- [x] Update README and `docs/windows-runtime-setup.md` for the persistent engine, CPU/CUDA package behavior, SmartScreen, models-downloaded-separately, and privacy.
+- [x] Write `docs/releases/v1.1.0.md` release notes with precise performance claims and limitations.
+- [x] Run full tests, Release build, worker integration/recovery, version-consistency, CPU package smoke, installer verification, diff check, credential/private-data scanning, and ZIP/installer payload inspection.
+- [x] Build and relaunch the owner-local v1.1.0 CUDA package from the committed HEAD with explicit provenance; confirm UI version, product commit, CUDA worker readiness, and no orphans.
+- [ ] Create and push tag `v1.1.0`, run the tag-triggered workflow, and publish the release — requires the owner's single final approval.
+
+## Review: LafazFlow v1.1.0 public release candidate
+- Version: project 1.1.0, installer 1.1.0, product version `1.1.0+<commit>`, portable `LafazFlow-1.1.0-win-x64-portable.zip`, installer `LafazFlow-1.1.0-setup.exe`, future tag `v1.1.0`.
+- Worker backend: `--version`/health report `compiled=` and `backend=`; CUDA settings require a CUDA worker (compiled+runtime), CPU settings accept CPU runtime; mismatch routes to the identical-settings CLI compatibility path or a clear failure with setup guidance; Diagnostics shows the active backend.
+- Workflow: tag-gated publish, manual-dispatch candidate uploads, pinned revisions/release identity/actions.
+- Tests/build: full suite green, Release build clean, version-consistency and backend tests green.
+- Packages: local CPU package and owner-local CUDA package verified with matching manifest hashes; v1.0.0 tag and release untouched.
+- M11 publication remains pending the owner's single explicit approval.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

@@ -9,7 +9,9 @@ var cliBaseline = CliBaselineLoader.Load(options.CliBaselinePath);
 var settings = VerifySettingsLoader.Load(options.SettingsPath) with
 {
     TranscriptionProfile = TranscriptionProfile.Quality,
-    WhisperBackend = WhisperBackend.Cuda,
+    WhisperBackend = options.Backend.Equals("Cpu", StringComparison.OrdinalIgnoreCase)
+        ? WhisperBackend.Cpu
+        : WhisperBackend.Cuda,
     ModelPath = options.ModelPath,
     QualityModelPath = options.ModelPath,
     VadModelPath = options.VadModelPath,
