@@ -16,7 +16,7 @@ param(
 
     [string]$CliReleaseIdentity = "",
 
-    [string]$WorkerRevision = "968eebe77225d25e57a3f981da7c696310f0e881",
+    [string]$WorkerRevision = "",
 
     [string]$Version = "",
 
@@ -37,8 +37,35 @@ function Get-Sha256([string]$path) {
     return (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant()
 }
 
+function Test-Hex40([string]$value) {
+    return $value -match "^[0-9a-fA-F]{40}$"
+}
+
+# CLI provenance is fail-closed: a Local CUDA binary is never assigned an
+# unverified revision. The revision must be supplied explicitly by the packager
+# as documented package/build provenance and is bound to the binary's SHA-256.
+$effectiveCliRevision = $null
+$cliRevisionEvidence = $null
+if ($CliSource -eq "LocalCuda") {
+    if (-not (Test-Hex40 $CliRevision)) {
+        throw "LocalCuda packaging requires a full 40-character hexadecimal -CliRevision. Refusing to guess provenance for the selected CLI."
+    }
+    $effectiveCliRevision = $CliRevision.ToLowerInvariant()
+    $cliRevisionEvidence = "explicit package/build provenance"
+}
+else {
+    # Official CPU binaries come from the GitHub release; no source revision is
+    # invented unless the release itself provides trustworthy evidence.
+    $effectiveCliRevision = $null
+    $cliRevisionEvidence = $null
+}
+
 $workerReported = $null
+$effectiveWorkerRevision = $null
 if ($WorkerPath -and (Test-Path -LiteralPath $WorkerPath)) {
+    if (-not (Test-Hex40 $WorkerRevision)) {
+        throw "Packaging a worker requires a full 40-character hexadecimal -WorkerRevision. Refusing to guess provenance for the selected worker."
+    }
     try {
         $versionOut = & $WorkerPath --version 2>$null | Out-String
         if ($versionOut -match "whisper=([0-9a-f]{7,40})") {
@@ -48,24 +75,16 @@ if ($WorkerPath -and (Test-Path -LiteralPath $WorkerPath)) {
     catch {
         $workerReported = $null
     }
-}
-
-# Keep the documented full revision only when the binary's own report matches
-# it as a prefix; otherwise record what the binary actually reports. A revision
-# is never invented for a binary that cannot confirm it.
-$effectiveWorkerRevision = $WorkerRevision
-if ($workerReported) {
-    if ($WorkerRevision -and -not $WorkerRevision.StartsWith($workerReported, [System.StringComparison]::OrdinalIgnoreCase)) {
-        $effectiveWorkerRevision = $workerReported
+    if (-not $workerReported) {
+        throw "The selected worker did not report a whisper revision via --version; cannot corroborate the supplied -WorkerRevision."
     }
+    if (-not $WorkerRevision.StartsWith($workerReported, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "The supplied worker revision $WorkerRevision does not begin with the revision the binary reported ($workerReported)."
+    }
+    $effectiveWorkerRevision = $WorkerRevision.ToLowerInvariant()
 }
-elseif (-not $effectiveWorkerRevision) {
-    $effectiveWorkerRevision = $null
-}
-
-$effectiveCliRevision = $CliRevision
-if ($CliSource -eq "OfficialCpu") {
-    $effectiveCliRevision = $null
+elseif ($WorkerPath) {
+    throw "The selected worker path was not found: $WorkerPath"
 }
 
 $manifest = [ordered]@{
@@ -96,6 +115,7 @@ $manifest = [ordered]@{
         file = (Split-Path -Leaf $CliPath)
         source = $CliSource
         revision = $effectiveCliRevision
+        revision_evidence_type = $cliRevisionEvidence
         release_identity = $(if ($CliReleaseIdentity) { $CliReleaseIdentity } else { $null })
         sha256 = (Get-Sha256 $CliPath)
     }

@@ -404,6 +404,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public string AppVersion => AppVersionText.Compact;
 
+    public string AppVersionWithCommit => AppVersionText.Full;
+
     public string SettingsWindowTitle => AppVersionText.SettingsTitle;
 
     public string ValidationMessage

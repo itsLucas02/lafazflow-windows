@@ -384,6 +384,30 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 
 **Closure:** M0–M10 persistent Whisper engine roadmap gates are complete. M11 (public release) remains unstarted and requires separate explicit owner approval.
 
+## Closure remediation — fail-closed binary provenance and final stable rollout
+
+**Status:** Complete (exit gate passed)
+
+### Finding 1 — revisions are explicit inputs, never hidden defaults
+
+- `scripts/package-windows-release.ps1` now requires `-WhisperCliRevision` (full 40-character hexadecimal) whenever `-WhisperCliLocalPath` is supplied; malformed or missing revisions abort packaging. `-WorkerRevision` is an explicit parameter passed through to the manifest generator.
+- `scripts/New-LafazFlowArtifactManifest.ps1` no longer defaults `WorkerRevision` to any hash. A packaged worker must report a `whisper=` prefix via `--version`, the supplied full revision must begin with that reported prefix, and the manifest records both the full revision and the reported short revision. Missing, malformed, unreported, or mismatched revisions fail the manifest generation.
+- The Local CUDA CLI revision is never guessed: the packager binds the explicitly supplied revision to the actual binary via its SHA-256 and records `cli.revision_evidence_type = "explicit package/build provenance"` (whisper-cli.exe cannot report its source revision via `--version`).
+- Official CPU packaging still records the GitHub release identity and asset URL with `cli.revision = null`; no revision is invented.
+- The app now embeds the git commit in its product version (`AssemblyInformationalVersion` = `1.0.0+<full hash>`); the About page shows `v1.0.0 (<short hash>)`.
+
+### Finding 2 — canonical stable rollout rebuilt from the final commit
+
+- The canonical `artifacts\release-m10` portable ZIP and staging were rebuilt from the new final HEAD with explicit revisions:
+  - `-WhisperCliRevision 968eebe77225d25e57a3f981da7c696310f0e881`
+  - `-WorkerRevision 968eebe77225d25e57a3f981da7c696310f0e881`
+- The packaged `whisper-cli.exe` SHA-256, `lafazflow-whisper-worker.exe` SHA-256, and `LafazFlow.Windows.exe` SHA-256 all match the embedded manifest; the worker reports `whisper=968eebe7` and CUDA readiness.
+- The running app is the canonical release-m10 staging build, its product version identifies the final commit, and no old app/worker/CLI processes remain.
+
+**Verification:** fail-closed manifest tests (missing/malformed/mismatched/unreported revisions fail; valid LocalCuda + matching worker succeed; OfficialCpu records release identity without revision; no private paths) and app-version tests green; focused 75; full suite 688 green; Release build 0 warnings/0 errors; `git diff --check` clean; canonical ZIP inspected (manifest present, hashes match, notices accurate, no private data).
+
+**Closure:** M0–M10 may close only after these checks pass; M11 remains unstarted and requires separate explicit owner approval.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

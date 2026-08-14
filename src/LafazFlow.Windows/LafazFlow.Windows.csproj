@@ -9,7 +9,20 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Resources\Icons\LafazFlow.ico</ApplicationIcon>
     <Version>1.0.0</Version>
+    <InformationalVersion>1.0.0</InformationalVersion>
   </PropertyGroup>
+
+  <Target Name="CaptureGitCommit" BeforeTargets="GenerateAssemblyInfo">
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; rev-parse HEAD"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LafazFlowGitCommit" />
+    </Exec>
+    <PropertyGroup>
+      <InformationalVersion Condition="'$(LafazFlowGitCommit)' != ''">$(Version)+$(LafazFlowGitCommit)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.3.0" />

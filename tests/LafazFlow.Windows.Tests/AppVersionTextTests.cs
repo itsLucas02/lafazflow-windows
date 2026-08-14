@@ -24,4 +24,17 @@ public sealed class AppVersionTextTests
     {
         Assert.Equal($"LafazFlow {AppVersionText.Compact}", AppVersionText.TrayHeader);
     }
+
+    [Fact]
+    public void CommitHashIsShortHexOrDev()
+    {
+        Assert.Matches(@"^([0-9a-f]{7}|dev)$", AppVersionText.CommitHash);
+    }
+
+    [Fact]
+    public void FullVersionIncludesCompactVersionAndCommit()
+    {
+        Assert.Equal($"{AppVersionText.Compact} ({AppVersionText.CommitHash})", AppVersionText.Full);
+        Assert.StartsWith("v", AppVersionText.Full);
+    }
 }

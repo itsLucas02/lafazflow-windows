@@ -335,7 +335,7 @@ public sealed class SettingsWindowXamlTests
         var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
 
         Assert.Contains("Title=\"{Binding SettingsWindowTitle}\"", xaml);
-        Assert.Contains("Text=\"{Binding AppVersion}\"", xaml);
+        Assert.Contains("Text=\"{Binding AppVersionWithCommit}\"", xaml);
     }
 
     [Fact]

@@ -395,3 +395,11 @@
 ## Avoid case-insensitive PowerShell variable collisions with script parameters
 - Pattern: A manifest script used `$cliRevision = $CliRevision` then `$cliRevision = $null` inside an `if`; the manifest still showed an empty string. PowerShell variables are case-insensitive, so the local alias collided with the `[string]$CliRevision` parameter whose type constraint coerced the `$null` back to `""`.
 - Rule: Use parameter names and local variable names that differ beyond letter casing (for example, `$CliRevision` vs `$effectiveCliRevision`), and test manifest generation deterministically instead of trusting serialized output.
+
+## Never guess binary provenance; make revisions explicit and fail closed
+- Pattern: A packager hard-coded a whisper.cpp revision for every local CLI path, and a manifest generator defaulted the worker revision to the same hash; fake test binaries were then asserted to have that revision. If an arbitrary binary had been packaged, the manifest would have claimed provenance the binary could not corroborate.
+- Rule: Provenance is an explicit input, never a default. Require a full 40-character revision for Local CUDA packaging, require the worker binary to report a matching `whisper=` prefix via `--version`, bind the revision to the binary's SHA-256, and fail packaging on missing, malformed, unreported, or mismatched revisions. Record the evidence type (for example, "explicit package/build provenance") and keep Official CPU release identity as the only identity when no source revision is trustworthy.
+
+## Embed the build commit in the product version for rollout traceability
+- Pattern: The app reported only `v1.0.0`, so the running build could not be tied to the repository commit that produced it, and rollout claims were not verifiable.
+- Rule: Capture `git rev-parse HEAD` at build time into `AssemblyInformationalVersion` (for example `1.0.0+<full hash>`) and surface the short hash in the UI; then the running executable's product version identifies the exact commit and can be verified from the file's version info.

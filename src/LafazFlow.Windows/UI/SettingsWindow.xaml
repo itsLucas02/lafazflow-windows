@@ -1125,7 +1125,7 @@
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
                             <TextBlock Text="Version" Style="{StaticResource FieldLabelStyle}" />
-                            <TextBlock Text="{Binding AppVersion}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,12" />
+                            <TextBlock Text="{Binding AppVersionWithCommit}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,12" />
                             <TextBlock Text="Made by Aizzul Luqman, 2026" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12" />
                             <TextBlock Text="Settings Folder" Style="{StaticResource FieldLabelStyle}" />
                             <Grid>

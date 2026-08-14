@@ -5,6 +5,8 @@ param(
     [string]$Runtime = "win-x64",
     [string]$OutputRoot = "",
     [string]$WhisperCliLocalPath = "",
+    [string]$WhisperCliRevision = "",
+    [string]$WorkerRevision = "",
     [string]$WorkerLocalPath = "C:\Tools\lafazflow-whisper-worker\bin\lafazflow-whisper-worker.exe",
     [string]$InnoSetupCompilerPath = ""
 )
@@ -56,10 +58,14 @@ $cliRevision = ""
 $cliReleaseIdentity = ""
 if ($WhisperCliLocalPath -and (Test-Path $WhisperCliLocalPath))
 {
+    if ($WhisperCliRevision -notmatch "^[0-9a-fA-F]{40}$")
+    {
+        throw "-WhisperCliLocalPath requires -WhisperCliRevision as a full 40-character hexadecimal revision. Refusing to guess provenance for the local CUDA CLI."
+    }
     Write-Host "Using local CUDA whisper-cli: $WhisperCliLocalPath"
     Copy-Item -LiteralPath $WhisperCliLocalPath -Destination $appDir
     $cliSource = "LocalCuda"
-    $cliRevision = "968eebe77225d25e57a3f981da7c696310f0e881"
+    $cliRevision = $WhisperCliRevision.ToLowerInvariant()
     $cliReleaseIdentity = ""
 }
 else
@@ -170,6 +176,10 @@ if ($workerIncluded)
 if ($cliRevision)
 {
     $manifestArgs += @("-CliRevision", $cliRevision)
+}
+if ($WorkerRevision)
+{
+    $manifestArgs += @("-WorkerRevision", $WorkerRevision)
 }
 if ($cliReleaseIdentity)
 {

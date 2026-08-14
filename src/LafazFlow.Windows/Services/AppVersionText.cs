@@ -13,6 +13,31 @@ public static class AppVersionText
         }
     }
 
+    public static string CommitHash
+    {
+        get
+        {
+            var informational = Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion;
+            if (informational is null)
+            {
+                return "dev";
+            }
+
+            var separator = informational.IndexOf('+');
+            if (separator < 0 || separator >= informational.Length - 1)
+            {
+                return "dev";
+            }
+
+            var hash = informational[(separator + 1)..];
+            return hash.Length > 7 ? hash[..7] : hash;
+        }
+    }
+
+    public static string Full => $"{Compact} ({CommitHash})";
+
     public static string SettingsTitle => $"LafazFlow Settings - {Compact}";
 
     public static string TrayHeader => $"LafazFlow {Compact}";
