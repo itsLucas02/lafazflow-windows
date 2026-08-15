@@ -40,6 +40,7 @@ public static partial class VocabularyCorrectionService
             corrected = pattern.Replace(corrected, replacement);
         }
 
+        corrected = FixRoadmapTerminology(corrected);
         corrected = FixTestingDictationThats(corrected);
         corrected = FixTestingDictationLetsThink(corrected);
         corrected = FixDeveloperDictationPhrases(corrected);
@@ -57,6 +58,27 @@ public static partial class VocabularyCorrectionService
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
         return corrected;
+    }
+
+    private static string FixRoadmapTerminology(string text)
+    {
+        var corrected = RoadMapRegex().Replace(text, match => RoadmapTerm(match.Value, plural: false));
+        corrected = RoadMapsRegex().Replace(corrected, match => RoadmapTerm(match.Value, plural: true));
+        corrected = RouteMapPlanningContextRegex().Replace(
+            corrected,
+            match => match.Groups[1].Value + RoadmapTerm(match.Groups[2].Value, plural: match.Groups[2].Value.EndsWith("s", StringComparison.OrdinalIgnoreCase)));
+        corrected = RouteMapHandoffContextRegex().Replace(
+            corrected,
+            match => match.Groups[1].Value + RoadmapTerm(match.Groups[2].Value, plural: match.Groups[2].Value.EndsWith("s", StringComparison.OrdinalIgnoreCase)));
+        return corrected;
+    }
+
+    private static string RoadmapTerm(string matched, bool plural)
+    {
+        var replacement = plural ? "roadmaps" : "roadmap";
+        return matched.Length > 0 && char.IsUpper(matched[0])
+            ? char.ToUpperInvariant(replacement[0]) + replacement[1..]
+            : replacement;
     }
 
     public static string Apply(string text, string customCorrectionRules)
@@ -333,6 +355,18 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])weight\s+a\s+minute(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex WeightAMinuteRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])road\s+map(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex RoadMapRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])road\s+maps(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex RoadMapsRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:project|implementation|milestone|backlog|engineering|software|product|sprint|release|development|feature|delivery|agent|handoff)\s+)(route\s+maps?)(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex RouteMapPlanningContextRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])((?:hand(?:ing|ed)?\s+off|handoff|hand-off|pass(?:ing|ed)?|give|gave|giving)\s+(?:the|this|that)?\s*)(route\s+maps?)(?=\s+(?:to|for)\s+(?:the\s+)?(?:agent|AI|assistant|engineer|developer|team|implementation|engineering|handoff))", RegexOptions.IgnoreCase)]
+    private static partial Regex RouteMapHandoffContextRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(wait,\s+(?:why|what|how)\b[^.!?]*)\.", RegexOptions.IgnoreCase)]
     private static partial Regex WaitQuestionPeriodRegex();

@@ -239,7 +239,7 @@ public sealed class ArtifactManifestTests
         var arguments =
             $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" " +
             $"-AppPath \"{appPath}\" -CliPath \"{cliPath}\" " +
-            $"-CliSource {cliSource} -Version 1.1.0 " +
+            $"-CliSource {cliSource} -Version 1.1.1 " +
             $"-OutputPath \"{outputPath}\"";
         if (workerPath.Length > 0)
         {

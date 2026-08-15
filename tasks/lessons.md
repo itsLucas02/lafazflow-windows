@@ -411,3 +411,11 @@
 ## Public packages must be self-contained and provenance-pinned
 - Pattern: A release workflow that downloaded an unrecorded "latest" CLI and never built the persistent worker would have produced an outdated, GPU-requiring or incomplete public package.
 - Rule: For public releases, build the CPU worker from the pinned whisper.cpp revision on the CI runner, pin the Official CPU CLI release identity, generate the artifact manifest from the actual binaries, and verify tag/project version agreement before publishing. Keep the owner-local CUDA package separate and never publish it as the standard CPU package.
+
+## Stale-build traps need a canonical install path, not artifact folders
+- Pattern: A stale binary in `artifacts\stable-single` (an old commit) was launched directly, so it reported pre-fix vocabulary behavior and made the current source look broken.
+- Rule: Never treat build-artifact folders as the runnable product. Install the verified build to a stable per-user path, create a canonical shortcut, and verify the running executable's path and embedded product commit after every rollout so the running build is always tied to the corrected source.
+
+## Normalize compound terms with context guards and casing preservation
+- Pattern: A blanket replacement of `route map` would have corrupted legitimate transport/network/geographic/navigation phrases, and a literal lowercase replacement would have broken sentence-initial `Road map`.
+- Rule: Normalize unambiguous compounds (road map → roadmap) globally, but gate ambiguous ones (route map) behind deterministic context regexes, preserve the original casing of the replacement, and add owner-sentence plus ambiguity regression tests for both the live-preview and final-paste paths.

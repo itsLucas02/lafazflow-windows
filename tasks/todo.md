@@ -427,6 +427,20 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Packages: local CPU package and owner-local CUDA package verified with matching manifest hashes; v1.0.0 tag and release untouched.
 - M11 publication remains pending the owner's single explicit approval.
 
+## Plan: v1.1.1 terminology and stale-build remediation
+- [x] Add canonical vocabulary support: `road map` → `roadmap`, `road maps` → `roadmaps`, preserving already-correct `roadmap`/`roadmaps`, casing, and punctuation; `roadmap`/`roadmaps` are visible default vocabulary terms.
+- [x] Correct `route map`/`route maps` → `roadmap`/`roadmaps` only in clear software, project-planning, implementation, milestone, backlog, engineering, delivery, or agent-handoff context; transport/network/geographic/navigation route maps remain unchanged.
+- [x] Add regression tests using the owner's supplied sentence (roadmap + DeepSeq → DeepSeek), plural forms, casing, punctuation, and ambiguity cases; verify both live preview and final pasted transcription apply the terminology.
+- [x] Bump version authorities to 1.1.1 (project, installer, package filenames, version-consistency test) without creating a tag or public release.
+- [x] Eliminate the stale-build launch trap: install the canonical owner-local CUDA build to a stable per-user path, create the canonical Start Menu/Desktop shortcut, relaunch hidden from the installed path, and verify product version, worker readiness, single instance, and no orphan CLI.
+- [x] Run focused terminology tests, full suite, Release build, diff check, privacy/package inspection, and a live local CUDA smoke test; commit and push to main.
+
+## Review: v1.1.1 terminology and stale-build remediation
+- Root cause: the stale `artifacts\stable-single` binary (1.0.0+cae70dd) predated the DeepSeek and roadmap vocabulary corrections; current source already corrected DeepSeq/DeepSec variants, and the roadmap normalization gap has now been closed.
+- Terminology: `FixRoadmapTerminology` normalizes road map(s) globally and route map(s) only in planning/handoff context; casing and punctuation preserved; both live preview and final paste run the same correction engine.
+- Rollout: canonical install at the per-user Programs path with shortcuts; old artifacts preserved; exactly one app + one owned CUDA worker, worker Ready, no orphan whisper-cli.
+- M11 publication (tag/release) remains unstarted and requires separate explicit owner approval.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

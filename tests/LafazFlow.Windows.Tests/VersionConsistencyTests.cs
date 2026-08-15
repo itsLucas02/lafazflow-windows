@@ -14,14 +14,14 @@ public sealed class VersionConsistencyTests
         var informationalVersion = ExtractValue(csproj, "<InformationalVersion>", "</InformationalVersion>");
         var installerVersion = ExtractValue(installer, "#define MyAppVersion \"", "\"");
 
-        Assert.Equal("1.1.0", projectVersion);
-        Assert.Equal("1.1.0", informationalVersion);
+        Assert.Equal("1.1.1", projectVersion);
+        Assert.Equal("1.1.1", informationalVersion);
         Assert.Equal(projectVersion, installerVersion);
         Assert.Contains("LafazFlow-$Version-$Runtime-portable.zip", packager);
         Assert.Contains("LafazFlow-$Version-setup.exe", packager);
-        Assert.Equal("LafazFlow-1.1.0-win-x64-portable.zip", $"LafazFlow-{projectVersion}-win-x64-portable.zip");
-        Assert.Equal("LafazFlow-1.1.0-setup.exe", $"LafazFlow-{projectVersion}-setup.exe");
-        Assert.Equal("v1.1.0", $"v{projectVersion}");
+        Assert.Equal("LafazFlow-1.1.1-win-x64-portable.zip", $"LafazFlow-{projectVersion}-win-x64-portable.zip");
+        Assert.Equal("LafazFlow-1.1.1-setup.exe", $"LafazFlow-{projectVersion}-setup.exe");
+        Assert.Equal("v1.1.1", $"v{projectVersion}");
     }
 
     private static string ExtractValue(string text, string startMarker, string endMarker)

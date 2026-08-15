@@ -17,6 +17,8 @@ public sealed class WhisperPromptBuilderTests
         Assert.Contains("DeepSeek", prompt);
         Assert.Contains("Supabase", prompt);
         Assert.Contains("MediBrave", prompt);
+        Assert.Contains("roadmap", prompt);
+        Assert.Contains("roadmaps", prompt);
     }
 
     [Fact]
@@ -68,6 +70,6 @@ public sealed class WhisperPromptBuilderTests
         });
 
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(prompt, "DeepSeek"));
-        Assert.Contains("LafazFlow, PDPA.", prompt);
+        Assert.Contains("roadmaps, PDPA.", prompt);
     }
 }

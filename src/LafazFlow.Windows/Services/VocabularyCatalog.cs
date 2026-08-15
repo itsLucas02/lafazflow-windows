@@ -45,7 +45,9 @@ public static class VocabularyCatalog
         new("PowerShell", ["power shell", "powershell"]),
         new("Cursor", ["cursor"]),
         new("Stripe", []),
-        new("LafazFlow", [])
+        new("LafazFlow", []),
+        new("roadmap", []),
+        new("roadmaps", [])
     ];
 
     public static IReadOnlyList<string> DefaultTerms => DefaultEntries

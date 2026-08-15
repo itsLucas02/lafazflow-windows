@@ -57,6 +57,56 @@ public sealed class VocabularyCorrectionServiceTests
         Assert.Equal(expected, corrected);
     }
 
+    [Fact]
+    public void OwnerReportedRoadmapDeepSeekSentenceIsFullyCorrected()
+    {
+        const string input =
+            "But here you are today is not to be the executioner, rather you are gonna be altering the roadmap " +
+            "which I will be handing it off to DeepSeq agent to be executing it.";
+        const string expected =
+            "But here you are today is not to be the executioner, rather you are gonna be altering the roadmap " +
+            "which I will be handing it off to DeepSeek agent to be executing it.";
+
+        Assert.Equal(expected, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
+    [InlineData("update all implementation road maps.", "update all implementation roadmaps.")]
+    [InlineData("the road map is ready.", "the roadmap is ready.")]
+    [InlineData("Road map shows the plan.", "Roadmap shows the plan.")]
+    [InlineData("road maps cover both quarters.", "roadmaps cover both quarters.")]
+    [InlineData("Road maps are in the backlog.", "Roadmaps are in the backlog.")]
+    [InlineData("we keep the roadmap and roadmaps up to date.", "we keep the roadmap and roadmaps up to date.")]
+    [InlineData("open the road map.", "open the roadmap.")]
+    public void RoadMapVariantsNormalizeToRoadmapPreservingCasingAndPunctuation(string input, string expected)
+    {
+        Assert.Equal(expected, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
+    [InlineData("contextual project route maps", "contextual project roadmaps")]
+    [InlineData("the implementation route map is ready", "the implementation roadmap is ready")]
+    [InlineData("our milestone route map", "our milestone roadmap")]
+    [InlineData("the backlog route maps were updated", "the backlog roadmaps were updated")]
+    [InlineData("engineering route map review", "engineering roadmap review")]
+    [InlineData("hand off the route map to the agent", "hand off the roadmap to the agent")]
+    [InlineData("passing the route maps to the engineering team", "passing the roadmaps to the engineering team")]
+    public void RouteMapCorrectedOnlyInPlanningOrHandoffContext(string input, string expected)
+    {
+        Assert.Equal(expected, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
+    [InlineData("a transport route map of the metro")]
+    [InlineData("the network route map shows data paths")]
+    [InlineData("this geographic route map covers the mountains")]
+    [InlineData("open the navigation route map")]
+    [InlineData("give visitors a route map of the city")]
+    public void LegitimateRouteMapsStayUnchanged(string input)
+    {
+        Assert.Equal(input, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
     [Theory]
     [InlineData("My name is Lukamine.", "My name is Luqman.")]
     [InlineData("My name is Lukman.", "My name is Luqman.")]

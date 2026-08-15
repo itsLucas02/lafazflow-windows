@@ -48,6 +48,20 @@ public sealed class TranscriptionPostProcessorTests
     }
 
     [Fact]
+    public void FinalTranscriptionAppliesRoadmapAndDeepSeekTerminology()
+    {
+        var result = _processor.Process(new TranscriptionPostProcessingRequest(
+            "update all implementation road maps and hand it off to DeepSeq agent.",
+            AppSettings.Default,
+            ""));
+
+        Assert.Equal(
+            "update all implementation roadmaps and hand it off to DeepSeek agent. ",
+            result.Text);
+        Assert.Contains(result.Stages, stage => stage is { Stage: "vocabulary", Changed: true });
+    }
+
+    [Fact]
     public void ProcessSkipsTrailingSeparatorWhenDisabled()
     {
         var result = _processor.Process(new TranscriptionPostProcessingRequest(
