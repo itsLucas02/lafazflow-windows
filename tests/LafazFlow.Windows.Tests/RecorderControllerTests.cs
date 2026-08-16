@@ -979,6 +979,36 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task PureRepetitionLoopFromEngineDoesNotPaste()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav");
+        var paste = new FakeClipboardPasteService();
+        var leaked = string.Join(".", Enumerable.Repeat("1", 16)) + ".";
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult(leaked, true, null, null, null)));
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            transcriptionEngine: engine);
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Empty(paste.Texts);
+        Assert.Equal(RecordingState.Error, viewModel.State);
+        Assert.Contains("No speech", viewModel.StatusDetail);
+    }
+
+    [Fact]
     public async Task CompletedDictationSkipsCustomCorrectionRulesWhenCorrectionsAreDisabled()
     {
         var viewModel = new MiniRecorderViewModel();

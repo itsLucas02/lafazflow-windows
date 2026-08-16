@@ -83,4 +83,29 @@ public sealed class PromptLeakDetectorTests
         Assert.False(PromptLeakDetector.IsPromptLeak("", Prompt));
         Assert.False(PromptLeakDetector.IsPromptLeak("hello world", ""));
     }
+
+    [Fact]
+    public void DetectsPureRepetitionLoopWithoutPromptMarker()
+    {
+        var leaked = string.Join(".", Enumerable.Repeat("1", 16)) + ".";
+
+        Assert.True(PromptLeakDetector.IsPromptLeak(leaked, Prompt));
+    }
+
+    [Fact]
+    public void DoesNotFlagRepetitionEmbeddedInRealSpeech()
+    {
+        var text = string.Join(" ", Enumerable.Repeat("no", 14))
+            + " I will not accept this change, please revise the plan.";
+
+        Assert.False(PromptLeakDetector.IsPromptLeak(text, Prompt));
+    }
+
+    [Fact]
+    public void DoesNotFlagShortRepeatedWordInRealSpeech()
+    {
+        var text = string.Join(" ", Enumerable.Repeat("very", 6)) + " good point, let us proceed.";
+
+        Assert.False(PromptLeakDetector.IsPromptLeak(text, Prompt));
+    }
 }

@@ -58,6 +58,24 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task PureRepetitionLoopFromWorkerSnapshotIsNotDisplayed()
+    {
+        var received = new List<string>();
+        var leaked = string.Join(".", Enumerable.Repeat("1", 16)) + ".";
+        var service = new RollingWhisperLiveTranscriptPreviewService(
+            TestOptions(),
+            workerTranscribeSnapshotAsync: (_, _, _, _) =>
+                Task.FromResult<string?>(leaked));
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 1600));
+        await Task.Delay(120);
+        await service.StopAsync();
+
+        Assert.Empty(received);
+    }
+
+    [Fact]
     public async Task PromptLeakFromCliFallbackIsNotDisplayedAndCountedAsSuppression()
     {
         var leaked = "Custom vocabulary, " +

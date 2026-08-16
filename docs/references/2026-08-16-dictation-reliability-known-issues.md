@@ -31,9 +31,9 @@ A **pure repetition loop without the prompt marker** (for example `1.1.1.1.1...`
 
 Failure to capture this shape is confirmed by user reports on 15–16/08/2026; the guard's code path was inspected and reproduced conceptually (a normalized `1 1 1 1 ...` transcript has a repetition run ≥ threshold but fails the marker check).
 
-### Fix direction (not yet approved/implemented)
+### Fix (implemented 16/08/2026)
 
-Generalize the leak guard so a **runaway repetition (same normalized token repeated ~10+ times) fails the dictation in both the live preview and the final paste**, independent of the prompt marker. Add regression tests using both observed shapes and confirm legitimate speech (which never repeats the same word 10+ times) is untouched.
+`PromptLeakDetector` now also flags a **standalone runaway repetition** — the same normalized token repeated 15+ times consecutively AND dominating ≥80% of the transcript — independent of the prompt marker. Both the live preview and the final paste fail such dictations as no-speech instead of leaking the loop. Regression tests cover the pure `1.1.1.1…` shape, the marker+repetition shape, and legitimate repeated words embedded in real speech (which stay untouched).
 
 ## 2. Voice not captured (silent recordings)
 
