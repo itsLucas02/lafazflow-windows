@@ -419,3 +419,15 @@
 ## Normalize compound terms with context guards and casing preservation
 - Pattern: A blanket replacement of `route map` would have corrupted legitimate transport/network/geographic/navigation phrases, and a literal lowercase replacement would have broken sentence-initial `Road map`.
 - Rule: Normalize unambiguous compounds (road map → roadmap) globally, but gate ambiguous ones (route map) behind deterministic context regexes, preserve the original casing of the replacement, and add owner-sentence plus ambiguity regression tests for both the live-preview and final-paste paths.
+
+## Guard against whole repetition-hallucination families, not single shapes
+- Pattern: Whisper repetition loops surfaced as "Custom vocabulary, Individu, Individu…" and later as "1.1.1.1.1…". The first guard only fired when the text started with the prompt marker, so the second shape (no marker) leaked into both the live preview and the final paste.
+- Rule: Treat all runaway-repetition output as one failure family and gate it independently of prompt markers: reject transcripts with the same normalized token repeated ~10+ times in both preview and final paths, and keep regression tests for every observed shape. Enumerating token shapes one at a time guarantees recurrence.
+
+## Gate recording readiness on real audio, not on "recording started"
+- Pattern: The user sometimes spoke into a dead capture path (wrong default device, exclusive-mode contention, or device change) and only learned at stop time via "Microphone input was silent" — 18 such rejections and 10 "no speech" failures were logged.
+- Rule: Model the capture start on FluidVoice's readiness gate: recording is ready only when the first PCM buffer actually arrives, with a short timeout that fails fast and visibly. Follow VoiceInk's device manager (remember last-used device, switch to a fallback on failure) and Handy's explicit device enumeration so the app never silently records from the wrong or unavailable input.
+
+## Make reliability findings durable, not memory-dependent
+- Pattern: Recurring dictation failures (repetition leaks, silent captures) lived only in conversation memory, so each agent rediscovered them.
+- Rule: Record symptoms, log evidence, code paths, reference-project findings, and fix directions in a tracked reference document (`docs/references/2026-08-16-dictation-reliability-known-issues.md`) and keep lessons in `tasks/lessons.md` so any future agent starts from tangible facts.
