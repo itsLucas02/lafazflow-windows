@@ -74,6 +74,23 @@ Handy enumerates input devices via cpal, exposes each device with its name and w
 
 The microphone selector UI (choosing a device in Settings) remains a candidate follow-up; automatic fallback and fast failure are implemented.
 
+## 3. DeepSeek phonetic family and "their/there/they're" priming
+
+### Symptom
+
+The brand name `DeepSeek` is phonetically ambiguous: whisper produces `DeepSeq`, `DeepSec`, `Deep6`, `Deep Sea`, `Dipsick`, `Deep stick`, and similar shapes depending on the audio. Separately, the homophone trio `their/there/they're` is occasionally misheard as nonsense (`Dyer`, `Gear`, `Dyaa`, `DR`).
+
+### Fix (implemented 16/08/2026)
+
+- A bounded **phonetic family rule** replaces `deep` + (`seek|seq|sec|sick|stick|six|sea|sik|sique|6`) and `dip` + (`sick|seq|sec|seek|sea|six`) with the brand spelling `DeepSeek` in both the live preview and the final paste.
+- **Approved trade-off:** the literal phrase "deep sea" (ocean) is also rewritten to `DeepSeek` because the owner's dictation is brand-focused; revisit with a guard if the ocean meaning is ever dictated.
+- **Deliberately excluded real words:** `dipstick`, `gear`, and `DR`/`Dr.` are never rewritten, so legitimate dictation ("check the dipstick", "the gear is broken", "Dr. Smith", "DR strategy") is untouched.
+- `their`, `there`, and `they're` were added to the vocabulary prompt to prime the correct homophone at the ASR level; no post-processing replacement is applied to these words (a global map would corrupt real words like `gear`/`DR`).
+
+### Related ASR variance (16/08/2026)
+
+Whisper's VAD can shift the first-word boundary on ambiguous audio onsets between builds and runs (observed: "please remember…" vs "at least remember…" on a retained fixture). This is inherent to the engine and is not a regression. Integration tests therefore assert substantive equivalence (normalized edit-distance ratio ≤ 0.15 plus preserved ending word) instead of exact raw equality, and cancel/preemption assertions accept either `Aborted` or `Ok` (cancellation is best-effort; a completed decode returning `Ok` is correct behavior). The invariants that matter — the worker stays healthy after a cancel, and a final request never waits behind preview — remain strictly asserted.
+
 ## 3. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.

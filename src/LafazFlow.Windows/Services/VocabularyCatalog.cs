@@ -47,7 +47,10 @@ public static class VocabularyCatalog
         new("Stripe", []),
         new("LafazFlow", []),
         new("roadmap", []),
-        new("roadmaps", [])
+        new("roadmaps", []),
+        new("their", []),
+        new("there", []),
+        new("they're", [])
     ];
 
     public static IReadOnlyList<string> DefaultTerms => DefaultEntries

@@ -344,6 +344,22 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task LivePreviewAppliesDeepSeekPhoneticFamily()
+    {
+        var service = CreateService(
+            previews: ["Dipsick, deep stick."],
+            logs: out _);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 1);
+        await service.StopAsync();
+
+        Assert.Equal(["DeepSeek, DeepSeek."], received);
+    }
+
+    [Fact]
     public async Task LogsPreviewLifecycleEvents()
     {
         var diagnostics = new RecordingHotkeyDiagnostics();

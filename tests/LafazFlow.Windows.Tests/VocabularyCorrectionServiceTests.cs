@@ -108,6 +108,35 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("Dipsick, Dipsick, Dipsick.", "DeepSeek, DeepSeek, DeepSeek.")]
+    [InlineData("deep stick and deep stick.", "DeepSeek and DeepSeek.")]
+    [InlineData("Deep6 is the agent.", "DeepSeek is the agent.")]
+    [InlineData("deep sea is the agent.", "DeepSeek is the agent.")]
+    [InlineData("DeepSeq and DeepSec are handled.", "DeepSeek and DeepSeek are handled.")]
+    public void DeepSeekPhoneticFamilyNormalizesToBrand(string input, string expected)
+    {
+        Assert.Equal(expected, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
+    [InlineData("check the dipstick before driving.")]
+    [InlineData("the gear is broken.")]
+    [InlineData("DR Smith will review the plan.")]
+    [InlineData("the DR strategy is documented.")]
+    public void RealWordsNearThePhoneticFamilyStayUnchanged(string input)
+    {
+        Assert.Equal(input, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Fact]
+    public void ApprovedDeepSeaTradeOffRewritesTheOceanPhrase()
+    {
+        Assert.Equal(
+            "The DeepSeek is cold and dark.",
+            VocabularyCorrectionService.ApplyDefaults("The deep sea is cold and dark."));
+    }
+
+    [Theory]
     [InlineData("My name is Lukamine.", "My name is Luqman.")]
     [InlineData("My name is Lukman.", "My name is Luqman.")]
     [InlineData("My name is Luqmen.", "My name is Luqman.")]

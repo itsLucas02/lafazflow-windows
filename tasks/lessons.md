@@ -431,3 +431,11 @@
 ## Make reliability findings durable, not memory-dependent
 - Pattern: Recurring dictation failures (repetition leaks, silent captures) lived only in conversation memory, so each agent rediscovered them.
 - Rule: Record symptoms, log evidence, code paths, reference-project findings, and fix directions in a tracked reference document (`docs/references/2026-08-16-dictation-reliability-known-issues.md`) and keep lessons in `tasks/lessons.md` so any future agent starts from tangible facts.
+
+## Replace variant whack-a-mole with bounded phonetic families
+- Pattern: Every new mishearing shape of `DeepSeek` (`DeepSeq`, `Deep6`, `Deep Sea`, `Dipsick`, `Deep stick`) required a new exact-variant entry, so the list never ended and the owner kept seeing unhandled shapes.
+- Rule: For a brand or product word, use one bounded phonetic-family regex (deep/dip + the observed near-homophones) normalized to the canonical spelling, keep exact variants as a fallback, and explicitly exclude real words that collide (`dipstick`, `gear`, `DR`). Homophone priming (adding `their/there/they're` to the prompt) is safer than a post-processing map that would corrupt legitimate words.
+
+## Do not assert exact equality on raw ASR output or cancel timing
+- Pattern: Real-worker integration tests asserted exact normalized transcripts and strict `Aborted` outcomes; whisper's VAD shifted a fixture's first word between builds ("please" → "at least") and fast decodes finished before a cancel arrived, making the suite intermittently red.
+- Rule: Assert substantive equivalence for ASR output (edit-distance ratio plus preserved ending) and treat cancellation/preemption as best-effort (accept `Aborted` or `Ok`), while keeping strict checks on the invariants that matter — worker health after cancel and final-never-waits-behind-preview.

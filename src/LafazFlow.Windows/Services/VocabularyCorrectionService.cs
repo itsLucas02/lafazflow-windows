@@ -41,6 +41,7 @@ public static partial class VocabularyCorrectionService
         }
 
         corrected = FixRoadmapTerminology(corrected);
+        corrected = FixDeepSeekPhoneticFamily(corrected);
         corrected = FixTestingDictationThats(corrected);
         corrected = FixTestingDictationLetsThink(corrected);
         corrected = FixDeveloperDictationPhrases(corrected);
@@ -57,6 +58,13 @@ public static partial class VocabularyCorrectionService
         corrected = FixDeveloperEdgeCasesDictationContext(corrected);
         corrected = NormalizeProtectedDeveloperTokens(corrected);
 
+        return corrected;
+    }
+
+    private static string FixDeepSeekPhoneticFamily(string text)
+    {
+        var corrected = DeepSeekFamilyRegex().Replace(text, "DeepSeek");
+        corrected = DeepSeekDipFamilyRegex().Replace(corrected, "DeepSeek");
         return corrected;
     }
 
@@ -358,6 +366,12 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])road\s+map(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex RoadMapRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(deep[\s-]?(?:seek|seq|sec|sick|stick|six|sea|sik|sique|6))(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex DeepSeekFamilyRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])(dip[\s-]?(?:sick|seq|sec|seek|sea|six))(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex DeepSeekDipFamilyRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])road\s+maps(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex RoadMapsRegex();
