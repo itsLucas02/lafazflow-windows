@@ -395,6 +395,17 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         private set => SetProperty(ref _engineActiveBackendText, value);
     }
 
+    public string MicrophoneDevicesText
+    {
+        get
+        {
+            var devices = MicrophoneDeviceCatalog.ListDevices();
+            return devices.Count == 0
+                ? "No microphones detected"
+                : string.Join(", ", devices.Select(device => device.Name));
+        }
+    }
+
     public string SettingsFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "LafazFlow");

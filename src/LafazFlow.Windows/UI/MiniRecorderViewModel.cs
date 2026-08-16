@@ -132,6 +132,11 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         }
     }
 
+    public void SetTransientStatusDetail(string message)
+    {
+        StatusDetail = message;
+    }
+
     public string AppVersion { get; } = AppVersionText.Compact;
 
     public bool IsRecording => State == RecordingState.Recording;

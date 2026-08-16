@@ -14,7 +14,7 @@ public sealed class AudioCaptureServiceTests
         try
         {
             using var service = new AudioCaptureService(
-                () => input,
+                _ => input,
                 (_, _) => writer,
                 TimeSpan.FromMilliseconds(200));
             service.Start(root);
@@ -50,7 +50,7 @@ public sealed class AudioCaptureServiceTests
         try
         {
             using var service = new AudioCaptureService(
-                () => inputs.Dequeue(),
+                _ => inputs.Dequeue(),
                 (_, _) =>
                 {
                     var writer = new FakeAudioCaptureWriter();
@@ -88,7 +88,7 @@ public sealed class AudioCaptureServiceTests
         var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
         try
         {
-            using var service = new AudioCaptureService(() => input, (_, _) => writer);
+            using var service = new AudioCaptureService(_ => input, (_, _) => writer);
             service.Start(root);
 
             var error = Assert.Throws<InvalidOperationException>(() => service.Start(root));
@@ -113,7 +113,7 @@ public sealed class AudioCaptureServiceTests
         try
         {
             using var service = new AudioCaptureService(
-                () => input,
+                _ => input,
                 (_, _) => writer,
                 TimeSpan.FromMilliseconds(40));
             service.Start(root);
@@ -139,7 +139,7 @@ public sealed class AudioCaptureServiceTests
         try
         {
             using var service = new AudioCaptureService(
-                () => input,
+                _ => input,
                 (_, _) => new ThrowingAudioCaptureWriter(),
                 TimeSpan.FromMilliseconds(200));
             service.Start(root);
@@ -168,7 +168,7 @@ public sealed class AudioCaptureServiceTests
         var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
         try
         {
-            using var service = new AudioCaptureService(() => input, (_, _) => writer);
+            using var service = new AudioCaptureService(_ => input, (_, _) => writer);
             service.Start(root);
             input.Emit([1, 0]);
 
@@ -186,11 +186,84 @@ public sealed class AudioCaptureServiceTests
     [Fact]
     public async Task StopAsyncWithoutActiveSessionThrows()
     {
-        using var service = new AudioCaptureService(() => new FakeAudioInputDevice(), (_, _) => new FakeAudioCaptureWriter());
+        using var service = new AudioCaptureService(_ => new FakeAudioInputDevice(), (_, _) => new FakeAudioCaptureWriter());
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.StopAsync());
 
         Assert.Equal("No active microphone recording.", error.Message);
+    }
+
+    [Fact]
+    public async Task WaitForFirstAudioTimesOutWhenNoDataArrives()
+    {
+        var input = new FakeAudioInputDevice();
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(_ => input, (_, _) => writer);
+            service.Start(root);
+
+            var arrived = await service.WaitForFirstAudioAsync(TimeSpan.FromMilliseconds(50));
+
+            Assert.False(arrived);
+            Assert.False(service.HasReceivedAudio);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task WaitForFirstAudioCompletesWhenDataArrives()
+    {
+        var input = new FakeAudioInputDevice();
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(_ => input, (_, _) => writer);
+            service.Start(root);
+            input.Emit(new byte[1600]);
+
+            var arrived = await service.WaitForFirstAudioAsync(TimeSpan.FromSeconds(1));
+
+            Assert.True(arrived);
+            Assert.True(service.HasReceivedAudio);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task TrySwitchInputDeviceSwapsToDeliveringDevice()
+    {
+        var silent = new FakeAudioInputDevice();
+        var working = new FakeAudioInputDevice();
+        var inputs = new Queue<IAudioInputDevice>([silent, working]);
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(_ => inputs.Dequeue(), (_, _) => writer);
+            service.Start(root);
+
+            Assert.False(await service.WaitForFirstAudioAsync(TimeSpan.FromMilliseconds(50)));
+            Assert.True(service.TrySwitchInputDevice(1, out _));
+            working.Emit(new byte[3200]);
+            Assert.True(service.HasReceivedAudio);
+
+            var finalization = await service.StopAsync();
+            Assert.True(finalization.ByteCount >= 3200);
+            Assert.Equal(AudioCaptureFinalizeState.Finalized, finalization.State);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -202,7 +275,7 @@ public sealed class AudioCaptureServiceTests
         {
             string? outputPath = null;
             using var service = new AudioCaptureService(
-                () => input,
+                _ => input,
                 (path, format) => new WaveFileAudioCaptureWriter(path, format),
                 TimeSpan.FromMilliseconds(200));
             outputPath = service.Start(root);

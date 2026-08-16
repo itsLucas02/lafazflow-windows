@@ -66,13 +66,13 @@ VoiceInk maintains an audio device manager (`availableDevices`, `lastUsedMicroph
 
 Handy enumerates input devices via cpal, exposes each device with its name and whether it is the default, and supports explicit per-device selection rather than trusting an implicit default.
 
-### Fix direction (not yet approved/implemented)
+### Fix (implemented 16/08/2026)
 
-1. **Live capture-readiness gate** (FluidVoice pattern): when recording starts, require the first PCM buffer within a short deadline; if none arrives, fail fast with a clear "microphone is not delivering audio" message instead of wasting the user's speech.
-2. **Device manager + fallback** (VoiceInk/Handy pattern): enumerate input devices, remember the last-used device, detect device failure/change (including exclusive-mode contention), switch to a fallback with a visible notification, and surface the active device in Diagnostics.
-3. Keep the existing post-hoc silence check as a final safety net.
+1. **Live capture-readiness gate** (FluidVoice pattern): `AudioCaptureService` now tracks whether any PCM buffer has arrived (`HasReceivedAudio`) and exposes `WaitForFirstAudioAsync`. When recording starts, `RecorderController` waits up to 4 seconds for first audio; if none arrives, it tries each enumerated input device as a fallback (2-second probe each) and, if nothing delivers audio, aborts the session immediately with a clear "Microphone is not delivering audio…" message instead of wasting the user's speech.
+2. **Device management + fallback** (VoiceInk/Handy pattern): `MicrophoneDeviceCatalog` enumerates NAudio input devices; `AudioCaptureService.TrySwitchInputDevice` swaps the active input to a working device mid-session (same 16 kHz/mono/16-bit format) and the mini recorder shows "Using microphone: <name>"; the preferred device name is persisted in settings (`MicrophoneDeviceName`, schema 18) so sessions bind to the last-known working microphone rather than a drifting Windows default. Diagnostics lists the available microphones.
+3. The existing post-hoc silence check remains as the final safety net.
 
-The microphone selector/device UI was previously listed as an explicit non-goal; the repeated silent-recording failures make it a candidate to reprioritize.
+The microphone selector UI (choosing a device in Settings) remains a candidate follow-up; automatic fallback and fast failure are implemented.
 
 ## 3. What has already been done (context for future agents)
 
@@ -80,13 +80,15 @@ The microphone selector/device UI was previously listed as an explicit non-goal;
 - **v1.1.0 public release** (`5d1a014` tag `v1.1.0`): CPU worker + Official CPU CLI package, tag/version validation workflow, backend compatibility checks (CUDA settings never silently run a CPU worker).
 - **v1.1.1 patch candidate** (`dd31111`): roadmap/roadmaps terminology, canonical per-user install path, taskbar/Desktop/Start Menu shortcuts repointed to the installed build.
 - **Stale-build trap eliminated**: verified on 16/08/2026 that the taskbar pin pointed at `artifacts\stable-single` (`1.0.0+cae70dd`); it was repointed to the installed `1.1.1+dd31111` build and the running instance replaced.
+- **Repetition-leak guard generalized** (16/08/2026): standalone repetition loops (same token 15+ times, dominating ≥80% of the transcript) now fail both the live preview and the final paste.
+- **Mic readiness + fallback** (16/08/2026): first-audio gate with automatic device fallback and persisted preferred microphone (schema 18).
 
 ## 4. Open decisions awaiting owner approval
 
 - Generalize the repetition-leak guard (section 1).
 - DeepSeek phonetic family + prompt anchoring (separate discussion; includes the "deep sea" ambiguity rule).
 - Live capture-readiness gate and microphone device management (section 2).
-- Commit/push of this document and any approved fixes.
+- Full microphone selector UI in Settings (auto-fallback and fast failure are done).
 
 ## 5. Cross-references
 

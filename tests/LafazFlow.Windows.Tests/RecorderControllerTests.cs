@@ -1009,6 +1009,76 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task StartRecordingAbortsFastWhenMicrophoneDeliversNoAudio()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav")
+        {
+            HasReceivedAudio = false,
+            FallbackAvailable = false
+        };
+        var paste = new FakeClipboardPasteService();
+        var transcriptionCalls = 0;
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ =>
+            {
+                transcriptionCalls++;
+                return Task.FromResult("unused");
+            }),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            micReadinessTimeout: TimeSpan.FromMilliseconds(20),
+            micProbeTimeout: TimeSpan.FromMilliseconds(20));
+
+        controller.StartRecording();
+
+        await WaitUntilAsync(() => viewModel.State == RecordingState.Error);
+        Assert.Contains("not delivering audio", viewModel.StatusDetail);
+        Assert.Empty(paste.Texts);
+        Assert.Equal(0, transcriptionCalls);
+    }
+
+    [Fact]
+    public async Task StartRecordingFallsBackToWorkingMicrophone()
+    {
+        var viewModel = new MiniRecorderViewModel();
+        var window = new FakeMiniRecorderWindow();
+        var audio = new FakeAudioCaptureService("first.wav")
+        {
+            HasReceivedAudio = false,
+            FallbackAvailable = true
+        };
+        var paste = new FakeClipboardPasteService();
+        var controller = new RecorderController(
+            viewModel,
+            window,
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            micReadinessTimeout: TimeSpan.FromMilliseconds(20),
+            micProbeTimeout: TimeSpan.FromMilliseconds(20));
+
+        controller.StartRecording();
+
+        await WaitUntilAsync(() => audio.ActiveInputDeviceName == "fake-device-0");
+        Assert.Equal(RecordingState.Recording, viewModel.State);
+        Assert.Contains("Using microphone: fake-device-0", viewModel.StatusDetail);
+
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+        Assert.Contains("hello", string.Join(" ", paste.Texts));
+    }
+
+    [Fact]
     public async Task CompletedDictationSkipsCustomCorrectionRulesWhenCorrectionsAreDisabled()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -1203,18 +1273,44 @@ public sealed class RecorderControllerTests
 
         public int StartCount { get; private set; }
 
+        public bool HasReceivedAudio { get; set; } = true;
+
+        public string? ActiveInputDeviceName { get; private set; }
+
+        public bool FallbackAvailable { get; set; }
+
         public Task? StopGate { get; set; }
 
         public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public TaskCompletionSource StopCompleted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public string Start(string outputDirectory)
+        public string Start(string outputDirectory, string? preferredInputDeviceName = null)
         {
             StartCount++;
             CurrentPath = _paths.Dequeue();
+            ActiveInputDeviceName = preferredInputDeviceName ?? "fake-mic";
             AudioLevelChanged?.Invoke(0.5);
             return CurrentPath;
+        }
+
+        public Task<bool> WaitForFirstAudioAsync(TimeSpan timeout)
+        {
+            return Task.FromResult(HasReceivedAudio);
+        }
+
+        public bool TrySwitchInputDevice(int deviceIndex, out string deviceName)
+        {
+            if (!FallbackAvailable)
+            {
+                deviceName = "";
+                return false;
+            }
+
+            deviceName = $"fake-device-{deviceIndex}";
+            HasReceivedAudio = true;
+            ActiveInputDeviceName = deviceName;
+            return true;
         }
 
         public async Task<AudioCaptureFinalization> StopAsync()

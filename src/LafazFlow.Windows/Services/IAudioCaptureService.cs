@@ -29,7 +29,15 @@ public interface IAudioCaptureService
 
     event Action<byte[]>? AudioChunkAvailable;
 
-    string Start(string outputDirectory);
+    bool HasReceivedAudio { get; }
+
+    string? ActiveInputDeviceName { get; }
+
+    string Start(string outputDirectory, string? preferredInputDeviceName = null);
 
     Task<AudioCaptureFinalization> StopAsync();
+
+    Task<bool> WaitForFirstAudioAsync(TimeSpan timeout);
+
+    bool TrySwitchInputDevice(int deviceIndex, out string deviceName);
 }

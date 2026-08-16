@@ -57,6 +57,33 @@ public sealed class SettingsStoreTests
     }
 
     [Fact]
+    public void LoadMigratesSchemaSeventeenSettingsAndDefaultsMicrophoneDeviceName()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var settingsPath = Path.Combine(root, "settings.json");
+        var v17 = """
+            {
+              "SettingsSchemaVersion": 17,
+              "HotkeyGesture": "DoubleShift",
+              "HotkeyMode": 1,
+              "WhisperThreads": 16,
+              "TranscriptionProfile": 1,
+              "WhisperBackend": 1
+            }
+            """;
+        File.WriteAllText(settingsPath, v17);
+        var store = new SettingsStore(root);
+
+        var settings = store.Load();
+
+        Assert.Equal(18, settings.SettingsSchemaVersion);
+        Assert.Equal("", settings.MicrophoneDeviceName);
+        Assert.Equal(TranscriptionProfile.Quality, settings.TranscriptionProfile);
+        Assert.Equal(WhisperBackend.Cuda, settings.WhisperBackend);
+    }
+
+    [Fact]
     public void SaveThenLoadRoundTripsSettings()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

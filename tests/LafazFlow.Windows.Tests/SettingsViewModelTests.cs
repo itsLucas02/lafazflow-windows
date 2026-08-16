@@ -87,6 +87,16 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void MicrophoneDevicesTextIsNeverEmptyPlaceholder()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var store = new SettingsStore(root);
+        var viewModel = SettingsViewModel.Load(store);
+
+        Assert.False(string.IsNullOrWhiteSpace(viewModel.MicrophoneDevicesText));
+    }
+
+    [Fact]
     public void LoadCopiesPersistedSettingsIntoEditableProperties()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

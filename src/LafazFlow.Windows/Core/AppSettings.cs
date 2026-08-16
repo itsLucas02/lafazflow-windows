@@ -2,7 +2,7 @@ namespace LafazFlow.Windows.Core;
 
 public sealed record AppSettings
 {
-    public const int CurrentSchemaVersion = 17;
+    public const int CurrentSchemaVersion = 18;
     public const int DefaultClipboardRestoreDelayMs = 1500;
     public const string DefaultWhisperInitialPrompt =
         "Supabase, Contabo, Vercel, Tailscale, Netlify, Mintlify, Stripe, Context7, MCP, Vite, GitHub, PowerShell, Cursor, LafazFlow, Luqman, MediBrave, "
@@ -14,6 +14,7 @@ public sealed record AppSettings
     public int SettingsSchemaVersion { get; init; } = CurrentSchemaVersion;
     public string HotkeyGesture { get; init; } = "DoubleShift";
     public HotkeyMode HotkeyMode { get; init; } = HotkeyMode.Hybrid;
+    public string MicrophoneDeviceName { get; init; } = "";
     public string WhisperCliPath { get; init; } = "";
     public string CudaWhisperCliPath { get; init; } = @"C:\Tools\whisper.cpp-cuda\bin\whisper-cli.exe";
     public string ModelPath { get; init; } = "";
