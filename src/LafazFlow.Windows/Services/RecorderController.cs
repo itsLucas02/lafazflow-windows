@@ -452,6 +452,7 @@ public sealed class RecorderController
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperStarted);
             var runtime = WhisperCliTranscriptionService.ResolveRuntime(job.Settings);
+            var finalDecodeOptions = runtime.DecodeOptions.ForCompleteFinalPass();
             var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(job.Settings);
             string transcript;
             TranscriptionEngineResult? engineResult = null;
@@ -483,7 +484,7 @@ public sealed class RecorderController
                     job.AudioPath,
                     prompt,
                     job.Settings.WhisperThreads,
-                    runtime.DecodeOptions,
+                    finalDecodeOptions,
                     cancellationToken);
                 transcript = timed.Text;
                 if (timed.Timing is { } timing)
@@ -505,7 +506,7 @@ public sealed class RecorderController
                     job.AudioPath,
                     prompt,
                     job.Settings.WhisperThreads,
-                    runtime.DecodeOptions,
+                    finalDecodeOptions,
                     cancellationToken);
             }
 

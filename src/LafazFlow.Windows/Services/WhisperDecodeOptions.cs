@@ -8,6 +8,15 @@ public sealed record WhisperDecodeOptions(
     string VadModelPath,
     int? MaxContextTokens = null)
 {
+    public WhisperDecodeOptions ForCompleteFinalPass()
+    {
+        return this with
+        {
+            EnableVad = false,
+            VadModelPath = ""
+        };
+    }
+
     public static WhisperDecodeOptions Fast { get; } = new(
         Temperature: 0,
         NoFallback: true,

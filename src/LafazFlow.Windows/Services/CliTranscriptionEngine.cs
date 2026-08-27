@@ -22,6 +22,7 @@ public sealed class CliTranscriptionEngine : ITranscriptionEngine
         CancellationToken cancellationToken)
     {
         var runtime = WhisperCliTranscriptionService.ResolveRuntime(settings);
+        var finalDecodeOptions = runtime.DecodeOptions.ForCompleteFinalPass();
         var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(settings);
         long? modelLoadMs = null;
         long? inferenceMs = null;
@@ -35,7 +36,7 @@ public sealed class CliTranscriptionEngine : ITranscriptionEngine
                 audioPath,
                 prompt,
                 settings.WhisperThreads,
-                runtime.DecodeOptions,
+                finalDecodeOptions,
                 cancellationToken);
             text = timed.Text;
             modelLoadMs = timed.Timing?.LoadMs;
@@ -51,7 +52,7 @@ public sealed class CliTranscriptionEngine : ITranscriptionEngine
                 audioPath,
                 prompt,
                 settings.WhisperThreads,
-                runtime.DecodeOptions,
+                finalDecodeOptions,
                 cancellationToken);
         }
 

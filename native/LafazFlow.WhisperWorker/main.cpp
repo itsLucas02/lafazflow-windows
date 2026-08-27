@@ -366,7 +366,7 @@ std::vector<float> PcmFromBytes(const std::vector<std::uint8_t>& bytes, std::uin
     return pcm;
 }
 
-whisper_full_params BuildParams() {
+whisper_full_params BuildParams(const std::uint8_t operation) {
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     params.n_threads = g_threads;
     params.language = g_language.c_str();
@@ -387,7 +387,10 @@ whisper_full_params BuildParams() {
         params.initial_prompt = g_initial_prompt.c_str();
         params.carry_initial_prompt = g_carry_initial_prompt;
     }
-    if (g_vad) {
+    // VAD is useful for low-latency rolling previews, but it can discard quiet
+    // words inside a long recording. Final dictation must decode the complete
+    // captured waveform; it is the authoritative text pasted to the target.
+    if (g_vad && operation != OpFinal) {
         params.vad = true;
         params.vad_model_path = g_vad_model.c_str();
         params.vad_params.threshold = g_vad_threshold;
@@ -418,7 +421,7 @@ void Transcribe(HANDLE pipe, const Frame& frame) {
     }
 
     g_abort.store(false);
-    whisper_full_params params = BuildParams();
+    whisper_full_params params = BuildParams(frame.kind);
     const int result = whisper_full(g_ctx, params, pcm.data(), static_cast<int>(pcm.size()));
     if (result != 0) {
         g_last_failure = g_abort.load() ? "aborted" : "decode_failed";
