@@ -155,6 +155,52 @@ public sealed class TranscriptionTextFormatterTests
 
     [Theory]
     [InlineData(
+        "What are you talking about? You are making things much more complicated than it is.",
+        "What are you talking about? You are making things much more complicated than it is.")]
+    [InlineData(
+        "How did this happen? This implementation is more complicated than it needs to be.",
+        "How did this happen? This implementation is more complicated than it needs to be.")]
+    public void FormatDoesNotLetEarlierQuestionChangeFinalStatement(
+        string input,
+        string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData(
+        "So now you are telling me it's in the main branch.",
+        "So now you are telling me it's in the main branch?")]
+    [InlineData(
+        "Now you are saying that the release is already public.",
+        "Now you are saying that the release is already public?")]
+    [InlineData(
+        "The branch is clean. So now you are telling me it's already pushed.",
+        "The branch is clean. So now you are telling me it's already pushed?")]
+    public void FormatRepairsHighConfidenceConfirmationQuestions(
+        string input,
+        string expected)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(expected, formatted);
+    }
+
+    [Theory]
+    [InlineData("Now you are telling me the story.")]
+    [InlineData("You are telling me about the release process.")]
+    [InlineData("So now you are saying goodbye.")]
+    public void FormatPreservesSimilarDeclarativeSentences(string input)
+    {
+        var formatted = TranscriptionTextFormatter.Format(input);
+
+        Assert.Equal(input, formatted);
+    }
+
+    [Theory]
+    [InlineData(
         "This is complete. And the next section starts here.",
         "This is complete. And the next section starts here.")]
     [InlineData(

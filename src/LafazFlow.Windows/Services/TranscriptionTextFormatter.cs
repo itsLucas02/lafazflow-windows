@@ -49,16 +49,17 @@ public static partial class TranscriptionTextFormatter
         }
 
         normalized = char.ToUpperInvariant(normalized[0]) + normalized[1..];
+        var finalSentence = GetFinalSentence(normalized);
 
         if (!EndsWithSentencePunctuation(normalized))
         {
-            normalized += ShouldEndAsQuestion(normalized) ? "?" : ".";
+            normalized += ShouldEndAsQuestion(finalSentence) ? "?" : ".";
         }
-        else if (normalized.EndsWith('.') && ShouldEndAsQuestion(normalized))
+        else if (normalized.EndsWith('.') && ShouldEndAsQuestion(finalSentence))
         {
             normalized = normalized[..^1] + "?";
         }
-        else if (normalized.EndsWith('?') && !ShouldKeepQuestionMark(normalized))
+        else if (normalized.EndsWith('?') && !ShouldKeepQuestionMark(finalSentence))
         {
             normalized = normalized[..^1] + ".";
         }
@@ -70,6 +71,15 @@ public static partial class TranscriptionTextFormatter
     {
         var last = text[^1];
         return last is '.' or '?' or '!';
+    }
+
+    private static string GetFinalSentence(string text)
+    {
+        var trimmed = text.Trim();
+        var boundaries = SentenceBoundaryRegex().Matches(trimmed);
+        return boundaries.Count == 0
+            ? trimmed
+            : trimmed[(boundaries[^1].Index + boundaries[^1].Length)..];
     }
 
     private static bool ShouldEndAsQuestion(string text)
@@ -89,6 +99,11 @@ public static partial class TranscriptionTextFormatter
         if (HasDeclarativeOpinionClause(candidate))
         {
             return false;
+        }
+
+        if (ConfirmationQuestionRegex().IsMatch(candidate))
+        {
+            return true;
         }
 
         if (candidate.StartsWith("Wait, ", StringComparison.OrdinalIgnoreCase))
@@ -233,4 +248,10 @@ public static partial class TranscriptionTextFormatter
 
     [GeneratedRegex(@"^(?:of course|basically|for sure|definitely|probably|maybe|perhaps)$", RegexOptions.IgnoreCase)]
     private static partial Regex DeclarativeFragmentRegex();
+
+    [GeneratedRegex(@"^(?:so\s+)?(?:now\s+)?(?:you(?:'re|\s+are)\s+(?:telling|saying)\s+me\s+(?:that\s+|it(?:'s|\s+is)\s+|this\s+|there\s+|we\s+|you\s+|i\s+)|you(?:'re|\s+are)\s+saying\s+that\s+)", RegexOptions.IgnoreCase)]
+    private static partial Regex ConfirmationQuestionRegex();
+
+    [GeneratedRegex(@"[.!?]\s+")]
+    private static partial Regex SentenceBoundaryRegex();
 }
