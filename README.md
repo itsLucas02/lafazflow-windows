@@ -1,5 +1,9 @@
 # LafazFlow for Windows
 
+<p align="center">
+  <img src="src/LafazFlow.Windows/Resources/Icons/lafazflow-mark.png" alt="LafazFlow" width="180" height="180" />
+</p>
+
 [![Release](https://github.com/itsLucas02/lafazflow-windows/actions/workflows/release.yml/badge.svg)](https://github.com/itsLucas02/lafazflow-windows/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/itsLucas02/lafazflow-windows?sort=semver&label=latest)](https://github.com/itsLucas02/lafazflow-windows/releases)
 
