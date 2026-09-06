@@ -1,5 +1,8 @@
 # LafazFlow for Windows
 
+[![Release](https://github.com/itsLucas02/lafazflow-windows/actions/workflows/release.yml/badge.svg)](https://github.com/itsLucas02/lafazflow-windows/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/itsLucas02/lafazflow-windows?sort=semver&label=latest)](https://github.com/itsLucas02/lafazflow-windows/releases)
+
 LafazFlow is a privacy-first dictation app for Windows. Press a global hotkey, speak naturally, and have the transcript pasted into the application you were already using.
 
 Transcription runs locally with a persistent, crash-isolated `whisper.cpp` engine. The Whisper model loads once when LafazFlow starts and stays ready, so warm dictation avoids the repeated model-loading delay of a one-shot CLI. Your recordings and transcripts do not need to leave your computer, there is no required cloud account, and the core dictation workflow remains available offline.
@@ -55,8 +58,10 @@ This stack produces a genuine Windows executable and gives LafazFlow direct acce
 
 Ready-to-run Windows builds are published on the [Releases](https://github.com/itsLucas02/lafazflow-windows/releases) page:
 
-- `LafazFlow-1.1.0-win-x64-portable.zip` — unzip and run, no installation needed.
-- `LafazFlow-1.1.0-setup.exe` — installer with Start Menu and desktop shortcuts.
+- `LafazFlow-<version>-win-x64-portable.zip` — unzip and run, no installation needed.
+- `LafazFlow-<version>-setup.exe` — installer with Start Menu and desktop shortcuts.
+
+> **Version note:** the latest published release is **v1.1.0**. Development on the `main` branch is ahead at **v1.1.1** and may not yet have a matching downloadable build. Download from the Releases page unless you are building from source.
 
 Windows 10/11 (64-bit) is supported. End users do not need the .NET SDK; releases are self-contained. Whisper model files are downloaded separately from inside the app (Settings > Models) and are never bundled.
 
@@ -104,6 +109,8 @@ Diagnostic recordings are optional and controlled through the application settin
 
 Contributions are welcome. Bug reports, accessibility improvements, documentation, tests, Windows compatibility fixes, performance work, and thoughtful interface improvements all help the project.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide — build/test requirements, branch and commit conventions, and the pull request checklist. All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 Before opening a pull request:
 
 1. Keep the change focused and explain the user-facing reason.
@@ -112,7 +119,7 @@ Before opening a pull request:
 4. Run `dotnet build LafazFlow.Windows.sln --configuration Release`.
 5. Do not commit Whisper models, recordings, transcripts, credentials, or machine-specific configuration.
 
-Please use [GitHub Issues](https://github.com/itsLucas02/lafazflow-windows/issues) for reproducible bugs and focused feature proposals.
+Please use [GitHub Issues](https://github.com/itsLucas02/lafazflow-windows/issues) for reproducible bugs and focused feature proposals. For security vulnerabilities, report privately per [SECURITY.md](SECURITY.md).
 
 ## License
 
