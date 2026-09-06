@@ -26,6 +26,18 @@ public sealed class TrayIconServiceSourceTests
         Assert.Contains("ShowBalloonTip(3000)", source);
     }
 
+    [Fact]
+    public void TrayMenuContainsCheckForUpdatesItem()
+    {
+        var repoRoot = FindRepoRoot();
+        var sourcePath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "Services", "TrayIconService.cs");
+        var source = File.ReadAllText(Path.GetFullPath(sourcePath));
+
+        Assert.Contains("Check for Updates…", source);
+        Assert.Contains("_checkForUpdates", source);
+        Assert.Contains("ShowUpdateNotification", source);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

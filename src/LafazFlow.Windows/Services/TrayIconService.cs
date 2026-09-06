@@ -12,6 +12,7 @@ public sealed class TrayIconService : IDisposable
     private readonly MiniRecorderViewModel _viewModel;
     private readonly Action _openSettings;
     private readonly Action _openLogs;
+    private readonly Action _checkForUpdates;
     private readonly Action _exit;
     private readonly NotifyIcon _notifyIcon;
     private readonly ContextMenuStrip _menu;
@@ -20,11 +21,13 @@ public sealed class TrayIconService : IDisposable
         MiniRecorderViewModel viewModel,
         Action openSettings,
         Action openLogs,
+        Action checkForUpdates,
         Action exit)
     {
         _viewModel = viewModel;
         _openSettings = openSettings;
         _openLogs = openLogs;
+        _checkForUpdates = checkForUpdates;
         _exit = exit;
         _menu = BuildMenu();
         _notifyIcon = new NotifyIcon
@@ -44,6 +47,7 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new ToolStripMenuItem(AppVersionText.TrayHeader) { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Settings", null, (_, _) => _openSettings());
+        menu.Items.Add("Check for Updates…", null, (_, _) => _checkForUpdates());
         menu.Items.Add("Open Logs", null, (_, _) => _openLogs());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit LafazFlow", null, (_, _) => _exit());
@@ -101,6 +105,20 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon.BalloonTipText = message ?? "LafazFlow is ready. Double-press Shift to dictate.";
         _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
         _notifyIcon.ShowBalloonTip(3000);
+    }
+
+    public void ShowUpdateNotification(UpdateInfo update)
+    {
+        if (!update.IsUpdateAvailable || update.LatestVersion is null)
+        {
+            return;
+        }
+
+        _notifyIcon.BalloonTipTitle = "LafazFlow update available";
+        _notifyIcon.BalloonTipText =
+            $"LafazFlow {update.LatestVersion} is available. You are on {update.CurrentVersion}. Right-click the tray icon and choose \"Check for Updates…\" to open the download.";
+        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+        _notifyIcon.ShowBalloonTip(5000);
     }
 
     public static void OpenLogsFolder()

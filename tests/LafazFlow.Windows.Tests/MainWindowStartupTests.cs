@@ -101,6 +101,30 @@ public sealed class MainWindowStartupTests
         Assert.True(deliveryIndex < pasteStart);
     }
 
+    [Fact]
+    public void ShellInitializationChecksForUpdatesInBackground()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
+        var initStart = code.IndexOf("public void InitializeShell", StringComparison.Ordinal);
+        var initEnd = code.IndexOf("private void OnLoaded", StringComparison.Ordinal);
+        var initBody = code[initStart..initEnd];
+
+        Assert.Contains("CheckForUpdatesAsync(openDownloadWhenUpdate: false)", initBody);
+    }
+
+    [Fact]
+    public void ManualUpdateCheckOpensDownloadWhenAvailable()
+    {
+        var repoRoot = FindRepoRoot();
+        var code = File.ReadAllText(Path.Combine(repoRoot, "src", "LafazFlow.Windows", "MainWindow.xaml.cs"));
+
+        Assert.Contains("private void CheckForUpdatesFromMenu()", code);
+        Assert.Contains("CheckForUpdatesAsync(openDownloadWhenUpdate: true)", code);
+        Assert.Contains("UpdateChecker", code);
+        Assert.Contains("info.DownloadPage", code);
+    }
+
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

@@ -85,6 +85,7 @@ public partial class MainWindow : Window
             _miniRecorderViewModel,
             ShowSettingsFromShell,
             TrayIconService.OpenLogsFolder,
+            CheckForUpdatesFromMenu,
             () => System.Windows.Application.Current.Shutdown());
         _miniRecorderViewModel.SettingsRequested += OnSettingsRequested;
         Loaded += OnLoaded;
@@ -110,6 +111,7 @@ public partial class MainWindow : Window
         _miniRecorderViewModel.State = RecordingState.Idle;
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
+        _ = CheckForUpdatesAsync(openDownloadWhenUpdate: false);
         if (_workerSupervisor is not null)
         {
             _ = Task.Run(async () =>
@@ -220,6 +222,49 @@ public partial class MainWindow : Window
         catch
         {
         }
+    }
+
+    private async Task CheckForUpdatesAsync(bool openDownloadWhenUpdate)
+    {
+        try
+        {
+            var info = await new UpdateChecker().CheckAsync();
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (!info.IsUpdateAvailable)
+                {
+                    if (openDownloadWhenUpdate && _trayIcon is not null)
+                    {
+                        _trayIcon.ShowStartupNotification(
+                            "You are on the latest version of LafazFlow.");
+                    }
+
+                    return;
+                }
+
+                if (openDownloadWhenUpdate && info.DownloadPage is not null)
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = info.DownloadPage.ToString(),
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    _trayIcon?.ShowUpdateNotification(info);
+                }
+            });
+        }
+        catch
+        {
+            // Update checks must never interrupt normal operation.
+        }
+    }
+
+    private void CheckForUpdatesFromMenu()
+    {
+        _ = CheckForUpdatesAsync(openDownloadWhenUpdate: true);
     }
 
     private void OnDoubleShiftPressed(long hotkeyTimestamp)
