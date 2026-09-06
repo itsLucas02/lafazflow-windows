@@ -84,6 +84,27 @@ public sealed class VocabularyCorrectionServiceTests
     }
 
     [Theory]
+    [InlineData("the front end is written in C#.", "the frontend is written in C#.")]
+    [InlineData("Front end is a React app.", "Frontend is a React app.")]
+    [InlineData("we ship the front ends to staging.", "we ship the frontends to staging.")]
+    [InlineData("the back end handles the API.", "the backend handles the API.")]
+    [InlineData("Back end is the service layer.", "Backend is the service layer.")]
+    [InlineData("back ends run the workers.", "backends run the workers.")]
+    public void FrontendBackendVariantsNormalizePreservingCasingAndPunctuation(string input, string expected)
+    {
+        Assert.Equal(expected, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
+    [InlineData("the frontend is written in C#.")]
+    [InlineData("our backend stays offline.")]
+    [InlineData("Frontend and Backend are both local.")]
+    public void AlreadyJoinedFrontendBackendStayUnchanged(string input)
+    {
+        Assert.Equal(input, VocabularyCorrectionService.ApplyDefaults(input));
+    }
+
+    [Theory]
     [InlineData("contextual project route maps", "contextual project roadmaps")]
     [InlineData("the implementation route map is ready", "the implementation roadmap is ready")]
     [InlineData("our milestone route map", "our milestone roadmap")]

@@ -46,6 +46,8 @@ public static class VocabularyCatalog
         new("Cursor", ["cursor"]),
         new("Stripe", []),
         new("LafazFlow", []),
+        new("frontend", []),
+        new("backend", []),
         new("roadmap", []),
         new("roadmaps", []),
         new("their", []),

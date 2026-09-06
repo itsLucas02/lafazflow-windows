@@ -344,6 +344,22 @@ public sealed class RollingWhisperLiveTranscriptPreviewServiceTests
     }
 
     [Fact]
+    public async Task LivePreviewAppliesFrontendBackendTerminology()
+    {
+        var service = CreateService(
+            previews: ["the front end talks to the back end."],
+            logs: out _);
+        var received = new List<string>();
+
+        await service.StartAsync(AppSettings.Default, received.Add, CancellationToken.None);
+        service.AcceptAudioChunk(CreatePcmChunk(milliseconds: 80));
+        await WaitUntilAsync(() => received.Count == 1);
+        await service.StopAsync();
+
+        Assert.Equal(["the frontend talks to the backend."], received);
+    }
+
+    [Fact]
     public async Task LivePreviewAppliesDeepSeekPhoneticFamily()
     {
         var service = CreateService(

@@ -41,6 +41,7 @@ public static partial class VocabularyCorrectionService
         }
 
         corrected = FixRoadmapTerminology(corrected);
+        corrected = FixFrontendBackendTerminology(corrected);
         corrected = FixDeepSeekPhoneticFamily(corrected);
         corrected = FixTestingDictationThats(corrected);
         corrected = FixTestingDictationLetsThink(corrected);
@@ -79,6 +80,29 @@ public static partial class VocabularyCorrectionService
             corrected,
             match => match.Groups[1].Value + RoadmapTerm(match.Groups[2].Value, plural: match.Groups[2].Value.EndsWith("s", StringComparison.OrdinalIgnoreCase)));
         return corrected;
+    }
+
+    private static string FixFrontendBackendTerminology(string text)
+    {
+        var corrected = FrontEndWordRegex().Replace(text, match => FrontendBackendTerm(match.Value));
+        corrected = BackEndWordRegex().Replace(corrected, match => FrontendBackendTerm(match.Value));
+        return corrected;
+    }
+
+    private static string FrontendBackendTerm(string matched)
+    {
+        var lower = matched.ToLowerInvariant();
+        var replacement = lower switch
+        {
+            "front end" => "frontend",
+            "front ends" => "frontends",
+            "back end" => "backend",
+            "back ends" => "backends",
+            _ => matched
+        };
+        return matched.Length > 0 && char.IsUpper(matched[0])
+            ? char.ToUpperInvariant(replacement[0]) + replacement[1..]
+            : replacement;
     }
 
     private static string RoadmapTerm(string matched, bool plural)
@@ -366,6 +390,12 @@ public static partial class VocabularyCorrectionService
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])road\s+map(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex RoadMapRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])front\s+ends?(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex FrontEndWordRegex();
+
+    [GeneratedRegex(@"(?<![\p{L}\p{N}])back\s+ends?(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
+    private static partial Regex BackEndWordRegex();
 
     [GeneratedRegex(@"(?<![\p{L}\p{N}])(deep[\s-]?(?:seek|seq|sec|sick|stick|six|sea|sik|sique|6))(?![\p{L}\p{N}])", RegexOptions.IgnoreCase)]
     private static partial Regex DeepSeekFamilyRegex();

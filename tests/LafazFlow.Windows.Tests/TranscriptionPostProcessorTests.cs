@@ -62,6 +62,18 @@ public sealed class TranscriptionPostProcessorTests
     }
 
     [Fact]
+    public void FinalTranscriptionAppliesFrontendBackendTerminology()
+    {
+        var result = _processor.Process(new TranscriptionPostProcessingRequest(
+            "I work on the front end and the back end every day.",
+            AppSettings.Default,
+            ""));
+
+        Assert.Equal("I work on the frontend and the backend every day. ", result.Text);
+        Assert.Contains(result.Stages, stage => stage is { Stage: "vocabulary", Changed: true });
+    }
+
+    [Fact]
     public void ProcessSkipsTrailingSeparatorWhenDisabled()
     {
         var result = _processor.Process(new TranscriptionPostProcessingRequest(
