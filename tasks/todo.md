@@ -2468,4 +2468,19 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Pushed tag `v1.0.0`; GitHub Actions ran the full suite, built the Inno Setup installer, packaged the portable ZIP, and published the release automatically.
 - Live release: `LafazFlow-1.0.0-setup.exe` (54.4 MB) and `LafazFlow-1.0.0-win-x64-portable.zip` (79.0 MB) at https://github.com/itsLucas02/lafazflow-windows/releases/tag/v1.0.0.
 
+## Plan: Warm microphone pre-roll
+- [x] Keep the selected/default microphone warm while LafazFlow is running.
+- [x] Prepend only the latest 500 ms of PCM when recording starts.
+- [x] follow the Windows default between recordings or fail clearly when a pinned microphone is unavailable.
+- [x] Remove mid-recording device fallback and preserve the completed recording if preparing the next microphone fails.
+- [x] Add capture, lifecycle, settings, and UI regression coverage.
+- [x] Verify the canonical installed build against the real microphone path.
+
+## Review: Warm microphone pre-roll
+- The microphone stream now stays ready between dictations and contributes a bounded 500 ms pre-roll, eliminating startup loss without changing CUDA, model, CLI, VAD, or thread settings.
+- Blank microphone selection follows the Windows default between recordings; an explicitly selected disconnected microphone fails visibly instead of silently switching devices.
+- Capture callbacks are owned by a generation token, so late callbacks cannot write into a newer recording. A failure reopening the next stream no longer discards audio that already finalized successfully.
+- Focused tests pass (101); full suite passes (799); Release build passes with 0 warnings and 0 errors; `git diff --check` passes.
+- Canonical installed-app verification: one app plus one owned CUDA worker, `MIC ready using=Windows default`, 177 ms drain, 1.237 s recording produced a 1.768 s WAV (approximately 500 ms pre-roll), and no `whisper-cli` process.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

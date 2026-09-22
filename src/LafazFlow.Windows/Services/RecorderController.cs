@@ -27,7 +27,6 @@ public sealed class RecorderController
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly TimeSpan _micReadinessTimeout;
-    private readonly TimeSpan _micProbeTimeout;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -56,8 +55,7 @@ public sealed class RecorderController
         ITranscriptionEngine? transcriptionEngine = null,
         PerformanceHealthMonitor? performanceHealthMonitor = null,
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
-        TimeSpan? micReadinessTimeout = null,
-        TimeSpan? micProbeTimeout = null)
+        TimeSpan? micReadinessTimeout = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -78,7 +76,6 @@ public sealed class RecorderController
         _performanceHealthMonitor = performanceHealthMonitor;
         _restartWorkerAsync = restartWorkerAsync;
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
-        _micProbeTimeout = micProbeTimeout ?? TimeSpan.FromSeconds(2);
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -180,7 +177,23 @@ public sealed class RecorderController
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",
             "Recordings");
-        _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
+        try
+        {
+            _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
+        }
+        catch (Exception error)
+        {
+            _runCancellation.Dispose();
+            _runCancellation = null;
+            _currentLatencyTrace.Fail(error);
+            _latencyReporter.Report(_currentLatencyTrace);
+            _currentLatencyTrace = null;
+            _viewModel.SetError(ShortError(error));
+            _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
+            _window.ShowBottomCenter();
+            LogError(error.ToString());
+            return;
+        }
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
         _soundCues.PlayRecordingStarted(SoundCueOptions.FromSettings(settings));
@@ -198,28 +211,6 @@ public sealed class RecorderController
             {
                 LogInfo($"MIC ready using={_audioCapture.ActiveInputDeviceName ?? "Windows default"}");
                 return;
-            }
-
-            foreach (var device in MicrophoneDeviceCatalog.ListDevices())
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                if (_audioCapture.TrySwitchInputDevice(device.Index, out var deviceName)
-                    && await _audioCapture.WaitForFirstAudioAsync(_micProbeTimeout))
-                {
-                    LogInfo($"MIC fallback using={deviceName}");
-                    await _window.InvokeAsync(() =>
-                    {
-                        if (_viewModel.IsRecording)
-                        {
-                            _viewModel.SetTransientStatusDetail($"Using microphone: {deviceName}");
-                        }
-                    });
-                    return;
-                }
             }
 
             if (!cancellationToken.IsCancellationRequested)

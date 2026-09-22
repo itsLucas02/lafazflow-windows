@@ -428,6 +428,14 @@
 - Pattern: The user sometimes spoke into a dead capture path (wrong default device, exclusive-mode contention, or device change) and only learned at stop time via "Microphone input was silent" — 18 such rejections and 10 "no speech" failures were logged.
 - Rule: Model the capture start on FluidVoice's readiness gate: recording is ready only when the first PCM buffer actually arrives, with a short timeout that fails fast and visibly. Follow VoiceInk's device manager (remember last-used device, switch to a fallback on failure) and Handy's explicit device enumeration so the app never silently records from the wrong or unavailable input.
 
+## Verify audio callbacks by stream ownership, not event sender identity
+- Pattern: The first warm-microphone attempt worked with a fake whose event sender was the wrapper object, but real NAudio callbacks used a different sender; filtering by sender identity therefore dropped every real PCM buffer and broke capture completely.
+- Rule: Bind callbacks to an explicit stream generation and invalidate that generation before disposal. Unit-test a callback whose sender differs from the wrapper, then prove start, drain, and WAV duration through the real installed microphone path before rollout.
+
+## Never discard finalized speech because the next microphone cannot open
+- Pattern: Stop finalization and next-stream warmup shared one exception path, so a failure preparing the next recording could suppress the valid recording that had just completed.
+- Rule: Treat current-session finalization and next-session readiness as separate outcomes. Return and transcribe finalized audio; surface the microphone problem when the next recording starts.
+
 ## Make reliability findings durable, not memory-dependent
 - Pattern: Recurring dictation failures (repetition leaks, silent captures) lived only in conversation memory, so each agent rediscovered them.
 - Rule: Record symptoms, log evidence, code paths, reference-project findings, and fix directions in a tracked reference document (`docs/references/2026-08-16-dictation-reliability-known-issues.md`) and keep lessons in `tasks/lessons.md` so any future agent starts from tangible facts.

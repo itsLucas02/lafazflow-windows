@@ -6,6 +6,80 @@ namespace LafazFlow.Windows.Tests;
 public sealed class AudioCaptureServiceTests
 {
     [Fact]
+    public void PinnedDisconnectedMicrophoneFailsInsteadOfUsingDefault()
+    {
+        var factoryCalled = false;
+        using var service = new AudioCaptureService(
+            _ =>
+            {
+                factoryCalled = true;
+                return new FakeAudioInputDevice();
+            },
+            (_, _) => new FakeAudioCaptureWriter());
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            service.WarmUp("Definitely disconnected microphone"));
+
+        Assert.Contains("Selected microphone is disconnected", error.Message);
+        Assert.False(factoryCalled);
+    }
+
+    [Fact]
+    public async Task WarmUpPrependsAudioCapturedImmediatelyBeforeStart()
+    {
+        var warmInput = new FakeAudioInputDevice();
+        var replacementInput = new FakeAudioInputDevice();
+        var inputs = new Queue<IAudioInputDevice>([warmInput, replacementInput]);
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(_ => inputs.Dequeue(), (_, _) => writer);
+            service.WarmUp();
+            warmInput.EmitFromUnderlyingDevice([1, 0, 2, 0]);
+
+            service.Start(root);
+            warmInput.Emit([3, 0, 4, 0]);
+            await service.StopAsync();
+
+            Assert.Equal([1, 0, 2, 0, 3, 0, 4, 0], writer.Bytes);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StopReturnsFinalizedAudioWhenNextWarmUpFails()
+    {
+        var input = new FakeAudioInputDevice();
+        var inputCount = 0;
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(
+                _ => inputCount++ == 0
+                    ? input
+                    : new FakeAudioInputDevice { StartError = new IOException("microphone unavailable") },
+                (_, _) => writer);
+            service.Start(root);
+            input.Emit([1, 0, 2, 0]);
+
+            var finalization = await service.StopAsync();
+
+            Assert.Equal(AudioCaptureFinalizeState.Finalized, finalization.State);
+            Assert.Equal([1, 0, 2, 0], writer.Bytes);
+            Assert.Throws<IOException>(() => service.Start(root));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task StopAsyncIncludesFinalBufferArrivingAfterStopRequest()
     {
         var input = new FakeAudioInputDevice { FireStopOnStop = false };
@@ -44,7 +118,8 @@ public sealed class AudioCaptureServiceTests
     {
         var firstInput = new FakeAudioInputDevice();
         var secondInput = new FakeAudioInputDevice();
-        var inputs = new Queue<IAudioInputDevice>([firstInput, secondInput]);
+        var thirdInput = new FakeAudioInputDevice();
+        var inputs = new Queue<IAudioInputDevice>([firstInput, secondInput, thirdInput]);
         var writers = new List<FakeAudioCaptureWriter>();
         var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
         try
@@ -174,7 +249,7 @@ public sealed class AudioCaptureServiceTests
 
             var finalization = await service.StopAsync();
 
-            Assert.Equal(AudioCaptureFinalizeState.Finalized, finalization.State);
+            Assert.Equal(AudioCaptureFinalizeState.Failed, finalization.State);
             Assert.Contains("device_error", finalization.ErrorKind);
         }
         finally
@@ -239,34 +314,6 @@ public sealed class AudioCaptureServiceTests
     }
 
     [Fact]
-    public async Task TrySwitchInputDeviceSwapsToDeliveringDevice()
-    {
-        var silent = new FakeAudioInputDevice();
-        var working = new FakeAudioInputDevice();
-        var inputs = new Queue<IAudioInputDevice>([silent, working]);
-        var writer = new FakeAudioCaptureWriter();
-        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
-        try
-        {
-            using var service = new AudioCaptureService(_ => inputs.Dequeue(), (_, _) => writer);
-            service.Start(root);
-
-            Assert.False(await service.WaitForFirstAudioAsync(TimeSpan.FromMilliseconds(50)));
-            Assert.True(service.TrySwitchInputDevice(1, out _));
-            working.Emit(new byte[3200]);
-            Assert.True(service.HasReceivedAudio);
-
-            var finalization = await service.StopAsync();
-            Assert.True(finalization.ByteCount >= 3200);
-            Assert.Equal(AudioCaptureFinalizeState.Finalized, finalization.State);
-        }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
-    }
-
-    [Fact]
     public async Task RealWriterProducesHeaderSampleAndDurationParity()
     {
         var input = new FakeAudioInputDevice();
@@ -313,8 +360,14 @@ public sealed class AudioCaptureServiceTests
 
         public Exception? StopError { get; init; }
 
+        public Exception? StartError { get; init; }
+
         public void StartRecording()
         {
+            if (StartError is not null)
+            {
+                throw StartError;
+            }
         }
 
         public void StopRecording()
@@ -334,6 +387,11 @@ public sealed class AudioCaptureServiceTests
         public void Emit(byte[] bytes)
         {
             DataAvailable?.Invoke(this, new WaveInEventArgs(bytes, bytes.Length));
+        }
+
+        public void EmitFromUnderlyingDevice(byte[] bytes)
+        {
+            DataAvailable?.Invoke(new object(), new WaveInEventArgs(bytes, bytes.Length));
         }
 
         public void EmitStop()

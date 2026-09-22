@@ -9,6 +9,7 @@ namespace LafazFlow.Windows.UI;
 
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
+    public const string FollowWindowsDefaultMicrophone = "Follow Windows default";
     private readonly SettingsStore _settingsStore;
     private readonly LatencyDiagnosticLogStore _latencyDiagnostics;
     private readonly HotkeyDiagnosticLogStore _hotkeyDiagnostics;
@@ -41,6 +42,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private double _soundCueCompletedVolumePercent;
     private double _soundCueErrorVolumePercent;
     private bool _keepRecordingsForDiagnostics;
+    private string _selectedMicrophoneOption = FollowWindowsDefaultMicrophone;
     private string _validationMessage = "";
     private string _runtimeProfileStatus = "";
     private string _runtimeDiagnosticsMessage = "";
@@ -105,6 +107,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
         SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
+        MicrophoneOptions = [
+            FollowWindowsDefaultMicrophone,
+            .. MicrophoneDeviceCatalog.ListDevices().Select(device => device.Name)
+        ];
+        SelectedMicrophoneOption = MicrophoneOptions.FirstOrDefault(option =>
+            string.Equals(option, settings.MicrophoneDeviceName, StringComparison.OrdinalIgnoreCase))
+            ?? FollowWindowsDefaultMicrophone;
         RefreshModelCards();
         RefreshLatencyDiagnostics();
         RefreshHotkeyDiagnostics();
@@ -288,6 +297,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         get => _keepRecordingsForDiagnostics;
         set => SetProperty(ref _keepRecordingsForDiagnostics, value);
+    }
+
+    public IReadOnlyList<string> MicrophoneOptions { get; }
+
+    public string SelectedMicrophoneOption
+    {
+        get => _selectedMicrophoneOption;
+        set => SetProperty(ref _selectedMicrophoneOption, value);
     }
 
     public ObservableCollection<LatencyDiagnosticRow> RecentLatencyRows { get; } = [];
@@ -703,7 +720,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             SoundCueTranscribingStartedVolume = Math.Clamp(SoundCueTranscribingStartedVolumePercent / 100.0, 0, 2),
             SoundCueCompletedVolume = Math.Clamp(SoundCueCompletedVolumePercent / 100.0, 0, 2),
             SoundCueErrorVolume = Math.Clamp(SoundCueErrorVolumePercent / 100.0, 0, 2),
-            KeepRecordingsForDiagnostics = KeepRecordingsForDiagnostics
+            KeepRecordingsForDiagnostics = KeepRecordingsForDiagnostics,
+            MicrophoneDeviceName = SelectedMicrophoneOption == FollowWindowsDefaultMicrophone
+                ? ""
+                : SelectedMicrophoneOption
         };
     }
 
@@ -734,6 +754,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SoundCueCompletedVolumePercent = settings.SoundCueCompletedVolume * 100;
         SoundCueErrorVolumePercent = settings.SoundCueErrorVolume * 100;
         KeepRecordingsForDiagnostics = settings.KeepRecordingsForDiagnostics;
+        SelectedMicrophoneOption = MicrophoneOptions.FirstOrDefault(option =>
+            string.Equals(option, settings.MicrophoneDeviceName, StringComparison.OrdinalIgnoreCase))
+            ?? FollowWindowsDefaultMicrophone;
         RefreshModelCards();
         RefreshVoiceEngineStatus();
     }

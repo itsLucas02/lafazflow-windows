@@ -651,6 +651,16 @@
                     <TextBlock Text="Everyday dictation behavior. These options affect the next recording." Style="{StaticResource SectionSubtitleStyle}" />
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
+                            <TextBlock Text="Microphone" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <ComboBox ItemsSource="{Binding MicrophoneOptions}"
+                                      SelectedItem="{Binding SelectedMicrophoneOption}"
+                                      MinWidth="280"
+                                      HorizontalAlignment="Left"
+                                      Margin="0,0,0,6" />
+                            <TextBlock Text="Follow Windows default changes microphones automatically between recordings. A named microphone stays selected until you change it."
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,14" />
                             <CheckBox Content="Show live transcript preview" IsChecked="{Binding ShowLiveTranscriptPreview}" />
                             <CheckBox Content="Apply vocabulary corrections" IsChecked="{Binding EnableVocabularyCorrections}" />
                             <CheckBox Content="Polish broken continuation punctuation (on device)" IsChecked="{Binding EnableConservativeDictationPolish}" />

@@ -111,6 +111,14 @@ public partial class MainWindow : Window
         _miniRecorderViewModel.State = RecordingState.Idle;
         _hotkeyService.DoubleShiftPressed += OnDoubleShiftPressed;
         _hotkeyService.Start();
+        try
+        {
+            _audioCaptureService.WarmUp(_settingsStore.Load().MicrophoneDeviceName);
+        }
+        catch
+        {
+            // StartRecording surfaces the device error if it is still unavailable.
+        }
         _ = CheckForUpdatesAsync(openDownloadWhenUpdate: false);
         if (_workerSupervisor is not null)
         {

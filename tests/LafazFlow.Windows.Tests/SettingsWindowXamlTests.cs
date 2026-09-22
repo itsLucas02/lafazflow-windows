@@ -20,6 +20,8 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("local:SettingsSection.Clipboard", xaml);
         Assert.Contains("local:SettingsSection.Diagnostics", xaml);
         Assert.Contains("local:SettingsSection.About", xaml);
+        Assert.Contains("ItemsSource=\"{Binding MicrophoneOptions}\"", xaml);
+        Assert.Contains("SelectedItem=\"{Binding SelectedMicrophoneOption}\"", xaml);
     }
 
     [Fact]

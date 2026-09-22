@@ -190,6 +190,7 @@ public sealed class SettingsViewModelTests
         viewModel.SoundCueErrorVolumePercent = 60;
         viewModel.CustomVocabularyTerms = "PDPA\r\nCare Visit";
         viewModel.CustomCorrectionRules = "superbiz => Supabase\r\nstill document => stale document";
+        viewModel.SelectedMicrophoneOption = "Studio microphone";
 
         var result = viewModel.Save();
 
@@ -217,6 +218,23 @@ public sealed class SettingsViewModelTests
         Assert.Equal(0.6, saved.SoundCueErrorVolume, precision: 6);
         Assert.Equal("PDPA\r\nCare Visit", saved.CustomVocabularyTerms);
         Assert.Equal("superbiz => Supabase\r\nstill document => stale document", saved.CustomCorrectionRules);
+        Assert.Equal("Studio microphone", saved.MicrophoneDeviceName);
+    }
+
+    [Fact]
+    public void SaveStoresBlankMicrophoneForWindowsDefault()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var cliPath = Path.GetTempFileName();
+        var modelPath = Path.GetTempFileName();
+        var store = new SettingsStore(root, cliPath, modelPath);
+        var viewModel = SettingsViewModel.Load(store);
+        viewModel.SelectedMicrophoneOption = SettingsViewModel.FollowWindowsDefaultMicrophone;
+
+        var result = viewModel.Save();
+
+        Assert.True(result.Success);
+        Assert.Equal("", store.Load().MicrophoneDeviceName);
     }
 
     [Fact]

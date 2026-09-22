@@ -6,12 +6,22 @@ namespace LafazFlow.Windows.Services;
 public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 {
     private static readonly TimeSpan DefaultStopDeadline = TimeSpan.FromSeconds(2);
+    private const int PreRollBytes = 16000;
 
     private readonly object _sessionLock = new();
     private readonly Func<int?, IAudioInputDevice> _createInputDevice;
     private readonly Func<string, WaveFormat, IAudioCaptureWriter> _createWriter;
     private readonly TimeSpan _stopDeadline;
     private CaptureSession? _activeSession;
+    private CaptureSession? _stoppingSession;
+    private IAudioInputDevice? _warmInput;
+    private string _warmPreference = "";
+    private bool _warmAvailable;
+    private int _warmGeneration;
+    private EventHandler<WaveInEventArgs>? _warmDataHandler;
+    private EventHandler<StoppedEventArgs>? _warmStoppedHandler;
+    private readonly Queue<byte> _preRoll = new(PreRollBytes);
+    private TaskCompletionSource<bool> _warmAudioSource = NewAudioSource();
 
     public AudioCaptureService()
         : this(
@@ -39,6 +49,14 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
     public string? ActiveInputDeviceName { get; private set; }
 
+    public void WarmUp(string? preferredInputDeviceName = null)
+    {
+        lock (_sessionLock)
+        {
+            EnsureWarmInput(preferredInputDeviceName);
+        }
+    }
+
     public string Start(string outputDirectory, string? preferredInputDeviceName = null)
     {
         Directory.CreateDirectory(outputDirectory);
@@ -51,43 +69,35 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 throw new InvalidOperationException("A microphone recording is already active.");
             }
 
-            var deviceIndex = MicrophoneDeviceCatalog.ResolveIndex(preferredInputDeviceName);
-            var input = _createInputDevice(deviceIndex);
-            var writer = _createWriter(outputPath, input.WaveFormat);
-            session = new CaptureSession(input, writer, PublishAudioChunk, outputPath);
-            _activeSession = session;
-            ActiveInputDeviceName = deviceIndex.HasValue
-                ? MicrophoneDeviceCatalog.ListDevices().FirstOrDefault(device => device.Index == deviceIndex.Value)?.Name
-                : null;
-        }
-
-        try
-        {
-            session.Start();
-            return outputPath;
-        }
-        catch
-        {
-            lock (_sessionLock)
+            EnsureWarmInput(preferredInputDeviceName);
+            var writer = _createWriter(outputPath, _warmInput!.WaveFormat);
+            try
             {
-                if (ReferenceEquals(_activeSession, session))
-                {
-                    _activeSession = null;
-                }
+                session = new CaptureSession(writer, PublishAudioChunk, outputPath, [.. _preRoll]);
+            }
+            catch
+            {
+                writer.Dispose();
+                throw;
             }
 
-            session.Dispose();
-            throw;
+            _preRoll.Clear();
+            _activeSession = session;
         }
+
+        return outputPath;
     }
 
     public async Task<AudioCaptureFinalization> StopAsync()
     {
         CaptureSession? session;
+        string preference;
         lock (_sessionLock)
         {
             session = _activeSession;
             _activeSession = null;
+            _stoppingSession = session;
+            preference = _warmPreference;
         }
 
         if (session is null)
@@ -95,7 +105,29 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             throw new InvalidOperationException("No active microphone recording.");
         }
 
-        return await session.StopAsync(_stopDeadline);
+        try
+        {
+            _warmInput?.StopRecording();
+        }
+        catch (Exception error)
+        {
+            session.SignalStopped(error);
+        }
+
+        var finalization = await session.StopAsync(_stopDeadline);
+        lock (_sessionLock)
+        {
+            _stoppingSession = null;
+            try
+            {
+                ReplaceWarmInput(preference);
+            }
+            catch (Exception error)
+            {
+                LogCaptureFailure($"Microphone could not be readied for the next recording: {error.Message}");
+            }
+        }
+        return finalization;
     }
 
     public async Task<bool> WaitForFirstAudioAsync(TimeSpan timeout)
@@ -103,38 +135,26 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         CaptureSession? session;
         lock (_sessionLock)
         {
-            session = _activeSession;
+            session = _activeSession ?? _stoppingSession;
         }
 
-        return session is not null && await session.WaitForFirstAudioAsync(timeout);
-    }
-
-    public bool TrySwitchInputDevice(int deviceIndex, out string deviceName)
-    {
-        deviceName = MicrophoneDeviceCatalog.ListDevices()
-            .FirstOrDefault(device => device.Index == deviceIndex)?.Name
-            ?? $"Microphone #{deviceIndex}";
-        CaptureSession? session;
-        lock (_sessionLock)
+        if (session?.HasReceivedAudio == true)
         {
-            session = _activeSession;
+            return true;
         }
 
-        if (session is null)
+        try
+        {
+            return await _warmAudioSource.Task.WaitAsync(timeout);
+        }
+        catch (TimeoutException)
         {
             return false;
         }
-
-        var replacement = _createInputDevice(deviceIndex);
-        if (!session.SwitchInput(replacement))
+        catch (OperationCanceledException)
         {
-            replacement.Dispose();
             return false;
         }
-
-        ActiveInputDeviceName = deviceName;
-        LogCaptureFailure($"Capture switched to input device {deviceIndex} ({deviceName}).");
-        return true;
     }
 
     public void Dispose()
@@ -143,8 +163,127 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         {
             _activeSession?.Dispose();
             _activeSession = null;
+            _stoppingSession?.Dispose();
+            _stoppingSession = null;
+            DisposeWarmInput();
         }
     }
+
+    private void EnsureWarmInput(string? preferredInputDeviceName)
+    {
+        var preference = preferredInputDeviceName?.Trim() ?? "";
+        if (_warmInput is not null
+            && _warmAvailable
+            && string.Equals(_warmPreference, preference, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        ReplaceWarmInput(preference);
+    }
+
+    private void ReplaceWarmInput(string? preferredInputDeviceName)
+    {
+        DisposeWarmInput();
+        var preference = preferredInputDeviceName?.Trim() ?? "";
+        var deviceIndex = MicrophoneDeviceCatalog.ResolveIndex(preference);
+        if (preference.Length > 0 && !deviceIndex.HasValue)
+        {
+            throw new InvalidOperationException($"Selected microphone is disconnected: {preference}");
+        }
+
+        var input = _createInputDevice(deviceIndex);
+        var generation = ++_warmGeneration;
+        _warmDataHandler = (_, args) => OnWarmDataAvailable(generation, args);
+        _warmStoppedHandler = (_, args) => OnWarmRecordingStopped(generation, args);
+        input.DataAvailable += _warmDataHandler;
+        input.RecordingStopped += _warmStoppedHandler;
+        try
+        {
+            _warmInput = input;
+            _warmPreference = preference;
+            _warmAvailable = true;
+            ActiveInputDeviceName = deviceIndex.HasValue
+                ? MicrophoneDeviceCatalog.ListDevices().FirstOrDefault(device => device.Index == deviceIndex.Value)?.Name
+                : "Windows default";
+            input.StartRecording();
+        }
+        catch
+        {
+            DisposeWarmInput();
+            throw;
+        }
+    }
+
+    private void DisposeWarmInput()
+    {
+        var input = _warmInput;
+        _warmInput = null;
+        _warmAvailable = false;
+        _warmGeneration++;
+        if (input is not null)
+        {
+            if (_warmDataHandler is not null) input.DataAvailable -= _warmDataHandler;
+            if (_warmStoppedHandler is not null) input.RecordingStopped -= _warmStoppedHandler;
+            try { input.StopRecording(); } catch { }
+            input.Dispose();
+        }
+
+        _warmDataHandler = null;
+        _warmStoppedHandler = null;
+        _preRoll.Clear();
+        _warmAudioSource = NewAudioSource();
+    }
+
+    private void OnWarmDataAvailable(int generation, WaveInEventArgs e)
+    {
+        CaptureSession? session;
+        lock (_sessionLock)
+        {
+            if (generation != _warmGeneration)
+            {
+                return;
+            }
+
+            foreach (var value in e.Buffer.AsSpan(0, e.BytesRecorded))
+            {
+                if (_preRoll.Count == PreRollBytes)
+                {
+                    _preRoll.Dequeue();
+                }
+                _preRoll.Enqueue(value);
+            }
+
+            _warmAudioSource.TrySetResult(true);
+            session = _activeSession ?? _stoppingSession;
+        }
+
+        session?.Write(e.Buffer, e.BytesRecorded);
+    }
+
+    private void OnWarmRecordingStopped(int generation, StoppedEventArgs e)
+    {
+        CaptureSession? session;
+        lock (_sessionLock)
+        {
+            if (generation != _warmGeneration)
+            {
+                return;
+            }
+
+            _warmAvailable = false;
+            session = _activeSession ?? _stoppingSession;
+        }
+
+        session?.SignalStopped(e.Exception);
+        if (e.Exception is not null)
+        {
+            LogCaptureFailure($"Microphone disconnected: {e.Exception.Message}");
+        }
+    }
+
+    private static TaskCompletionSource<bool> NewAudioSource() =>
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private void PublishAudioChunk(byte[] audioChunk, double audioLevel)
     {
@@ -172,101 +311,33 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
     private sealed class CaptureSession : IDisposable
     {
         private readonly object _lock = new();
-        private IAudioInputDevice _input;
         private readonly IAudioCaptureWriter _writer;
         private readonly Action<byte[], double> _publishAudioChunk;
-        private readonly TaskCompletionSource<StoppedEventArgs?> _stoppedSource =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TaskCompletionSource<bool> _firstAudioSource =
+        private readonly TaskCompletionSource<bool> _drainedSource =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly string _outputPath;
         private bool _active = true;
         private bool _hasReceivedAudio;
         private long _writtenBytes;
+        private Exception? _deviceError;
 
         public AudioCaptureState State { get; private set; } = AudioCaptureState.Recording;
 
         public bool HasReceivedAudio => _hasReceivedAudio;
 
         public CaptureSession(
-            IAudioInputDevice input,
             IAudioCaptureWriter writer,
             Action<byte[], double> publishAudioChunk,
-            string outputPath)
+            string outputPath,
+            byte[] preRoll)
         {
-            _input = input;
             _writer = writer;
             _publishAudioChunk = publishAudioChunk;
             _outputPath = outputPath;
-            _input.DataAvailable += OnDataAvailable;
-            _input.RecordingStopped += OnRecordingStopped;
-        }
-
-        public void Start()
-        {
-            _input.StartRecording();
-        }
-
-        public async Task<bool> WaitForFirstAudioAsync(TimeSpan timeout)
-        {
-            if (_hasReceivedAudio)
+            if (preRoll.Length > 0)
             {
-                return true;
-            }
-
-            try
-            {
-                return await _firstAudioSource.Task.WaitAsync(timeout);
-            }
-            catch (TimeoutException)
-            {
-                return false;
-            }
-            catch (OperationCanceledException)
-            {
-                return false;
-            }
-        }
-
-        public bool SwitchInput(IAudioInputDevice replacement)
-        {
-            lock (_lock)
-            {
-                if (!_active || State != AudioCaptureState.Recording)
-                {
-                    return false;
-                }
-
-                if (replacement.WaveFormat.SampleRate != _input.WaveFormat.SampleRate
-                    || replacement.WaveFormat.BitsPerSample != _input.WaveFormat.BitsPerSample
-                    || replacement.WaveFormat.Channels != _input.WaveFormat.Channels)
-                {
-                    return false;
-                }
-
-                _input.DataAvailable -= OnDataAvailable;
-                _input.RecordingStopped -= OnRecordingStopped;
-                try
-                {
-                    _input.StopRecording();
-                }
-                catch
-                {
-                }
-
-                _input.Dispose();
-                _input = replacement;
-                _input.DataAvailable += OnDataAvailable;
-                _input.RecordingStopped += OnRecordingStopped;
-                try
-                {
-                    _input.StartRecording();
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
+                _writer.Write(preRoll, 0, preRoll.Length);
+                _writtenBytes = preRoll.Length;
             }
         }
 
@@ -282,20 +353,10 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 State = AudioCaptureState.Stopping;
             }
 
-            try
-            {
-                _input.StopRecording();
-            }
-            catch
-            {
-                // Fall through to the bounded deadline path.
-            }
-
             var timedOut = false;
-            StoppedEventArgs? stopped = null;
             try
             {
-                stopped = await _stoppedSource.Task.WaitAsync(deadline);
+                await _drainedSource.Task.WaitAsync(deadline);
             }
             catch (TimeoutException)
             {
@@ -306,10 +367,10 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 timedOut = true;
             }
 
-            return Finalize(stopped, timedOut);
+            return Finalize(timedOut);
         }
 
-        private AudioCaptureFinalization Finalize(StoppedEventArgs? stopped, bool timedOut)
+        private AudioCaptureFinalization Finalize(bool timedOut)
         {
             string errorKind = timedOut ? "audio_drain_timeout" : "";
             lock (_lock)
@@ -317,16 +378,6 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 if (_active)
                 {
                     _active = false;
-                    _input.DataAvailable -= OnDataAvailable;
-                    _input.RecordingStopped -= OnRecordingStopped;
-                }
-
-                try
-                {
-                    _input.StopRecording();
-                }
-                catch
-                {
                 }
 
                 try
@@ -338,27 +389,19 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                     errorKind = string.IsNullOrWhiteSpace(errorKind) ? "writer_failure" : $"{errorKind}|writer_failure";
                 }
 
-                try
-                {
-                    _input.Dispose();
-                }
-                catch
-                {
-                }
-
-                if (stopped?.Exception is { } deviceException)
+                if (_deviceError is not null)
                 {
                     errorKind = string.IsNullOrWhiteSpace(errorKind)
                         ? "device_error"
                         : $"{errorKind}|device_error";
-                    LogCaptureFailure($"Device reported an error during stop: {deviceException.Message}");
                 }
 
                 var sampleCount = _writtenBytes / 2;
                 var durationMilliseconds = sampleCount * 1000 / 16000;
-                State = errorKind.Contains("writer_failure", StringComparison.Ordinal)
-                    ? AudioCaptureState.Failed
-                    : AudioCaptureState.Finalized;
+                State = string.IsNullOrWhiteSpace(errorKind)
+                    || errorKind.Equals("audio_drain_timeout", StringComparison.Ordinal)
+                    ? AudioCaptureState.Finalized
+                    : AudioCaptureState.Failed;
                 return new AudioCaptureFinalization(
                     _outputPath,
                     sampleCount,
@@ -381,26 +424,20 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 }
 
                 _active = false;
-                _input.DataAvailable -= OnDataAvailable;
-                _input.RecordingStopped -= OnRecordingStopped;
-                try
-                {
-                    _input.StopRecording();
-                }
-                finally
-                {
-                    _input.Dispose();
-                    _writer.Dispose();
-                }
+                _writer.Dispose();
             }
         }
 
-        private void OnRecordingStopped(object? sender, StoppedEventArgs e)
+        public void SignalStopped(Exception? error)
         {
-            _stoppedSource.TrySetResult(e);
+            lock (_lock)
+            {
+                _deviceError = error;
+                _drainedSource.TrySetResult(true);
+            }
         }
 
-        private void OnDataAvailable(object? sender, WaveInEventArgs e)
+        public void Write(byte[] buffer, int bytesRecorded)
         {
             byte[] audioChunk;
             double audioLevel;
@@ -412,12 +449,11 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 }
 
                 _hasReceivedAudio = true;
-                _firstAudioSource.TrySetResult(true);
-                _writer.Write(e.Buffer, 0, e.BytesRecorded);
-                _writtenBytes += e.BytesRecorded;
-                audioChunk = new byte[e.BytesRecorded];
-                Buffer.BlockCopy(e.Buffer, 0, audioChunk, 0, e.BytesRecorded);
-                audioLevel = CalculateAudioLevel(e.Buffer, e.BytesRecorded);
+                _writer.Write(buffer, 0, bytesRecorded);
+                _writtenBytes += bytesRecorded;
+                audioChunk = new byte[bytesRecorded];
+                Buffer.BlockCopy(buffer, 0, audioChunk, 0, bytesRecorded);
+                audioLevel = CalculateAudioLevel(buffer, bytesRecorded);
             }
 
             _publishAudioChunk(audioChunk, audioLevel);
