@@ -436,6 +436,10 @@
 - Pattern: Stop finalization and next-stream warmup shared one exception path, so a failure preparing the next recording could suppress the valid recording that had just completed.
 - Rule: Treat current-session finalization and next-session readiness as separate outcomes. Return and transcribe finalized audio; surface the microphone problem when the next recording starts.
 
+## Replay identical audio before blaming microphone startup
+- Pattern: Five short recordings sounded like the first word was clipped, but the saved WAVs decoded correctly 5/5 with the stored base prompt. The worker's automatically duplicated 813-character vocabulary prompt changed the same audio into `Rest in`, `Resting`, and `listing`.
+- Rule: For apparent start-word loss, replay the exact retained WAV across the active prompt/VAD matrix. Change capture only if the waveform or prompt-controlled replay proves capture loss; keep Whisper prompts short and never append a second built-in vocabulary catalogue automatically.
+
 ## Make reliability findings durable, not memory-dependent
 - Pattern: Recurring dictation failures (repetition leaks, silent captures) lived only in conversation memory, so each agent rediscovered them.
 - Rule: Record symptoms, log evidence, code paths, reference-project findings, and fix directions in a tracked reference document (`docs/references/2026-08-16-dictation-reliability-known-issues.md`) and keep lessons in `tasks/lessons.md` so any future agent starts from tangible facts.

@@ -2483,4 +2483,16 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Focused tests pass (101); full suite passes (799); Release build passes with 0 warnings and 0 errors; `git diff --check` passes.
 - Canonical installed-app verification: one app plus one owned CUDA worker, `MIC ready using=Windows default`, 177 ms drain, 1.237 s recording produced a 1.768 s WAV (approximately 500 ms pre-roll), and no `whisper-cli` process.
 
+## Plan: Short-utterance prompt regression
+- [x] Preserve the five reported recordings and prove whether capture, VAD, or decoding changed `Testing`.
+- [x] Replay the same WAVs with and without VAD and with the exact worker prompt.
+- [x] Remove automatic duplication of the built-in vocabulary in the Whisper prompt while preserving user-entered custom terms.
+- [x] Run full verification, build and install the corrected candidate, and repeat the five-recording check.
+
+## Evidence: Short-utterance prompt regression
+- All five saved WAVs contained enough beginning audio: replay with the saved base prompt decoded `Testing one two three` 5/5 with VAD and 5/5 without VAD.
+- The running worker received an automatically expanded 813-character prompt that repeated the built-in terms and added another vocabulary block. Replaying the exact same WAVs with that prompt reproduced the live failures: `Rest in`, `Resting`, `listing`, `listing`, and only one `Testing`.
+- Root cause is prompt over-conditioning in `WhisperPromptBuilder`, not microphone startup, pre-roll, or VAD.
+- Corrected candidate uses the saved 498-character prompt unchanged with no duplicate block; full suite passes (799), Release build is clean, and the installed CUDA worker reaches Ready.
+
 # Task: Windows MVP Hotkey And Prerequisite Revision

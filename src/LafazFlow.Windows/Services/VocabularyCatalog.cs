@@ -3,8 +3,7 @@ namespace LafazFlow.Windows.Services;
 public sealed record VocabularyEntry(string Term, IReadOnlyList<string> HeardVariants);
 
 /// <summary>
-/// Single source of truth for the built-in vocabulary: the terms shown in the
-/// app's Vocabulary screen, the terms injected into the local Whisper prompt,
+/// Single source of truth for the terms shown in the app's Vocabulary screen
 /// and the deterministic heard-phrase corrections that normalize ASR drift.
 /// </summary>
 public static class VocabularyCatalog

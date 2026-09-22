@@ -11,14 +11,15 @@ public static class WhisperPromptBuilder
 
     public static string BuildVocabularyPrompt(string builtInPrompt, string customVocabularyTerms)
     {
-        var terms = NormalizeTerms(
-            VocabularyCatalog.DefaultTerms.Concat(SplitCustomTerms(customVocabularyTerms)));
-        if (terms.Count == 0)
+        var basePrompt = builtInPrompt.Trim();
+        var terms = NormalizeTerms(SplitCustomTerms(customVocabularyTerms))
+            .Where(term => !basePrompt.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (terms.Length == 0)
         {
-            return builtInPrompt.Trim();
+            return basePrompt;
         }
 
-        var basePrompt = builtInPrompt.Trim();
         var separator = basePrompt.EndsWith('.') ? " " : ". ";
         return $"{basePrompt}{separator}Custom vocabulary: {string.Join(", ", terms)}.";
     }

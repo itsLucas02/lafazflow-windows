@@ -6,22 +6,15 @@ namespace LafazFlow.Windows.Tests;
 public sealed class WhisperPromptBuilderTests
 {
     [Fact]
-    public void BuildVocabularyPromptIncludesDefaultVocabularyWhenCustomTermsAreEmpty()
+    public void BuildVocabularyPromptDoesNotDuplicateBuiltInVocabulary()
     {
         var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(AppSettings.Default with
         {
             CustomVocabularyTerms = ""
         });
 
-        Assert.StartsWith(AppSettings.DefaultWhisperInitialPrompt, prompt);
-        Assert.Contains("DeepSeek", prompt);
-        Assert.Contains("Supabase", prompt);
-        Assert.Contains("MediBrave", prompt);
-        Assert.Contains("roadmap", prompt);
-        Assert.Contains("roadmaps", prompt);
-        Assert.Contains("their", prompt);
-        Assert.Contains("there", prompt);
-        Assert.Contains("they're", prompt);
+        Assert.Equal(AppSettings.DefaultWhisperInitialPrompt, prompt);
+        Assert.DoesNotContain("Custom vocabulary:", prompt);
     }
 
     [Fact]
@@ -37,7 +30,6 @@ public sealed class WhisperPromptBuilderTests
                 """
         });
 
-        Assert.Contains("DeepSeek", prompt);
         Assert.Contains("PDPA, Care Visit, align, inline alert.", prompt);
     }
 
@@ -54,25 +46,24 @@ public sealed class WhisperPromptBuilderTests
                 """
         });
 
-        Assert.Contains("DeepSeek", prompt);
         Assert.Contains("PDPA, Align.", prompt);
         Assert.DoesNotContain("pdpa", prompt);
         Assert.DoesNotContain("align.", prompt);
     }
 
     [Fact]
-    public void BuildVocabularyPromptDeduplicatesCustomTermThatMatchesDefault()
+    public void BuildVocabularyPromptDoesNotAppendCustomTermAlreadyInBasePrompt()
     {
         var prompt = WhisperPromptBuilder.BuildVocabularyPrompt(AppSettings.Default with
         {
             CustomVocabularyTerms = """
-                deepseek
                 Supabase
+                supabase
                 PDPA
                 """
         });
 
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(prompt, "DeepSeek"));
-        Assert.Contains("they're, PDPA.", prompt);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(prompt, "Supabase", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        Assert.EndsWith("Custom vocabulary: PDPA.", prompt);
     }
 }
