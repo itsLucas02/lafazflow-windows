@@ -36,7 +36,16 @@ public static class AppVersionText
         }
     }
 
-    public static string Full => $"{Compact} ({CommitHash})";
+    public static string BuildNumber
+    {
+        get
+        {
+            var revision = Assembly.GetExecutingAssembly().GetName().Version?.Revision ?? 0;
+            return revision > 0 ? revision.ToString() : "release";
+        }
+    }
+
+    public static string Full => BuildNumber == "release" ? Compact : $"{Compact} build {BuildNumber}";
 
     public static string SettingsTitle => $"LafazFlow Settings - {Compact}";
 

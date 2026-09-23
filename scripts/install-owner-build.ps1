@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $stage = Join-Path $repoRoot "artifacts\owner-install\LafazFlow"
 $expectedCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
+$buildNumber = (& git -C $repoRoot rev-list --count v1.1.0..HEAD).Trim()
 
 Get-Process LafazFlow.Windows, lafazflow-whisper-worker, whisper-cli -ErrorAction SilentlyContinue |
     Stop-Process -Force
@@ -18,7 +19,7 @@ if (Test-Path -LiteralPath $stage) {
 }
 
 dotnet publish (Join-Path $repoRoot "src\LafazFlow.Windows\LafazFlow.Windows.csproj") `
-    -c Release -r win-x64 --self-contained true -o $stage
+    -c Release -r win-x64 --self-contained true -o $stage -p:LafazFlowBuildNumber=$buildNumber
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
 
 $cudaCli = Join-Path $CudaDirectory "whisper-cli.exe"
@@ -57,4 +58,6 @@ if (-not [string]::Equals($runningPath, $installedExe, [StringComparison]::Ordin
     throw "Wrong LafazFlow build is running: $runningPath"
 }
 
-Write-Host "Installed and launched LafazFlow $installedVersion from $installedExe"
+$assemblyVersion = [Reflection.AssemblyName]::GetAssemblyName((Join-Path $InstallDirectory "LafazFlow.Windows.dll")).Version
+$friendlyVersion = "v$($assemblyVersion.Major).$($assemblyVersion.Minor).$($assemblyVersion.Build) build $($assemblyVersion.Revision)"
+Write-Host "Installed and launched LafazFlow $friendlyVersion from $installedExe"

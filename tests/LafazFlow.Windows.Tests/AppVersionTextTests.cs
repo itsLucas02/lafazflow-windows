@@ -32,9 +32,18 @@ public sealed class AppVersionTextTests
     }
 
     [Fact]
-    public void FullVersionIncludesCompactVersionAndCommit()
+    public void FullVersionIncludesReadableSequentialBuild()
     {
-        Assert.Equal($"{AppVersionText.Compact} ({AppVersionText.CommitHash})", AppVersionText.Full);
+        var expected = AppVersionText.BuildNumber == "release"
+            ? AppVersionText.Compact
+            : $"{AppVersionText.Compact} build {AppVersionText.BuildNumber}";
+        Assert.Equal(expected, AppVersionText.Full);
         Assert.StartsWith("v", AppVersionText.Full);
+    }
+
+    [Fact]
+    public void BuildNumberIsSequentialOrDevelopmentFallback()
+    {
+        Assert.Matches(@"^(\d+|release)$", AppVersionText.BuildNumber);
     }
 }

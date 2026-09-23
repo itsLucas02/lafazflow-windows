@@ -65,7 +65,7 @@ Ready-to-run Windows builds are published on the [Releases](https://github.com/i
 - `LafazFlow-<version>-win-x64-portable.zip` — unzip and run, no installation needed.
 - `LafazFlow-<version>-setup.exe` — installer with Start Menu and desktop shortcuts.
 
-> **Version note:** the latest published release is **v1.1.0**. Development on the `main` branch is ahead at **v1.1.1** and may not yet have a matching downloadable build. Download from the Releases page unless you are building from source.
+> **Version note:** the latest published release is **v1.1.0**. Development on the `main` branch is ahead at **v1.1.2** and may not yet have a matching downloadable build. Download from the Releases page unless you are building from source.
 
 Windows 10/11 (64-bit) is supported. End users do not need the .NET SDK; releases are self-contained. Whisper model files are downloaded separately from inside the app (Settings > Models) and are never bundled.
 

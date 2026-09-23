@@ -8,8 +8,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Resources\Icons\LafazFlow.ico</ApplicationIcon>
-    <Version>1.1.1</Version>
-    <InformationalVersion>1.1.1</InformationalVersion>
+    <Version>1.1.2</Version>
+    <InformationalVersion>1.1.2</InformationalVersion>
+    <AssemblyVersion Condition="'$(LafazFlowBuildNumber)' != ''">$(Version).$(LafazFlowBuildNumber)</AssemblyVersion>
   </PropertyGroup>
 
   <Target Name="CaptureGitCommit" BeforeTargets="GenerateAssemblyInfo">
