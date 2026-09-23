@@ -5,12 +5,6 @@ namespace LafazFlow.Windows.Tests;
 public sealed class WhisperPipeProtocolTests
 {
     [Fact]
-    public void UncertainStatusHasStableProtocolValue()
-    {
-        Assert.Equal(7, (byte)WhisperPipeStatus.Uncertain);
-    }
-
-    [Fact]
     public void RequestRoundTripsThroughCodec()
     {
         var request = new WhisperPipeRequest(

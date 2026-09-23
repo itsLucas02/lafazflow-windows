@@ -20,8 +20,7 @@ public enum WhisperPipeStatus : byte
     Busy = 3,
     InternalError = 4,
     Timeout = 5,
-    Unavailable = 6,
-    Uncertain = 7
+    Unavailable = 6
 }
 
 public static class WhisperPipeProtocol

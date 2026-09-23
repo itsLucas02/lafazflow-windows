@@ -25,8 +25,6 @@
 #include <sddl.h>
 
 #include <atomic>
-#include <algorithm>
-#include <cctype>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
@@ -60,8 +58,7 @@ enum Status : std::uint8_t {
     StatusBusy = 3,
     StatusInternalError = 4,
     StatusTimeout = 5,
-    StatusUnavailable = 6,
-    StatusUncertain = 7
+    StatusUnavailable = 6
 };
 
 constexpr std::uint32_t kAudioFormatPcm16kMono = 1;
@@ -87,8 +84,6 @@ int g_vad_min_speech_duration_ms = 250;
 int g_vad_min_silence_duration_ms = 100;
 int g_vad_speech_pad_ms = 30;
 float g_vad_samples_overlap = 0.10f;
-constexpr int kShortDictationTokenLimit = 4;
-constexpr float kShortDictationFirstTokenConfidence = 0.50f;
 
 #ifdef LAFAZFLOW_WORKER_CUDA_BUILD
 const char* g_compiled_backend = "cuda";
@@ -441,8 +436,6 @@ void Transcribe(HANDLE pipe, const Frame& frame) {
     }
 
     std::string text;
-    int lexical_tokens = 0;
-    float first_lexical_probability = 1.0f;
     const int segments = whisper_full_n_segments(g_ctx);
     for (int i = 0; i < segments; i++) {
         const char* segment = whisper_full_get_segment_text(g_ctx, i);
@@ -452,32 +445,10 @@ void Transcribe(HANDLE pipe, const Frame& frame) {
             }
             text += segment;
         }
-        const int tokens = whisper_full_n_tokens(g_ctx, i);
-        for (int token_index = 0; token_index < tokens; token_index++) {
-            const char* token_text = whisper_full_get_token_text(g_ctx, i, token_index);
-            if (token_text == nullptr
-                || std::none_of(token_text, token_text + std::strlen(token_text),
-                    [](unsigned char value) { return std::isalnum(value) != 0; })) {
-                continue;
-            }
-            if (lexical_tokens++ == 0) {
-                first_lexical_probability = whisper_full_get_token_p(g_ctx, i, token_index);
-            }
-        }
     }
     g_completed_requests++;
     g_last_failure = "none";
     whisper_reset_timings(g_ctx);
-    std::fprintf(stderr, "worker: confidence lexical_tokens=%d first_token=%.3f\n",
-        lexical_tokens, first_lexical_probability);
-    if (frame.kind == OpFinal
-        && lexical_tokens <= kShortDictationTokenLimit
-        && first_lexical_probability < kShortDictationFirstTokenConfidence) {
-        const std::string reason = "low_first_token_confidence";
-        SendResponse(pipe, frame.kind, StatusUncertain, frame.request_id, frame.session_id, g_fingerprint,
-            std::vector<std::uint8_t>(reason.begin(), reason.end()));
-        return;
-    }
     SendResponse(pipe, frame.kind, StatusOk, frame.request_id, frame.session_id, g_fingerprint,
         std::vector<std::uint8_t>(text.begin(), text.end()));
 }
