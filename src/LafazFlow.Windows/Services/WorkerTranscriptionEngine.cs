@@ -48,6 +48,12 @@ public sealed class WorkerTranscriptionEngine : ITranscriptionEngine
                     null),
                 WhisperPipeStatus.Aborted => new TranscriptionEngineResult("", false, "aborted", null, null),
                 WhisperPipeStatus.Unavailable => new TranscriptionEngineResult("", false, "worker_unavailable", null, null),
+                WhisperPipeStatus.Uncertain => new TranscriptionEngineResult(
+                    "",
+                    false,
+                    "Transcription was uncertain, so nothing was pasted. Please try again.",
+                    null,
+                    null),
                 _ => new TranscriptionEngineResult(
                     "",
                     false,
