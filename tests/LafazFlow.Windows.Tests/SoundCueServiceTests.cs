@@ -215,6 +215,10 @@ public sealed class SoundCueServiceTests
             PlayedPath = path;
             Volume = volume;
         }
+
+        public void StopAll()
+        {
+        }
     }
 
     private sealed class ThrowingSoundCuePlayer : ISoundCuePlayer
@@ -222,6 +226,10 @@ public sealed class SoundCueServiceTests
         public void Play(string path, float volume)
         {
             throw new InvalidOperationException("Audio output unavailable.");
+        }
+
+        public void StopAll()
+        {
         }
     }
 

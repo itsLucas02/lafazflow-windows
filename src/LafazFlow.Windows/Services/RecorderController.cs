@@ -173,6 +173,7 @@ public sealed class RecorderController
 
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingStart);
         _runCancellation = new CancellationTokenSource();
+        _soundCues.StopAll();
         var recordingsRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",

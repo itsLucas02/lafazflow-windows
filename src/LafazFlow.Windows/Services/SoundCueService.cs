@@ -16,6 +16,8 @@ public enum SoundCueKind
 public interface ISoundCuePlayer
 {
     void Play(string path, float volume);
+
+    void StopAll();
 }
 
 public readonly record struct SoundCueOptions(
@@ -79,6 +81,11 @@ public sealed class SoundCueService
     public void PlayError(SoundCueOptions? options = null)
     {
         Play(SoundCueKind.Error, options);
+    }
+
+    public void StopAll()
+    {
+        _player.StopAll();
     }
 
     public void Play(SoundCueKind kind, SoundCueOptions? options = null)
@@ -185,6 +192,14 @@ public sealed class SoundCueService
                 {
                     _output.Play();
                 }
+            }
+        }
+
+        public void StopAll()
+        {
+            lock (_syncRoot)
+            {
+                _mixer?.RemoveAllMixerInputs();
             }
         }
 

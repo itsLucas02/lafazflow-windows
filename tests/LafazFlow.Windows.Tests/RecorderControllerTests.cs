@@ -356,6 +356,26 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public void StartingRecordingStopsSoundFromPreviousSession()
+    {
+        var soundPlayer = new RecordingSoundCuePlayer();
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService("first.wav"),
+            new FakeTranscriptionService(_ => Task.FromResult("hello")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            CreateSoundCueService(soundPlayer),
+            () => (IntPtr)111);
+
+        controller.StartRecording();
+
+        Assert.Equal(1, soundPlayer.StopCount);
+        Assert.Empty(soundPlayer.PlayedPaths);
+    }
+
+    [Fact]
     public async Task SoundCuesCanBeDisabledFromSettings()
     {
         var viewModel = new MiniRecorderViewModel();
@@ -1470,10 +1490,17 @@ public sealed class RecorderControllerTests
 
         public List<float> Volumes { get; } = [];
 
+        public int StopCount { get; private set; }
+
         public void Play(string path, float volume)
         {
             PlayedPaths.Add(path);
             Volumes.Add(volume);
+        }
+
+        public void StopAll()
+        {
+            StopCount++;
         }
     }
 
