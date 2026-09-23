@@ -46,3 +46,8 @@
 - Simplicity First: Make every change as simple as possible. Impact minimal code.
 - No Laziness: Find root causes. No temporary fixes. Senior developer standards.
 - Minimal Impact: Changes should only touch what's necessary. Avoid introducing bugs.
+
+## Owner-local delivery
+- After every successful owner-local implementation, run the relevant tests, commit the final source, then run `scripts/install-owner-build.ps1` before pushing or reporting completion.
+- The script must update and launch `C:\Users\User\AppData\Local\Programs\LafazFlow\LafazFlow.Windows.exe`, which is the executable targeted by the owner's taskbar pin. A build left only in `artifacts` is not delivered.
+- Commit and push verified changes directly to `main`; do not create another branch.

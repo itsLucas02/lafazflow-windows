@@ -37,6 +37,20 @@ public sealed class ReleasePackagingSourceTests
     }
 
     [Fact]
+    public void OwnerInstallScriptUpdatesCanonicalTaskbarTargetAndRejectsStaleBuild()
+    {
+        var repoRoot = FindRepoRoot();
+        var script = File.ReadAllText(Path.Combine(repoRoot, "scripts", "install-owner-build.ps1"));
+
+        Assert.Contains("Programs\\LafazFlow", script);
+        Assert.Contains("User Pinned\\TaskBar\\LafazFlow.lnk", script);
+        Assert.Contains("ProductVersion", script);
+        Assert.Contains("expectedCommit", script);
+        Assert.Contains("Get-Process LafazFlow.Windows", script);
+        Assert.Contains("Start-Process -FilePath $installedExe", script);
+    }
+
+    [Fact]
     public void ReleaseWorkflowBuildsPackagesAndPublishesArtifacts()
     {
         var repoRoot = FindRepoRoot();
