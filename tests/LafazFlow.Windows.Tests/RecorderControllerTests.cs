@@ -315,7 +315,7 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
-    public async Task StopShowsProcessingCueBeforeAudioStopCompletes()
+    public async Task SoundCueDoesNotPlayWhileMicrophoneIsOpen()
     {
         var viewModel = new MiniRecorderViewModel();
         var window = new FakeMiniRecorderWindow();
@@ -350,8 +350,9 @@ public sealed class RecorderControllerTests
 
         Assert.Equal(RecordingState.Transcribing, stateDuringStop);
         Assert.True(showProcessingDuringStop);
-        Assert.EndsWith("recstop.wav", playedPathsDuringStop.Last());
+        Assert.Empty(playedPathsDuringStop);
         Assert.False(stopCompletedDuringStop);
+        Assert.EndsWith("pastess.mp3", soundPlayer.PlayedPaths.Last());
     }
 
     [Fact]
@@ -401,7 +402,6 @@ public sealed class RecorderControllerTests
 
         Assert.Collection(
             soundPlayer.Volumes,
-            volume => Assert.Equal(0.8f, volume, precision: 6),
             volume => Assert.Equal(0.8f, volume, precision: 6),
             volume => Assert.Equal(1.0f, volume, precision: 6));
     }

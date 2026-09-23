@@ -196,7 +196,6 @@ public sealed class RecorderController
         }
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
-        _soundCues.PlayRecordingStarted(SoundCueOptions.FromSettings(settings));
         _window.ShowBottomCenter();
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
         StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
@@ -291,7 +290,6 @@ public sealed class RecorderController
         _targetWindow = IntPtr.Zero;
         _runCancellation = null;
         _viewModel.State = RecordingState.Transcribing;
-        _soundCues.PlayTranscribingStarted(SoundCueOptions.FromSettings(settings));
         _window.ShowBottomCenter();
         _stopHandoffTask = Task.Run(async () =>
         {
@@ -301,6 +299,7 @@ public sealed class RecorderController
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainStarted);
                 var finalization = await _audioCapture.StopAsync();
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainFinished);
+                _soundCues.PlayTranscribingStarted(SoundCueOptions.FromSettings(settings));
                 latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeStarted);
                 latencyTrace?.Mark(LatencyCheckpoint.WaveFinalizeFinished);
                 if (finalization.State == AudioCaptureFinalizeState.Failed)
