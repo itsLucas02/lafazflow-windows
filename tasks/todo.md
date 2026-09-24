@@ -2502,3 +2502,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Identify the installed/source mismatch that left the microphone fixes unavailable to the taskbar-launched app.
 - [x] Add one owner-install command that publishes CUDA, updates the canonical path, validates the embedded commit, repairs the taskbar target, and launches that exact executable.
 - [x] Run tests and build, commit, install from the final commit, verify the running path/version/worker, and push `main`.
+
+## Plan: First-word capture diagnostics
+- [x] Log privacy-safe callback timing, sequence, pre-roll bytes, endpoint identity/format, and onset signal metrics for each finalized WAV.
+- [x] Cover metric extraction and capture handoff with focused tests (14 focused and 803 total pass; Release build clean).
+- [ ] Run the full suite and Release build, install the canonical owner build, and verify real-microphone diagnostic output.
+- [ ] Use a labeled crackling recording to identify the faulty capture layer before changing the audio backend.

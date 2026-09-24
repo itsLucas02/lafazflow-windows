@@ -1,4 +1,8 @@
 using System.IO;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
 namespace LafazFlow.Windows.Services;
@@ -16,12 +20,15 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
     private CaptureSession? _stoppingSession;
     private IAudioInputDevice? _warmInput;
     private string _warmPreference = "";
+    private string _warmDeviceDescription = "unknown";
     private bool _warmAvailable;
     private int _warmGeneration;
     private EventHandler<WaveInEventArgs>? _warmDataHandler;
     private EventHandler<StoppedEventArgs>? _warmStoppedHandler;
     private readonly Queue<byte> _preRoll = new(PreRollBytes);
     private TaskCompletionSource<bool> _warmAudioSource = NewAudioSource();
+    private long _callbackSequence;
+    private long _lastCallbackTimestamp;
 
     public AudioCaptureService()
         : this(
@@ -73,7 +80,9 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             var writer = _createWriter(outputPath, _warmInput!.WaveFormat);
             try
             {
-                session = new CaptureSession(writer, PublishAudioChunk, outputPath, [.. _preRoll]);
+                session = new CaptureSession(
+                    writer, PublishAudioChunk, outputPath, [.. _preRoll],
+                    _callbackSequence, _warmDeviceDescription, _warmInput.WaveFormat);
             }
             catch
             {
@@ -115,6 +124,14 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         }
 
         var finalization = await session.StopAsync(_stopDeadline);
+        try
+        {
+            LogCaptureFailure(session.DiagnosticSummary(finalization));
+        }
+        catch
+        {
+            // Diagnostics must never prevent a finalized recording from reaching transcription.
+        }
         lock (_sessionLock)
         {
             _stoppingSession = null;
@@ -206,6 +223,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             ActiveInputDeviceName = deviceIndex.HasValue
                 ? MicrophoneDeviceCatalog.ListDevices().FirstOrDefault(device => device.Index == deviceIndex.Value)?.Name
                 : "Windows default";
+            _warmDeviceDescription = CaptureDeviceDescription();
             input.StartRecording();
         }
         catch
@@ -233,11 +251,14 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         _warmStoppedHandler = null;
         _preRoll.Clear();
         _warmAudioSource = NewAudioSource();
+        _lastCallbackTimestamp = 0;
     }
 
     private void OnWarmDataAvailable(int generation, WaveInEventArgs e)
     {
         CaptureSession? session;
+        long sequence;
+        double callbackGapMs;
         lock (_sessionLock)
         {
             if (generation != _warmGeneration)
@@ -245,6 +266,12 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                 return;
             }
 
+            var timestamp = Stopwatch.GetTimestamp();
+            callbackGapMs = _lastCallbackTimestamp == 0
+                ? 0
+                : Stopwatch.GetElapsedTime(_lastCallbackTimestamp, timestamp).TotalMilliseconds;
+            _lastCallbackTimestamp = timestamp;
+            sequence = ++_callbackSequence;
             foreach (var value in e.Buffer.AsSpan(0, e.BytesRecorded))
             {
                 if (_preRoll.Count == PreRollBytes)
@@ -258,7 +285,22 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             session = _activeSession ?? _stoppingSession;
         }
 
-        session?.Write(e.Buffer, e.BytesRecorded);
+        session?.Write(e.Buffer, e.BytesRecorded, sequence, callbackGapMs);
+    }
+
+    private string CaptureDeviceDescription()
+    {
+        try
+        {
+            using var devices = new MMDeviceEnumerator();
+            using var endpoint = devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
+            var id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.ID)))[..12];
+            return $"{ActiveInputDeviceName};default={endpoint.FriendlyName};endpoint={id};mix={endpoint.AudioClient.MixFormat}";
+        }
+        catch
+        {
+            return ActiveInputDeviceName ?? "unknown";
+        }
     }
 
     private void OnWarmRecordingStopped(int generation, StoppedEventArgs e)
@@ -316,6 +358,16 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         private readonly TaskCompletionSource<bool> _drainedSource =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly string _outputPath;
+        private readonly long _startCallbackSequence;
+        private readonly int _preRollBytes;
+        private readonly string _device;
+        private readonly WaveFormat _format;
+        private long _firstCallbackSequence;
+        private long _lastCallbackSequence;
+        private int _callbackCount;
+        private int _lateCallbackCount;
+        private int _misalignedCallbackCount;
+        private double _maxCallbackGapMs;
         private bool _active = true;
         private bool _hasReceivedAudio;
         private long _writtenBytes;
@@ -329,11 +381,18 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             IAudioCaptureWriter writer,
             Action<byte[], double> publishAudioChunk,
             string outputPath,
-            byte[] preRoll)
+            byte[] preRoll,
+            long startCallbackSequence,
+            string device,
+            WaveFormat format)
         {
             _writer = writer;
             _publishAudioChunk = publishAudioChunk;
             _outputPath = outputPath;
+            _startCallbackSequence = startCallbackSequence;
+            _preRollBytes = preRoll.Length;
+            _device = device;
+            _format = format;
             if (preRoll.Length > 0)
             {
                 _writer.Write(preRoll, 0, preRoll.Length);
@@ -437,7 +496,24 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             }
         }
 
-        public void Write(byte[] buffer, int bytesRecorded)
+        public string DiagnosticSummary(AudioCaptureFinalization finalization)
+        {
+            lock (_lock)
+            {
+                var signal = CaptureOnsetMetrics.Analyze(_outputPath, _preRollBytes);
+                return $"CAPTURE state={finalization.State} device={_device} format={_format} " +
+                    $"start_seq={_startCallbackSequence} first_seq={_firstCallbackSequence} last_seq={_lastCallbackSequence} " +
+                    $"callbacks={_callbackCount} pre_roll_bytes={_preRollBytes} max_callback_gap_ms={_maxCallbackGapMs:F1} " +
+                    $"late_callbacks={_lateCallbackCount} misaligned_callbacks={_misalignedCallbackCount} " +
+                    $"first_above_0_1pct_sample={signal.FirstAbovePointOnePercentSample} " +
+                    $"first_above_1pct_sample={signal.FirstAboveOnePercentSample} " +
+                    $"boundary_jump_pcm={signal.BoundaryJumpPcm} " +
+                    $"onset_100ms_rms={signal.RmsFirst100:F4} onset_100ms_peak={signal.PeakFirst100:F4} " +
+                    $"onset_500ms_rms={signal.RmsFirst500:F4} onset_500ms_peak={signal.PeakFirst500:F4}";
+            }
+        }
+
+        public void Write(byte[] buffer, int bytesRecorded, long sequence, double callbackGapMs)
         {
             byte[] audioChunk;
             double audioLevel;
@@ -448,6 +524,13 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
                     return;
                 }
 
+                if (_callbackCount == 0) _firstCallbackSequence = sequence;
+                _lastCallbackSequence = sequence;
+                _callbackCount++;
+                _maxCallbackGapMs = Math.Max(_maxCallbackGapMs, callbackGapMs);
+                var expectedMs = bytesRecorded * 1000.0 / _format.AverageBytesPerSecond;
+                if (callbackGapMs > expectedMs + 25) _lateCallbackCount++;
+                if (bytesRecorded % _format.BlockAlign != 0) _misalignedCallbackCount++;
                 _hasReceivedAudio = true;
                 _writer.Write(buffer, 0, bytesRecorded);
                 _writtenBytes += bytesRecorded;
