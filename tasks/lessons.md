@@ -452,3 +452,7 @@
 - Pattern: Real-worker integration tests asserted exact normalized transcripts and strict `Aborted` outcomes; whisper's VAD shifted a fixture's first word between builds ("please" → "at least") and fast decodes finished before a cancel arrived, making the suite intermittently red.
 - Rule: Assert substantive equivalence for ASR output (edit-distance ratio plus preserved ending) and treat cancellation/preemption as best-effort (accept `Aborted` or `Ok`), while keeping strict checks on the invariants that matter — worker health after cancel and final-never-waits-behind-preview.
 - A source commit is not an owner-local rollout. Every successful LafazFlow change must finish through `scripts/install-owner-build.ps1`, verify the installed product version contains current `HEAD`, and launch the same canonical executable targeted by the taskbar pin.
+
+## Treat continuing first-word failures as a capture-path failure until hardware proves otherwise
+- Pattern: A diagnostic-only rollout left the owner with repeated first-word omissions, while failed saved WAVs audibly crackled at onset. Clean pre-roll boundaries and callback counts did not make the 16 kHz legacy WaveIn path reliable.
+- Rule: When a captured WAV itself damages the opening, test the native microphone format and capture API on real hardware, preserve the full WAV for transcription, and require repeated owner-spoken acceptance phrases before claiming the issue fixed.

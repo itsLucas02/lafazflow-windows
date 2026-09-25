@@ -2508,3 +2508,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Cover metric extraction and capture handoff with focused tests (14 focused and 803 total pass; Release build clean).
 - [ ] Run the full suite and Release build, install the canonical owner build, and verify real-microphone diagnostic output.
 - [ ] Use a labeled crackling recording to identify the faulty capture layer before changing the audio backend.
+
+## Plan: Native-format microphone capture replacement
+- [x] Replace legacy WaveIn capture with shared-mode WASAPI at the endpoint's native format and resample to existing 16 kHz PCM.
+- [x] Verify synthetic native mono/stereo conversion and live microphone callback/drain.
+- [ ] Run the full suite and Release build; install the owner build and verify process, worker, taskbar, and capture log.
+- [ ] Repeatedly test immediate opening phrases with the owner and compare failed/successful WAVs before calling this a fix.

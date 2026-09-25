@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace LafazFlow.Windows.Services;
 
@@ -32,7 +33,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
     public AudioCaptureService()
         : this(
-            _ => new WaveInAudioInputDevice(_ ?? -1),
+            _ => new WasapiAudioInputDevice(_ ?? -1),
             (path, format) => new WaveFileAudioCaptureWriter(path, format),
             null)
     {
@@ -293,7 +294,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         try
         {
             using var devices = new MMDeviceEnumerator();
-            using var endpoint = devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
+            using var endpoint = devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Console);
             var id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.ID)))[..12];
             return $"{ActiveInputDeviceName};default={endpoint.FriendlyName};endpoint={id};mix={endpoint.AudioClient.MixFormat}";
         }
@@ -574,39 +575,101 @@ internal interface IAudioCaptureWriter : IDisposable
     void Write(byte[] buffer, int offset, int count);
 }
 
-internal sealed class WaveInAudioInputDevice : IAudioInputDevice
+internal sealed class WasapiAudioInputDevice : IAudioInputDevice
 {
-    private readonly WaveInEvent _waveIn;
+    private readonly WasapiCapture _capture;
+    private readonly NativePcm16Resampler _converter;
 
-    public WaveInAudioInputDevice(int deviceIndex = -1)
+    public WasapiAudioInputDevice(int deviceIndex = -1)
     {
-        _waveIn = new WaveInEvent
+        using var enumerator = new MMDeviceEnumerator();
+        var endpoints = enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active);
+        var endpoint = deviceIndex < 0
+            ? enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Console)
+            : endpoints[deviceIndex];
+        _capture = new WasapiCapture(endpoint, useEventSync: true, audioBufferMillisecondsLength: 50);
+        try { _converter = new NativePcm16Resampler(_capture.WaveFormat); }
+        catch { _capture.Dispose(); throw; }
+        _capture.DataAvailable += (_, args) =>
+            _converter.Add(args.Buffer, args.BytesRecorded, Publish);
+        _capture.RecordingStopped += (_, args) =>
         {
-            DeviceNumber = deviceIndex,
-            WaveFormat = new WaveFormat(16000, 16, 1),
-            BufferMilliseconds = 50
+            var stopped = args;
+            try
+            {
+                if (args.Exception is null) _converter.Flush(Publish);
+            }
+            catch (Exception error)
+            {
+                stopped = new StoppedEventArgs(error);
+            }
+            RecordingStopped?.Invoke(this, stopped);
         };
     }
 
-    public event EventHandler<WaveInEventArgs>? DataAvailable
+    public event EventHandler<WaveInEventArgs>? DataAvailable;
+
+    public event EventHandler<StoppedEventArgs>? RecordingStopped;
+
+    public WaveFormat WaveFormat { get; } = new(16000, 16, 1);
+
+    public void StartRecording() => _capture.StartRecording();
+
+    public void StopRecording() => _capture.StopRecording();
+
+    public void Dispose() => _capture.Dispose();
+
+    private void Publish(byte[] pcm) => DataAvailable?.Invoke(this, new WaveInEventArgs(pcm, pcm.Length));
+}
+
+internal sealed class NativePcm16Resampler
+{
+    private readonly BufferedWaveProvider _nativeBuffer;
+    private readonly WdlResamplingSampleProvider _resampler;
+    private readonly byte[] _flushBuffer;
+    private readonly float[] _samples = new float[3200];
+
+    public NativePcm16Resampler(WaveFormat nativeFormat)
     {
-        add => _waveIn.DataAvailable += value;
-        remove => _waveIn.DataAvailable -= value;
+        if (nativeFormat.Channels is < 1 or > 2)
+            throw new NotSupportedException($"Unsupported microphone channel count: {nativeFormat.Channels}");
+
+        _flushBuffer = new byte[(nativeFormat.AverageBytesPerSecond / 20 / nativeFormat.BlockAlign) * nativeFormat.BlockAlign];
+        _nativeBuffer = new BufferedWaveProvider(nativeFormat)
+        {
+            ReadFully = false,
+            BufferDuration = TimeSpan.FromSeconds(2)
+        };
+        ISampleProvider samples = _nativeBuffer.ToSampleProvider();
+        if (nativeFormat.Channels == 2)
+        {
+            samples = new StereoToMonoSampleProvider(samples) { LeftVolume = 0.5f, RightVolume = 0.5f };
+        }
+        _resampler = new WdlResamplingSampleProvider(samples, 16000);
     }
 
-    public event EventHandler<StoppedEventArgs>? RecordingStopped
+    public void Add(byte[] nativePcm, int count, Action<byte[]> publish)
     {
-        add => _waveIn.RecordingStopped += value;
-        remove => _waveIn.RecordingStopped -= value;
+        _nativeBuffer.AddSamples(nativePcm, 0, count);
+        Drain(publish);
     }
 
-    public WaveFormat WaveFormat => _waveIn.WaveFormat;
+    public void Flush(Action<byte[]> publish) => Add(_flushBuffer, _flushBuffer.Length, publish);
 
-    public void StartRecording() => _waveIn.StartRecording();
-
-    public void StopRecording() => _waveIn.StopRecording();
-
-    public void Dispose() => _waveIn.Dispose();
+    private void Drain(Action<byte[]> publish)
+    {
+        int count;
+        while ((count = _resampler.Read(_samples, 0, _samples.Length)) > 0)
+        {
+            var pcm = new byte[count * 2];
+            for (var index = 0; index < count; index++)
+            {
+                var value = (short)Math.Clamp((int)Math.Round(_samples[index] * 32768), short.MinValue, short.MaxValue);
+                BitConverter.TryWriteBytes(pcm.AsSpan(index * 2, 2), value);
+            }
+            publish(pcm);
+        }
+    }
 }
 
 internal sealed class WaveFileAudioCaptureWriter : IAudioCaptureWriter

@@ -26,4 +26,17 @@ public sealed class MicrophoneDeviceCatalogTests
         Assert.Null(MicrophoneDeviceCatalog.ResolveIndex("", devices));
         Assert.Null(MicrophoneDeviceCatalog.ResolveIndex("Unknown Mic", devices));
     }
+
+    [Fact]
+    public void ExactEndpointNameWinsOverLegacyTruncatedPrefix()
+    {
+        var devices = new[]
+        {
+            new MicrophoneDeviceInfo(0, "Microphone Pro"),
+            new MicrophoneDeviceInfo(1, "Microphone")
+        };
+
+        Assert.Equal(1, MicrophoneDeviceCatalog.ResolveIndex("Microphone", devices));
+        Assert.Equal(0, MicrophoneDeviceCatalog.ResolveIndex("Microphone P", devices));
+    }
 }
