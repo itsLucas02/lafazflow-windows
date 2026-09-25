@@ -203,7 +203,7 @@ public sealed class RuntimeEnvironmentProbe : IRuntimeEnvironmentProbe
     {
         try
         {
-            return WaveInEvent.DeviceCount;
+            return WaveIn.DeviceCount;
         }
         catch
         {

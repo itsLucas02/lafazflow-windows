@@ -300,8 +300,9 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         {
             using var devices = new MMDeviceEnumerator();
             using var endpoint = devices.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Console);
+            using var client = endpoint.CreateAudioClient();
             var id = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(endpoint.ID)))[..12];
-            return $"{ActiveInputDeviceName};default={endpoint.FriendlyName};endpoint={id};mix={endpoint.AudioClient.MixFormat}";
+            return $"{ActiveInputDeviceName};default={endpoint.FriendlyName};endpoint={id};mix={client.MixFormat}";
         }
         catch
         {
@@ -582,7 +583,7 @@ internal interface IAudioCaptureWriter : IDisposable
 
 internal sealed class WasapiAudioInputDevice : IAudioInputDevice
 {
-    private readonly WasapiCapture _capture;
+    private readonly WasapiRecorder _capture;
     private readonly NativePcm16Resampler _converter;
     private readonly object _traceLock = new();
     private WaveFileWriter? _nativeTrace;
@@ -595,19 +596,25 @@ internal sealed class WasapiAudioInputDevice : IAudioInputDevice
         var endpoint = deviceIndex < 0
             ? enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Console)
             : endpoints[deviceIndex];
-        _capture = new WasapiCapture(endpoint, useEventSync: true, audioBufferMillisecondsLength: 50);
+        _capture = new WasapiRecorderBuilder()
+            .WithDevice(endpoint)
+            .WithRawMode()
+            .WithBufferLength(50)
+            .WithMmcssThreadPriority("Audio")
+            .Build();
         try { _converter = new NativePcm16Resampler(_capture.WaveFormat); }
         catch { _capture.Dispose(); throw; }
-        _capture.DataAvailable += (_, args) =>
+        _capture.DataAvailable += (buffer, _, _, _) =>
         {
+            var native = buffer.ToArray();
             lock (_traceLock)
             {
                 if (_nativeTrace is not null && _traceBytesRemaining > 0)
                 {
                     try
                     {
-                        var count = Math.Min(args.BytesRecorded, _traceBytesRemaining);
-                        _nativeTrace.Write(args.Buffer, 0, count);
+                        var count = Math.Min(native.Length, _traceBytesRemaining);
+                        _nativeTrace.Write(native, 0, count);
                         _traceBytesRemaining -= count;
                     }
                     catch
@@ -617,7 +624,7 @@ internal sealed class WasapiAudioInputDevice : IAudioInputDevice
                     }
                 }
             }
-            _converter.Add(args.Buffer, args.BytesRecorded, Publish);
+            _converter.Add(native, native.Length, Publish);
         };
         _capture.RecordingStopped += (_, args) =>
         {
@@ -690,8 +697,7 @@ internal sealed class NativePcm16Resampler
         _flushBuffer = new byte[(nativeFormat.AverageBytesPerSecond / 20 / nativeFormat.BlockAlign) * nativeFormat.BlockAlign];
         _nativeBuffer = new BufferedWaveProvider(nativeFormat)
         {
-            ReadFully = false,
-            BufferDuration = TimeSpan.FromSeconds(2)
+            ReadFully = false
         };
         ISampleProvider samples = _nativeBuffer.ToSampleProvider();
         if (nativeFormat.Channels == 2)
@@ -712,7 +718,7 @@ internal sealed class NativePcm16Resampler
     private void Drain(Action<byte[]> publish)
     {
         int count;
-        while ((count = _resampler.Read(_samples, 0, _samples.Length)) > 0)
+        while ((count = _resampler.Read(_samples)) > 0)
         {
             var pcm = new byte[count * 2];
             for (var index = 0; index < count; index++)

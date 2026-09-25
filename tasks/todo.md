@@ -2514,4 +2514,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Verify synthetic native mono/stereo conversion and live microphone callback/drain.
 - [ ] Run the full suite and Release build; install the owner build and verify process, worker, taskbar, and capture log.
 - [ ] Repeatedly test immediate opening phrases with the owner and compare failed/successful WAVs before calling this a fix.
-- [ ] Compare a failed build-23 native-format trace with its converted WAV to locate the remaining opening loss.
+- [x] Compare failed build-23 native-format traces with converted WAVs; the loss precedes resampling.
+
+## Plan: Bypass Windows capture effects
+- [x] Confirm build-23 native and 16 kHz audio match on failed opening trials (correlation above 0.995).
+- [x] Open the Razer microphone in supported WASAPI raw mode and pass the real-device capture/drain check.
+- [ ] Install the raw-mode build and validate repeated immediate openings, long dictation, sounds, worker latency, and paste.

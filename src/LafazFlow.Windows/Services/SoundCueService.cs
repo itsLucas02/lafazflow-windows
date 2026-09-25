@@ -149,7 +149,7 @@ public sealed class SoundCueService
     {
         private readonly object _syncRoot = new();
         private readonly Dictionary<string, CachedSound> _cache = new(StringComparer.OrdinalIgnoreCase);
-        private readonly WaveOutEvent? _output;
+        private readonly WaveOut? _output;
         private readonly MixingSampleProvider? _mixer;
 
         public NAudioSoundCuePlayer()
@@ -160,9 +160,9 @@ public sealed class SoundCueService
                 {
                     ReadFully = true
                 };
-                _output = new WaveOutEvent
+                _output = new WaveOut
                 {
-                    DesiredLatency = 120,
+                    BufferMilliseconds = 120,
                     NumberOfBuffers = 3
                 };
                 _output.Init(_mixer);
@@ -229,8 +229,9 @@ public sealed class SoundCueService
 
             var wholeFile = new List<float>((int)(reader.Length / 4));
             var readBuffer = new float[reader.WaveFormat.SampleRate * reader.WaveFormat.Channels];
+            var samples = reader.ToSampleProvider();
             int samplesRead;
-            while ((samplesRead = reader.Read(readBuffer, 0, readBuffer.Length)) > 0)
+            while ((samplesRead = samples.Read(readBuffer)) > 0)
             {
                 wholeFile.AddRange(readBuffer.Take(samplesRead));
             }
@@ -265,13 +266,13 @@ public sealed class SoundCueService
 
         public WaveFormat WaveFormat => _sound.WaveFormat;
 
-        public int Read(float[] buffer, int offset, int count)
+        public int Read(Span<float> buffer)
         {
             var availableSamples = _sound.AudioData.Length - _position;
-            var samplesToCopy = Math.Min(availableSamples, count);
+            var samplesToCopy = Math.Min(availableSamples, buffer.Length);
             for (var index = 0; index < samplesToCopy; index++)
             {
-                buffer[offset + index] = _sound.AudioData[_position + index] * _volume;
+                buffer[index] = _sound.AudioData[_position + index] * _volume;
             }
 
             _position += samplesToCopy;
