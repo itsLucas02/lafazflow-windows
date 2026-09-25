@@ -3,6 +3,8 @@
 **Date:** 16/08/2026 (Asia/Kuala_Lumpur)
 **Status:** Living reference for agents and maintainers. Update this file when symptoms, root causes, or fixes change. Do not paste transcripts, prompts, credentials, or personal data into this document.
 
+> **25 September 2026 capture update:** Section 2 describes the August `WaveIn` implementation and is historical. The current owner build uses raw-mode WASAPI with native-format capture and 16 kHz conversion. For the investigation, evidence, current code path, and recurrence procedure, see [First-word capture reliability: investigation and handoff](2026-09-25-first-word-capture-investigation.md). Do not use the August `WaveIn` description to diagnose the current build.
+
 ## 1. Repetition-hallucination text leaks
 
 ### Symptom

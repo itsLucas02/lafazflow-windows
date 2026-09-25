@@ -2506,8 +2506,8 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 ## Plan: First-word capture diagnostics
 - [x] Log privacy-safe callback timing, sequence, pre-roll bytes, endpoint identity/format, and onset signal metrics for each finalized WAV.
 - [x] Cover metric extraction and capture handoff with focused tests (14 focused and 803 total pass; Release build clean).
-- [ ] Run the full suite and Release build, install the canonical owner build, and verify real-microphone diagnostic output.
-- [ ] Use a labeled crackling recording to identify the faulty capture layer before changing the audio backend.
+- [x] Run the full suite and Release build, install the canonical owner build, and verify real-microphone diagnostic output.
+- [x] Use a labeled crackling recording to narrow the faulty capture layer before changing the audio backend; build 23 localized loss upstream of resampling, without identifying the exact Windows/device effect.
 
 ## Plan: Native-format microphone capture replacement
 - [x] Replace legacy WaveIn capture with shared-mode WASAPI at the endpoint's native format and resample to existing 16 kHz PCM.
@@ -2520,4 +2520,10 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Confirm build-23 native and 16 kHz audio match on failed opening trials (correlation above 0.995).
 - [x] Open the Razer microphone in supported WASAPI raw mode and pass the real-device capture/drain check.
 - [x] Install the raw-mode build and validate 20/20 immediate openings, long dictation, no stray audio, worker latency, and paste.
-- [ ] Remove temporary native trace, reinstall the final build, and repeat a short real-microphone acceptance check.
+- [x] Remove temporary native trace, reinstall the final build, and repeat a short real-microphone acceptance check (build 25: 3/3 immediate openings).
+
+## Review: First-word capture investigation and handoff
+
+- Evidence, rejected hypotheses, implementation history, current capture path, verification, privacy boundary, and recurrence procedure are recorded in `docs/references/2026-09-25-first-word-capture-investigation.md`.
+- Build 24 passed 20/20 short immediate-opening trials plus a longer dictation; cleaned build 25 passed 3/3 more. Full suite passed 807/807, Release build had zero warnings/errors, and real microphone capture/drain passed. This is session evidence, not proof against future recurrence.
+- Build 25 (`cc16a15`) is installed at the canonical taskbar path. Temporary sidecar writing is removed; existing private recordings and sidecars were retained.
