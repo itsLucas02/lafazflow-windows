@@ -93,6 +93,11 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
             _preRoll.Clear();
             _activeSession = session;
+            if (_warmInput is WasapiAudioInputDevice wasapi)
+            {
+                try { wasapi.BeginNativeTrace(outputPath); }
+                catch (Exception error) { LogCaptureFailure($"Native capture trace unavailable: {error.GetType().Name}"); }
+            }
         }
 
         return outputPath;
@@ -579,6 +584,9 @@ internal sealed class WasapiAudioInputDevice : IAudioInputDevice
 {
     private readonly WasapiCapture _capture;
     private readonly NativePcm16Resampler _converter;
+    private readonly object _traceLock = new();
+    private WaveFileWriter? _nativeTrace;
+    private int _traceBytesRemaining;
 
     public WasapiAudioInputDevice(int deviceIndex = -1)
     {
@@ -591,9 +599,33 @@ internal sealed class WasapiAudioInputDevice : IAudioInputDevice
         try { _converter = new NativePcm16Resampler(_capture.WaveFormat); }
         catch { _capture.Dispose(); throw; }
         _capture.DataAvailable += (_, args) =>
+        {
+            lock (_traceLock)
+            {
+                if (_nativeTrace is not null && _traceBytesRemaining > 0)
+                {
+                    try
+                    {
+                        var count = Math.Min(args.BytesRecorded, _traceBytesRemaining);
+                        _nativeTrace.Write(args.Buffer, 0, count);
+                        _traceBytesRemaining -= count;
+                    }
+                    catch
+                    {
+                        try { _nativeTrace.Dispose(); } catch { }
+                        _nativeTrace = null;
+                    }
+                }
+            }
             _converter.Add(args.Buffer, args.BytesRecorded, Publish);
+        };
         _capture.RecordingStopped += (_, args) =>
         {
+            lock (_traceLock)
+            {
+                try { _nativeTrace?.Dispose(); } catch { }
+                _nativeTrace = null;
+            }
             var stopped = args;
             try
             {
@@ -617,7 +649,28 @@ internal sealed class WasapiAudioInputDevice : IAudioInputDevice
 
     public void StopRecording() => _capture.StopRecording();
 
-    public void Dispose() => _capture.Dispose();
+    public void Dispose()
+    {
+        _capture.Dispose();
+        lock (_traceLock)
+        {
+            _nativeTrace?.Dispose();
+            _nativeTrace = null;
+        }
+    }
+
+    public void BeginNativeTrace(string outputPath)
+    {
+        var folder = Path.Combine(Path.GetDirectoryName(outputPath)!, "NativeDebug");
+        Directory.CreateDirectory(folder);
+        if (Directory.EnumerateFiles(folder, "*.wav").Take(30).Count() == 30) return;
+        lock (_traceLock)
+        {
+            _nativeTrace?.Dispose();
+            _nativeTrace = new WaveFileWriter(Path.Combine(folder, Path.GetFileName(outputPath)), _capture.WaveFormat);
+            _traceBytesRemaining = _capture.WaveFormat.AverageBytesPerSecond * 5;
+        }
+    }
 
     private void Publish(byte[] pcm) => DataAvailable?.Invoke(this, new WaveInEventArgs(pcm, pcm.Length));
 }

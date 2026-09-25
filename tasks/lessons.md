@@ -456,3 +456,4 @@
 ## Treat continuing first-word failures as a capture-path failure until hardware proves otherwise
 - Pattern: A diagnostic-only rollout left the owner with repeated first-word omissions, while failed saved WAVs audibly crackled at onset. Clean pre-roll boundaries and callback counts did not make the 16 kHz legacy WaveIn path reliable.
 - Rule: When a captured WAV itself damages the opening, test the native microphone format and capture API on real hardware, preserve the full WAV for transcription, and require repeated owner-spoken acceptance phrases before claiming the issue fixed.
+- Follow-up: WASAPI native-format capture still produced a WAV with a missing "And" on build 22. Capture the endpoint's native bytes alongside the converted output from the same stream before attributing that loss to resampling or microphone processing.

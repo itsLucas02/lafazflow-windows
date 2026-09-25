@@ -2514,3 +2514,4 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Verify synthetic native mono/stereo conversion and live microphone callback/drain.
 - [ ] Run the full suite and Release build; install the owner build and verify process, worker, taskbar, and capture log.
 - [ ] Repeatedly test immediate opening phrases with the owner and compare failed/successful WAVs before calling this a fix.
+- [ ] Compare a failed build-23 native-format trace with its converted WAV to locate the remaining opening loss.
