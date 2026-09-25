@@ -2512,11 +2512,12 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 ## Plan: Native-format microphone capture replacement
 - [x] Replace legacy WaveIn capture with shared-mode WASAPI at the endpoint's native format and resample to existing 16 kHz PCM.
 - [x] Verify synthetic native mono/stereo conversion and live microphone callback/drain.
-- [ ] Run the full suite and Release build; install the owner build and verify process, worker, taskbar, and capture log.
-- [ ] Repeatedly test immediate opening phrases with the owner and compare failed/successful WAVs before calling this a fix.
+- [x] Run the full suite and Release build; install the owner build and verify process, worker, taskbar, and capture log.
+- [x] Repeatedly test immediate opening phrases with the owner and compare failed/successful WAVs; standard WASAPI still failed, leading to raw mode.
 - [x] Compare failed build-23 native-format traces with converted WAVs; the loss precedes resampling.
 
 ## Plan: Bypass Windows capture effects
 - [x] Confirm build-23 native and 16 kHz audio match on failed opening trials (correlation above 0.995).
 - [x] Open the Razer microphone in supported WASAPI raw mode and pass the real-device capture/drain check.
-- [ ] Install the raw-mode build and validate repeated immediate openings, long dictation, sounds, worker latency, and paste.
+- [x] Install the raw-mode build and validate 20/20 immediate openings, long dictation, no stray audio, worker latency, and paste.
+- [ ] Remove temporary native trace, reinstall the final build, and repeat a short real-microphone acceptance check.
