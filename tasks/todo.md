@@ -2551,6 +2551,8 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Preserve reported silent WAV; compare full decode with existing speech detection.
 - [x] Gate final worker decode on speech presence without trimming the waveform.
 - [x] Verify reported silence returns no text and real speech still survives; run regression/full checks.
-- [ ] Document incident and limits, commit, install/restart canonical owner build, and push main.
+- [x] Document incident and limits, commit, install/restart canonical owner build, and push main.
 
 - Reference: [No-speech hallucination](../docs/references/2026-10-07-no-speech-hallucination.md). Verified 3/3 silent replays, subsequent speech, retained long speech, and 814/814 full tests; Release build clean.
+
+- Delivery: fix `158dd9e` installed as build 29; source/worker identity verified, installed worker Ready, and main pushed. Delivery-note follow-up changes documentation only.

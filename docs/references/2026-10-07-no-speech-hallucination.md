@@ -1,7 +1,7 @@
 # Background noise transcribed as invented speech
 
 Date: 7 October 2026, Asia/Kuala_Lumpur.
-Status: Reproduced on the reported recording; corrected worker verified before owner rollout.
+Status: Reproduced, fixed, verified, installed, and pushed to main.
 
 ## User report and impact
 
@@ -47,6 +47,10 @@ Remove-Item Env:LAFAZFLOW_TEST_NO_SPEECH_AUDIO
 ```
 
 This test returns without replay if the private audio variable/file or local worker/model/fixture prerequisites are unavailable. Generic CI success alone does not prove the private replay ran.
+
+## Owner delivery
+
+Fix commit: `158dd9e`. Installed and restarted v1.1.2 build 29 at the canonical taskbar executable. Embedded commit matched the fix; installed worker SHA256 matched the rebuilt worker. One canonical app and one installed worker were running, and the worker logged Ready. The fix was pushed to main. This subsequent delivery-note commit changes documentation only.
 
 ## Limits and recurrence
 
