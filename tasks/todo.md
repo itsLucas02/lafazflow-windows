@@ -2562,3 +2562,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Replayed that retained audio three times through the corrected worker: empty output, with subsequent real speech preserved. Tested worker hash matches installed worker.
 - Compared pinned Handy, VoiceInk, and FluidVoice silence protections; added verified source links and implementation gap to the existing no-speech reference.
 - Documentation-only follow-up; build 29 remains running. No blanket guarantee or transcript blacklist added.
+
+## Review: Owner acceptance of no-speech fix (2026-10-07)
+- Owner confirmed the issue is solved in live use after build 29 delivery.
+- Added that acceptance to the incident reference, preserving the distinction from automated replay and keeping untested configuration limits explicit.
+- Existing commits separate implementation (158dd9e), delivery evidence (4116c50), and reference comparison (4c064ab); this follow-up records owner acceptance only.
+- Documentation-only update; verified executable build 29 remains installed.
