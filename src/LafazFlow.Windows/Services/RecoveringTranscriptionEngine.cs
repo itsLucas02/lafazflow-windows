@@ -25,6 +25,16 @@ public sealed class RecoveringTranscriptionEngine : ITranscriptionEngine
         CancellationToken cancellationToken)
     {
         var first = await _primary.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
+        if (first.Succeeded && PromptLeakDetector.IsPromptLeak(
+                first.Text, WhisperPromptBuilder.BuildVocabularyPrompt(settings)))
+        {
+            var recovered = await _fallback.TranscribeAsync(audioPath, settings, dictationId, cancellationToken);
+            return recovered.Succeeded && !PromptLeakDetector.IsPromptLeak(
+                    recovered.Text, WhisperPromptBuilder.BuildVocabularyPrompt(settings))
+                ? recovered with { WasRetried = true }
+                : first with { Text = "", Succeeded = false, FailureKind = "repetition_recovery_failed" };
+        }
+
         var action = TranscriptionRecoveryPolicy.Decide(first.FailureKind, false, false);
         if (first.Succeeded || action == TranscriptionRecoveryAction.None)
         {

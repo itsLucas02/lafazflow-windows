@@ -2527,3 +2527,16 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Evidence, rejected hypotheses, implementation history, current capture path, verification, privacy boundary, and recurrence procedure are recorded in `docs/references/2026-09-25-first-word-capture-investigation.md`.
 - Build 24 passed 20/20 short immediate-opening trials plus a longer dictation; cleaned build 25 passed 3/3 more. Full suite passed 807/807, Release build had zero warnings/errors, and real microphone capture/drain passed. This is session evidence, not proof against future recurrence.
 - Build 25 (`cc16a15`) is installed at the canonical taskbar path. Temporary sidecar writing is removed; existing private recordings and sidecars were retained.
+
+## Plan: Long-dictation repetition recovery (2026-10-07)
+- [x] Reproduce the owner's retained audio and isolate the decoder difference.
+- [x] Use beam search for authoritative final worker decoding; keep preview greedy.
+- [x] Detect runaway repeated phrases and retry once through the existing CLI recovery path.
+- [x] Verify retained long audio, regression tests, full suite, and Release build.
+- [x] Commit main, install/restart canonical owner build, and verify runtime.
+
+## Review: Long-dictation repetition recovery
+- Identical private 78-second audio reproduced the phrase loop twice in the installed greedy worker and again in greedy CLI. Beam CLI recovered the missing middle speech.
+- Final worker now uses beam search; preview remains greedy. Updated worker recovered the middle and ending in three repeated replays. Multi-word phrase loops are rejected in preview/final, with one CLI recovery attempt for worker output.
+- Full Release suite passes 813/813, including the opt-in retained-audio regression with an independent CLI reference; Release build has zero warnings/errors. Private audio, settings, prompts, and transcripts remain outside Git.
+- Canonical owner installation relaunched with matching embedded source commit, matching rebuilt worker SHA256, one app plus one installed worker, and worker Ready. Push main after final install verification.

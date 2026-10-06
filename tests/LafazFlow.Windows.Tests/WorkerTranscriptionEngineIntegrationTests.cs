@@ -20,6 +20,34 @@ public sealed class WorkerTranscriptionEngineIntegrationTests
         && Directory.Exists(FixturesDirectory);
 
     [Fact]
+    public async Task RetainedLongAudioPreservesSpeechWithoutPhraseLoop()
+    {
+        // Private regression audio and its independently decoded reference stay local.
+        var audio = Environment.GetEnvironmentVariable("LAFAZFLOW_TEST_LONG_AUDIO");
+        if (string.IsNullOrEmpty(audio) || !File.Exists(audio) || !Available)
+        {
+            return;
+        }
+
+        var settings = AppSettings.Default with
+        {
+            TranscriptionProfile = TranscriptionProfile.Quality,
+            WhisperBackend = WhisperBackend.Cuda,
+            QualityModelPath = ModelPath,
+            EnableVad = true,
+            VadModelPath = VadModelPath
+        };
+        using var supervisor = new WhisperWorkerSupervisor();
+        var result = await new WorkerTranscriptionEngine(supervisor).TranscribeAsync(
+            audio, settings, Guid.NewGuid(), CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.False(PromptLeakDetector.IsPromptLeak(result.Text, settings.WhisperInitialPrompt));
+        AssertSubstantivelyEquivalent(
+            Normalize(File.ReadAllText(Path.ChangeExtension(audio, ".txt"))), Normalize(result.Text));
+        await supervisor.ShutdownAsync();
+    }
+
+    [Fact]
     public async Task WorkerEngineTranscribesFinalizedAudio()
     {
         if (!Available)

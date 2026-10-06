@@ -458,3 +458,8 @@
 - Rule: When a captured WAV itself damages the opening, test the native microphone format and capture API on real hardware, preserve the full WAV for transcription, and require repeated owner-spoken acceptance phrases before claiming the issue fixed.
 - Follow-up: WASAPI native-format capture still produced a WAV with a missing "And" on build 22. Capture the endpoint's native bytes alongside the converted output from the same stream before attributing that loss to resampling or microphone processing.
 - Finding: Failed build-23 native and converted traces correlated above 0.995, locating the loss before resampling. Windows raw capture then preserved 20/20 owner-spoken immediate openings and a longer dictation on build 24. Keep diagnostic sidecars temporary and verify the cleaned build again before final delivery.
+
+## Preserve long speech through authoritative decoding
+- Pattern: Greedy worker decoding replaced the middle of a retained 78-second recording with a repeated phrase; the same WAV reproduced the loop in the worker twice and in greedy CLI, while beam CLI recovered the missing speech.
+- Rule: Use beam search for final worker decoding, keep preview greedy, and detect repeated multi-word phrases independently of prompt presence. Retry through the existing CLI once rather than stripping duplicate text and concealing lost speech.
+- Verification: Compare identical retained private audio before/after and preserve meaningful middle content and ending, not merely shorter output. Keep audio and transcripts outside Git.

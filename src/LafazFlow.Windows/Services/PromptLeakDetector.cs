@@ -22,7 +22,7 @@ public static partial class PromptLeakDetector
     {
         var normalizedTranscript = Normalize(transcript);
         var normalizedPrompt = Normalize(prompt);
-        if (normalizedTranscript.Length == 0 || normalizedPrompt.Length == 0)
+        if (normalizedTranscript.Length == 0)
         {
             return false;
         }
@@ -37,7 +37,28 @@ public static partial class PromptLeakDetector
 
         return transcriptIsPromptEcho
             || (startsWithMarker && hallucinatedRepetition)
-            || runawayRepetition;
+            || runawayRepetition
+            || HasRepeatedPhraseLoop(normalizedTranscript);
+    }
+
+    private static bool HasRepeatedPhraseLoop(string normalizedText)
+    {
+        var words = normalizedText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // Eight consecutive copies and at least 40 words exclude normal stutters.
+        for (var length = 2; length <= 16 && length * 8 <= words.Length; length++)
+        {
+            var matched = 0;
+            for (var index = length; index < words.Length; index++)
+            {
+                matched = words[index] == words[index - length] ? matched + 1 : 0;
+                if (matched >= length * 7 && matched + length >= 40)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static bool HasLongRepeatedWordRun(string normalizedText)

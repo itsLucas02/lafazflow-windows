@@ -367,7 +367,10 @@ std::vector<float> PcmFromBytes(const std::vector<std::uint8_t>& bytes, std::uin
 }
 
 whisper_full_params BuildParams(const std::uint8_t operation) {
-    whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+    // Greedy decoding can loop over a phrase and lose speech in long recordings.
+    // Match the CLI's beam search for final dictation; previews remain greedy.
+    whisper_full_params params = whisper_full_default_params(
+        operation == OpFinal ? WHISPER_SAMPLING_BEAM_SEARCH : WHISPER_SAMPLING_GREEDY);
     params.n_threads = g_threads;
     params.language = g_language.c_str();
     params.no_timestamps = true;

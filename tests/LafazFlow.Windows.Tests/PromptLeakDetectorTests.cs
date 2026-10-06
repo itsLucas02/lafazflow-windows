@@ -4,6 +4,24 @@ namespace LafazFlow.Windows.Tests;
 
 public sealed class PromptLeakDetectorTests
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("Technical vocabulary")]
+    public void DetectsPhraseLoopBetweenLegitimateOpeningAndEnding(string prompt)
+    {
+        var text = "Here is the opening explanation. "
+            + string.Join(" ", Enumerable.Repeat("and I click on the button,", 30))
+            + " Please keep the controls in the same position.";
+        Assert.True(PromptLeakDetector.IsPromptLeak(text, prompt));
+    }
+
+    [Fact]
+    public void PreservesIntentionalShortPhraseRepetition()
+    {
+        Assert.False(PromptLeakDetector.IsPromptLeak(
+            "Go back, go back, go back, then move up and down, up and down.", ""));
+    }
+
     private const string Prompt =
         "Supabase, Contabo, Vercel. Custom vocabulary: DeepSeek, Supabase, MediBrave, Luqman.";
 

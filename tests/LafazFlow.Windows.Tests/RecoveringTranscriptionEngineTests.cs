@@ -5,6 +5,26 @@ namespace LafazFlow.Windows.Tests;
 
 public sealed class RecoveringTranscriptionEngineTests
 {
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PhraseLoopRetriesOnceAndNeverReturnsCorruptedText(bool recoveryWorks)
+    {
+        var loop = "Opening. " + string.Join(" ", Enumerable.Repeat("and I click on the button", 30)) + " Ending.";
+        var calls = 0;
+        var restarts = 0;
+        var engine = CreateEngine(
+            new StubEngine(Success(loop)),
+            new StubEngine(Success(recoveryWorks ? "Recovered full speech." : loop), () => calls++),
+            () => restarts++);
+        var result = await engine.TranscribeAsync("a.wav", AppSettings.Default, Guid.NewGuid(), CancellationToken.None);
+        Assert.Equal(1, calls);
+        Assert.Equal(0, restarts);
+        Assert.Equal(recoveryWorks, result.Succeeded);
+        Assert.Equal(recoveryWorks ? "Recovered full speech." : "", result.Text);
+        Assert.Equal(recoveryWorks, result.WasRetried);
+    }
+
     [Fact]
     public async Task PrimarySuccessDoesNotRestartOrFallback()
     {
