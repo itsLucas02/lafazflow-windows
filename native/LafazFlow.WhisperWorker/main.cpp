@@ -92,6 +92,7 @@ const char* g_compiled_backend = "cpu";
 #endif
 
 whisper_context* g_ctx = nullptr;
+whisper_vad_context* g_vad_ctx = nullptr;
 std::string g_model_path;
 std::string g_model_name;
 std::string g_fingerprint(32, '\0');
@@ -423,6 +424,39 @@ void Transcribe(HANDLE pipe, const Frame& frame) {
         return;
     }
 
+    // Classify speech presence only: never trim the authoritative final waveform.
+    if (frame.kind == OpFinal && g_vad && !g_vad_model.empty()) {
+        if (g_vad_ctx == nullptr) {
+            auto context_params = whisper_vad_default_context_params();
+            context_params.n_threads = g_threads;
+            context_params.use_gpu = false;
+            g_vad_ctx = whisper_vad_init_from_file_with_params(g_vad_model.c_str(), context_params);
+        }
+        if (g_vad_ctx == nullptr) {
+            SendResponse(pipe, frame.kind, StatusInternalError, frame.request_id, frame.session_id, g_fingerprint, {});
+            return;
+        }
+        auto vad_params = whisper_vad_default_params();
+        vad_params.threshold = g_vad_threshold;
+        vad_params.min_speech_duration_ms = g_vad_min_speech_duration_ms;
+        vad_params.min_silence_duration_ms = g_vad_min_silence_duration_ms;
+        vad_params.speech_pad_ms = g_vad_speech_pad_ms;
+        auto* speech = whisper_vad_segments_from_samples(
+            g_vad_ctx, vad_params, pcm.data(), static_cast<int>(pcm.size()));
+        if (speech == nullptr) {
+            SendResponse(pipe, frame.kind, StatusInternalError, frame.request_id, frame.session_id, g_fingerprint, {});
+            return;
+        }
+        const bool has_speech = whisper_vad_segments_n_segments(speech) > 0;
+        whisper_vad_free_segments(speech);
+        if (!has_speech) {
+            g_completed_requests++;
+            g_last_failure = "none";
+            SendResponse(pipe, frame.kind, StatusOk, frame.request_id, frame.session_id, g_fingerprint, {});
+            return;
+        }
+    }
+
     g_abort.store(false);
     whisper_full_params params = BuildParams(frame.kind);
     const int result = whisper_full(g_ctx, params, pcm.data(), static_cast<int>(pcm.size()));
@@ -692,6 +726,9 @@ int main(int argc, char** argv) {
     EngineLoop(pipe);
 
     reader.join();
+    if (g_vad_ctx != nullptr) {
+        whisper_vad_free(g_vad_ctx);
+    }
     if (g_ctx != nullptr) {
         whisper_free(g_ctx);
     }

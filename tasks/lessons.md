@@ -467,3 +467,7 @@
 ## Every reported error needs a durable incident reference
 - Pattern: The phrase-loop fix was committed, tested, installed, and pushed, but its explanation lived only in task/lesson notes until the owner requested a dedicated future reference.
 - Rule: Create or update a linked `docs/references/` incident record for every owner-reported error before declaring completion. Include evidence, cause versus uncertainty, fix, tests, commit, delivery, limitations, and recurrence steps; task notes alone are insufficient.
+
+## Sound energy is not proof of speech
+- Pattern: A no-speech recording passed amplitude thresholds and beam decoding invented text; existing VAD classified the identical waveform as zero speech segments.
+- Rule: Separate whole-recording speech presence from VAD trimming. For VAD-enabled final worker requests, reject zero speech before decoding and retain the full original waveform when speech exists. Verify silence followed by real speech, plus the long-audio regression; do not blacklist invented phrases or raise volume thresholds without evidence.

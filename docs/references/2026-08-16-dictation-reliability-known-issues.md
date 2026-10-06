@@ -7,6 +7,8 @@
 
 ## 1. Repetition-hallucination text leaks
 
+> **7 October 2026 no-speech incident:** Background noise passed the amplitude check and final decoding invented text. A separate worker speech-presence gate now rejects zero-speech recordings while preserving the full waveform for actual speech. See [No-speech hallucination](2026-10-07-no-speech-hallucination.md) for evidence, checks, configuration limits, and recurrence steps.
+
 > **7 October 2026 update:** Long multi-word phrase loops were reproduced on retained audio and fixed by beam search for final worker decoding, shared phrase-loop detection, and one CLI recovery attempt. The August protection/gap descriptions below are historical. See [Long-dictation phrase-loop incident](2026-10-07-long-dictation-phrase-loop.md) for current behavior, evidence, limits, tests, delivery, and recurrence steps.
 
 ### Symptom
