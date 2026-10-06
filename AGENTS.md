@@ -42,6 +42,13 @@
 - Document Results: Add review section to tasks/todo.md
 - Capture Lessons: Update tasks/lessons.md after corrections
 
+## User-reported error documentation
+- For every user-reported bug, error, or reliability failure, create or update a tracked reference in `docs/references/` as part of the investigation and fix. Documentation is required before reporting completion.
+- Record the symptom and user impact, affected build/settings, evidence and reproduction, confirmed cause versus unresolved hypotheses, changes made, verification results and limits, fix commit, owner-install status, and a recurrence procedure.
+- Link the reference from the relevant living issue document and `tasks/todo.md`; update `tasks/lessons.md` with the prevention rule. Update the existing incident reference when the same failure recurs instead of scattering its history.
+- Keep private recordings, transcripts, prompts, credentials, and endpoint identifiers outside Git. Document safe local evidence locations and runnable checks without copying private content.
+- If unresolved, document the current findings and exact continuation point. Do not label an unverified theory as a root cause or a source-only change as delivered.
+
 ## Core Principles
 - Simplicity First: Make every change as simple as possible. Impact minimal code.
 - No Laziness: Find root causes. No temporary fixes. Senior developer standards.

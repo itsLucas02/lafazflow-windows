@@ -463,3 +463,7 @@
 - Pattern: Greedy worker decoding replaced the middle of a retained 78-second recording with a repeated phrase; the same WAV reproduced the loop in the worker twice and in greedy CLI, while beam CLI recovered the missing speech.
 - Rule: Use beam search for final worker decoding, keep preview greedy, and detect repeated multi-word phrases independently of prompt presence. Retry through the existing CLI once rather than stripping duplicate text and concealing lost speech.
 - Verification: Compare identical retained private audio before/after and preserve meaningful middle content and ending, not merely shorter output. Keep audio and transcripts outside Git.
+
+## Every reported error needs a durable incident reference
+- Pattern: The phrase-loop fix was committed, tested, installed, and pushed, but its explanation lived only in task/lesson notes until the owner requested a dedicated future reference.
+- Rule: Create or update a linked `docs/references/` incident record for every owner-reported error before declaring completion. Include evidence, cause versus uncertainty, fix, tests, commit, delivery, limitations, and recurrence steps; task notes alone are insufficient.

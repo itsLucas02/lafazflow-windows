@@ -7,6 +7,8 @@
 
 ## 1. Repetition-hallucination text leaks
 
+> **7 October 2026 update:** Long multi-word phrase loops were reproduced on retained audio and fixed by beam search for final worker decoding, shared phrase-loop detection, and one CLI recovery attempt. The August protection/gap descriptions below are historical. See [Long-dictation phrase-loop incident](2026-10-07-long-dictation-phrase-loop.md) for current behavior, evidence, limits, tests, delivery, and recurrence steps.
+
 ### Symptom
 
 Whisper occasionally locks onto a single token and repeats it many times instead of transcribing the user's speech. The repeated text appears in the **live preview** while recording and can also reach the **final pasted output**.

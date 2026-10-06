@@ -2539,4 +2539,11 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Identical private 78-second audio reproduced the phrase loop twice in the installed greedy worker and again in greedy CLI. Beam CLI recovered the missing middle speech.
 - Final worker now uses beam search; preview remains greedy. Updated worker recovered the middle and ending in three repeated replays. Multi-word phrase loops are rejected in preview/final, with one CLI recovery attempt for worker output.
 - Full Release suite passes 813/813, including the opt-in retained-audio regression with an independent CLI reference; Release build has zero warnings/errors. Private audio, settings, prompts, and transcripts remain outside Git.
-- Canonical owner installation relaunched with matching embedded source commit, matching rebuilt worker SHA256, one app plus one installed worker, and worker Ready. Push main after final install verification.
+- Canonical owner installation relaunched with matching embedded source commit, matching rebuilt worker SHA256, one app plus one installed worker, and worker Ready. Fix commit `2cd280a` was pushed to main; remote HEAD matched the installed source commit.
+## Plan and review: Error-reference documentation (2026-10-07)
+- [x] Verify the phrase-loop fix commit and origin/main.
+- [x] Add a dedicated incident reference with symptom, replay evidence, confirmed decoder cause, guard gap, fix, tests, delivery, limits, and recurrence commands.
+- [x] Link the living reliability reference and record the owner's requirement in AGENTS.md and lessons.
+- [x] Check document links and diff, then commit and push documentation to main.
+- Reference: [Long-dictation phrase-loop incident](../docs/references/2026-10-07-long-dictation-phrase-loop.md).
+- Documentation-only follow-up: no executable source changed; the verified build 27 remains installed and running.
