@@ -54,6 +54,24 @@ Fix commit: `158dd9e`. Installed and restarted v1.1.2 build 29 at the canonical 
 
 ## Limits and recurrence
 
+### Follow-up: short invented courtesy phrase
+
+The owner subsequently reported another no-speech recording that produced a short courtesy phrase. Its capture ended at **03:07:58**, and paste completed at **03:07:59**, before corrected build 29 reached Ready at **03:10:29**. It therefore documents a second pre-fix failure, not verified recurrence in build 29. The recording contains approximately 1.52 seconds including pre-roll; the previous final decoder returned 10 characters. Do not infer that a report received after rollout was recorded after rollout.
+
+The second retained WAV was saved privately as `Benchmarks\silent-20261007\silent-thanks.wav`. Running `RetainedNoSpeechAudioReturnsNoTextAndNextSpeechStillDecodes` with this file enabled passed: all three replays returned successful empty text, and real speech decoded afterward in the same corrected worker. The installed build remains 29; no executable change was needed for this follow-up. This result covers these two saved recordings, not every possible background noise or spoken phrase.
+
+### Reference comparison verified during the follow-up
+
+These are inspected source behaviors at the repository's pinned revisions, not claims of universal reliability or a controlled side-by-side device benchmark:
+
+| Reference | Verified protection | Evidence |
+| --- | --- | --- |
+| Handy, `37a26fd6` | With VAD configured and enabled, the recorder forwards speech frames and drops noise frames; the action path checks empty sample input before transcription. Disabled VAD bypasses filtering. | [recorder.rs](https://github.com/cjpais/Handy/blob/37a26fd6ab905259d66affea57fff448288ca1aa/src-tauri/src/audio_toolkit/audio/recorder.rs#L651), [actions.rs](https://github.com/cjpais/Handy/blob/37a26fd6ab905259d66affea57fff448288ca1aa/src-tauri/src/actions.rs#L678) |
+| VoiceInk, `7023a6f7` | When enabled by the user and a VAD model is available, its Whisper wrapper configures decoder VAD at threshold 0.50 and minimum speech duration 250 ms. | [LibWhisper.swift](https://github.com/Beingpax/VoiceInk/blob/7023a6f7e16ba09c3b131fe71f8cc9e55c065f19/VoiceInk/Transcription/Whisper/LibWhisper.swift#L72) |
+| FluidVoice, `4ce0584f` | Its optional short-silence gate assesses recordings up to four seconds with peak, whole-buffer RMS, and maximum 20 ms frame RMS, before final ASR when no recognized preview exists and dictionary training is not active. It deliberately combines all three amplitude conditions to protect quiet words. | [ASRService.swift](https://github.com/altic-dev/FluidVoice/blob/4ce0584f93efbb5240d07b5039e23b09487b6ce0/Sources/Fluid/Services/ASRService.swift#L90) |
+
+LafazFlow's pre-fix amplitude-only gate was insufficient on both owner-labeled recordings. Preserving the full final waveform was a deliberate quiet-speech safeguard, but omitting an independent speech-presence gate was an implementation gap. The corrected worker preserves the full waveform while adding that gate; it does not copy reference filtering in a way that reintroduces known quiet-word loss. Remaining VAD-disabled and CLI-fallback coverage gaps below remain explicit.
+
 The gate follows the existing VAD-enabled worker configuration. VAD-disabled workers and direct CLI fallback do not gain this standalone gate. The owner uses VAD enabled with its model configured. This is not a universal promise that VAD can distinguish all music, background voices, or unusual speech; very brief or quiet speech may fail its existing threshold. No new owner-spoken acceptance trial was performed during this fix.
 
 If invented text recurs, preserve the exact WAV and correlate version, worker path, settings, preview, and final output. Replay standalone VAD to determine whether speech was detected. If detection is zero but text was pasted, check the running build and whether direct CLI fallback bypassed the worker. If detection is positive on non-speech, investigate the detector's classification with retained audio instead of adding transcript-specific replacements or raising amplitude thresholds blindly. If genuine speech is rejected, compare its VAD results without reintroducing final waveform trimming. Update this reference with the evidence and delivery result.

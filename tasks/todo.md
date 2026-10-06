@@ -2556,3 +2556,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Reference: [No-speech hallucination](../docs/references/2026-10-07-no-speech-hallucination.md). Verified 3/3 silent replays, subsequent speech, retained long speech, and 814/814 full tests; Release build clean.
 
 - Delivery: fix `158dd9e` installed as build 29; source/worker identity verified, installed worker Ready, and main pushed. Delivery-note follow-up changes documentation only.
+
+## Review: Second no-speech artifact and reference comparison
+- Matched the second recording to 03:07:58 capture / 03:07:59 paste, before build 29 launch at 03:10:29.
+- Replayed that retained audio three times through the corrected worker: empty output, with subsequent real speech preserved. Tested worker hash matches installed worker.
+- Compared pinned Handy, VoiceInk, and FluidVoice silence protections; added verified source links and implementation gap to the existing no-speech reference.
+- Documentation-only follow-up; build 29 remains running. No blanket guarantee or transcript blacklist added.

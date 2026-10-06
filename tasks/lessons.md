@@ -471,3 +471,4 @@
 ## Sound energy is not proof of speech
 - Pattern: A no-speech recording passed amplitude thresholds and beam decoding invented text; existing VAD classified the identical waveform as zero speech segments.
 - Rule: Separate whole-recording speech presence from VAD trimming. For VAD-enabled final worker requests, reject zero speech before decoding and retain the full original waveform when speech exists. Verify silence followed by real speech, plus the long-audio regression; do not blacklist invented phrases or raise volume thresholds without evidence.
+- Follow-up: A second reported artifact was recorded before build 29 launched and passed three empty-text replays through the corrected worker. Correlate capture/paste time with installation time before calling a later report a post-fix recurrence. Reference parity must include silence/noise protection, not just model loading and process lifecycle.
