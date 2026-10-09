@@ -472,3 +472,16 @@
 - Pattern: A no-speech recording passed amplitude thresholds and beam decoding invented text; existing VAD classified the identical waveform as zero speech segments.
 - Rule: Separate whole-recording speech presence from VAD trimming. For VAD-enabled final worker requests, reject zero speech before decoding and retain the full original waveform when speech exists. Verify silence followed by real speech, plus the long-audio regression; do not blacklist invented phrases or raise volume thresholds without evidence.
 - Follow-up: A second reported artifact was recorded before build 29 launched and passed three empty-text replays through the corrected worker. Correlate capture/paste time with installation time before calling a later report a post-fix recurrence. Reference parity must include silence/noise protection, not just model loading and process lifecycle.
+
+## Presence of speech does not validate the entire recording
+- Pattern: The owner reports invented text after actual dictation even though a whole-recording speech-presence gate is installed. That gate answers whether *any* speech exists, not whether a final suffix is grounded in speech.
+- Rule: Investigate a matching retained waveform and speech intervals before changing decoding. Compare worker and recovery paths, preserve quiet legitimate endings, and test deliberately spoken lookalike phrases; do not strip a reported phrase from text as a substitute for an audio-grounded fix.
+
+## Stop patching when the owner withdraws confidence in the foundation
+- Pattern: After repeated fabricated endings and missing opening speech, a proposal to refine the current worker's VAD boundary did not meet the owner's explicit request to retire the problematic engine.
+- Rule: Treat a requested total cutover as a product direction change, not another hotfix. Compare an existing Windows-capable offline dictation foundation using real owner audio and daily workflow; clarify whether the application/branding also goes, and migrate only after measured beginning-to-ending and paste acceptance.
+- Owner clarification: LafazFlow branding stays; the engine, interface, and all internal implementation must be replaced. Do not offer an engine-only swap or interpret “never see LafazFlow again” as permission to discard its brand. When forking a reference app, honor its separately reserved name and art assets.
+
+## Do not prefer an older speech model on language scope alone
+- Pattern: Recommending Parakeet V2 first because the owner dictates in English overlooked that the selected Windows reference app recommends V3, which also supports English. English-only training does not prove better results on this owner's recordings.
+- Rule: Use the upstream-supported recommended model as the first baseline when it supports the owner's language, then compare alternatives on the same retained audio and live workflow before selecting a default. Describe supported languages and runtime constraints separately from measured quality.
