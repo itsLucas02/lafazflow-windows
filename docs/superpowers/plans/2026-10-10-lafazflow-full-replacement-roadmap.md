@@ -18,6 +18,16 @@ The owner approved a decision record that supplements this roadmap: [Model-agnos
 - Stage 3 acceptance additionally uses flight-recorder replays across candidate engines plus owner-labeled live trials for opening words, quiet endings, trailing silence, and invented-content cases.
 - The salvage ledger (what ports over from the legacy app) is in the decision record. The legacy app stays the daily driver until cutover; the replacement must never silently fall back to it.
 
+## Autonomous execution protocol — 17 October 2026
+
+Owner granted a single approval for an autonomous continuation session and asked that the workflow proceed without waiting while the owner is away. Scope and stop conditions for that session:
+
+1. **Already delivered in this session:** the `comment and push` homophone fix and the interim dictation flight recorder (installed to the owner build, build 36).
+2. **Stage 1 baseline (execute autonomously):** restore the pinned Handy checkout (`%LOCALAPPDATA%\Temp\opencode\handy-v0.9.8` at `14f6f0d3`) without discarding the existing incremental build cache; rebuild the upstream test binary; obtain Parakeet V3 and verify it against the pinned SHA-256 `43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77`; replay the retained private fixtures through the headless file path; produce an auditable private results table plus a public-safe summary in `docs/references/`.
+3. **Owner trial artifact:** leave the upstream-branded test build launchable from the isolated temp checkout so the owner can try the new engine (its own identity, data directory, and shortcut; completely separate from LafazFlow). It must not become the daily app, and it must not touch LafazFlow's data directories or hotkey.
+4. **Stop conditions — do not proceed past these without the owner:** installing the test app as the daily driver; claiming a quality-gate pass when the replay table shows omissions, hallucinations, language drift, or unacceptable latency; source migration or new repo creation; branding/logo asset work; anything that disrupts the installed LafazFlow.
+5. **Phase C checkpoint (owner required):** after the owner tries the test build, decide the Stage 2 implementation home (rebrand in this repository vs a dedicated source location) and begin identity replacement.
+
 ## Current evidence and exact handoff
 
 - Owner-reported failures: three dictated sentences acquired an unspoken closing courtesy phrase; another lost spoken opening words and pasted only its ending. Exact failed WAV/session still unidentified. The protected local log has capture/latency/paste timing but no private transcript. No root cause of these particular dictations is confirmed. The existing worker checks whether **any** speech is present, then decodes the full waveform; the CLI recovery disables VAD for final decoding. This is a protection gap, not proof of causation.

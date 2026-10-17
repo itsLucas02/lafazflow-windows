@@ -496,6 +496,15 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Verification: focused 46 green (8 new service tests + 38 recorder tests including successful, failed, and diagnostics-retention ring cases); full suite 828 green; Release build 0 warnings/0 errors; `git diff --check` clean.
 - Owner-local install from the verified commit follows; a live dictation will create the first retained recording.
 
+## Plan: Autonomous Stage 1 replacement session (17 Oct 2026, owner away, single approval)
+- [ ] B1: Restore the pinned Handy checkout (`%LOCALAPPDATA%\Temp\opencode\handy-v0.9.8` at `14f6f0d3`) without discarding the existing incremental build cache.
+- [ ] B2: Rebuild the upstream test binary (`bun install --frozen-lockfile`, frontend build, `tauri build --no-bundle`) with the Vulkan SDK on PATH.
+- [ ] B3: Obtain Parakeet V3 in Handy's model store and verify the pinned SHA-256 `43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77`.
+- [ ] B4: Replay retained private fixtures through the headless file path; private results table stays under `%LOCALAPPDATA%\LafazFlow\Benchmarks\`; public-safe summary in `docs/references/`.
+- [ ] B5: Leave the isolated upstream-branded test build launchable for owner trial (separate identity/data/shortcut; no LafazFlow data or hotkey touched) and document how to try it.
+- [ ] Stop conditions honored: no daily-driver install, no quality-gate pass claimed without the replay table, no repo/identity/branding decisions, nothing that disrupts the installed LafazFlow.
+- [ ] Phase C checkpoint for the owner after the trial: decide the Stage 2 home (rebrand in this repo vs dedicated source) and begin identity replacement.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

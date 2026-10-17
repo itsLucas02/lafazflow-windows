@@ -64,3 +64,9 @@ Date: 17 October 2026, Asia/Kuala_Lumpur. Status: **Accepted by owner — all re
 3. **Interim flight recorder in the current app: approved.** Implement it as the next owner-local slice (plan tracked in `tasks/todo.md`) so the intermittent trust failures are captured and replayable while the replacement is built.
 4. **Replacement v1 engine lineup approved:** whisper-family (keeps the current quality model working) + Parakeet V3 + remote OpenAI-compatible endpoint. SenseVoice/Moonshine deferred as optional speed tiers until the catalog proves itself.
 5. **Phonon-2 role approved:** optional remote-endpoint comparison candidate in Stage 1 replays only (it runs as a local server); not a dependency. Revisit integration only if a native/GGML/ONNX runtime appears.
+
+## Delivery log
+
+- 17 Oct 2026: `comment and push` → `commit and push` homophone fix + recorder-test flake stabilization (commit `02d7210`).
+- 17 Oct 2026: interim dictation flight recorder delivered and installed to the owner build (commit `181cff5`, installed build 36); ring at `%LOCALAPPDATA%\LafazFlow\FlightRecorder`, Settings → Diagnostics card live.
+- 17 Oct 2026: owner granted a single approval for an autonomous continuation session; protocol and stop conditions recorded in the roadmap ("Autonomous execution protocol — 17 October 2026").
