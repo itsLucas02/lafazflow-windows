@@ -471,12 +471,30 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Delivery: owner-local install via `scripts/install-owner-build.ps1`, then push.
 
 ## Plan: Interim dictation flight recorder (current app, approved 17 Oct 2026)
-- [ ] Add a local auto-expiring ring buffer of recent finalized dictations: last 50 recordings or 48 hours, whichever comes first, under `%LOCALAPPDATA%\LafazFlow\FlightRecorder`.
-- [ ] Store the exact finalized WAV sent to the engine, named by timestamp and dictation id only (no transcript text in names or sidecars).
-- [ ] Add Settings controls: retention summary, save-this-one (pin/export the latest), and purge-all; document the local-only boundary.
-- [ ] Prune expired recordings on startup and after each dictation; the recorder must never block or delay dictation.
-- [ ] Regression tests: retention by count, retention by age, purge, save-one pinning, and no change to the normal pipeline.
-- [ ] Focused + full tests, Release build, owner-local install, and a live-dictation check that a replayable WAV is retained.
+
+**Goal:** every finalized dictation WAV is kept in a local auto-expiring ring buffer so intermittent trust failures (missing words, invented endings) stop being unreproducible.
+
+**Current code facts (grounded 17 Oct 2026)**
+- WAVs are written to `%LOCALAPPDATA%\LafazFlow\Recordings` (`RecorderController.StartRecording`, `recordingsRoot`).
+- `ProcessJobAsync` finally-block deletes each WAV unless the existing Diagnostics setting `KeepRecordingsForDiagnostics` is on (`RecorderController.cs:590`); that setting is a checkbox in Settings → Diagnostics.
+- The delete hook runs for both successful and failed dictations, so one hook covers both.
+
+**Implementation**
+- [x] New `FlightRecorderService`: root `%LOCALAPPDATA%\LafazFlow\FlightRecorder`; constants 50 recordings / 48 hours; `Keep(wavPath, dictationId)` moves the finalized WAV to `yyyyMMdd-HHmmss-<id8>.wav` and prunes; `Prune()` deletes by age then by count (oldest first); `GetSnapshot()` (count, oldest/newest) for the UI; `PurgeAll()`; `SaveLatest(destination)`; a simple lock; any failure falls back to the old delete behavior and never throws into the dictation path.
+- [x] `RecorderController.ProcessJobAsync` finally: when diagnostics retention is OFF, `Keep` instead of `TryDelete`; when ON, current behavior unchanged. Never blocks or delays dictation.
+- [x] Startup prune from `MainWindow.InitializeShell` alongside the other services.
+- [x] Settings → Diagnostics: new "Dictation flight recorder" card — local-only helper text, retention summary, buttons: Open folder, Save latest recording…, Purge all (code-behind handlers following the existing diagnostics-button pattern).
+- [x] No settings-schema change; filenames carry timestamp + dictation id only (no transcript text anywhere).
+- [x] Tests: `FlightRecorderServiceTests` (keep/rename, prune by count, prune by age, purge, save latest, failure fallback, no transcript strings); `RecorderControllerTests` additions (successful dictation ringed; failed dictation ringed; diagnostics-mode unchanged).
+- [x] Docs: mark the interim evidence path live in the 2026-10-08 incident reference; note the delivered slice in the decision record; review entry with verification numbers.
+- [x] Focused + full tests and Release build green; owner-local install and live-dictation ring check follow the commit.
+
+## Review: Interim dictation flight recorder (17 Oct 2026)
+- Delivered the ring buffer: every finalized dictation WAV now moves into `%LOCALAPPDATA%\LafazFlow\FlightRecorder` (last 50 recordings or 48 hours) instead of being deleted; failed dictations are captured too; the diagnostics-retention checkbox keeps its old behavior.
+- Settings → Diagnostics gained a "Dictation Flight Recorder" card with a live retention summary and Open Folder / Save Latest Recording… / Purge All actions; filenames are timestamp + dictation id only.
+- Safety: one hook in the existing cleanup path; service never throws into dictation; move failure falls back to the previous delete; startup prune runs on a background task; no settings-schema change.
+- Verification: focused 46 green (8 new service tests + 38 recorder tests including successful, failed, and diagnostics-retention ring cases); full suite 828 green; Release build 0 warnings/0 errors; `git diff --check` clean.
+- Owner-local install from the verified commit follows; a live dictation will create the first retained recording.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.

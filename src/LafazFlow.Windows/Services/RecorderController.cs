@@ -27,6 +27,7 @@ public sealed class RecorderController
     private readonly Func<IntPtr> _getForegroundWindow;
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly TimeSpan _micReadinessTimeout;
+    private readonly FlightRecorderService? _flightRecorder;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -55,7 +56,8 @@ public sealed class RecorderController
         ITranscriptionEngine? transcriptionEngine = null,
         PerformanceHealthMonitor? performanceHealthMonitor = null,
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
-        TimeSpan? micReadinessTimeout = null)
+        TimeSpan? micReadinessTimeout = null,
+        FlightRecorderService? flightRecorder = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -76,6 +78,7 @@ public sealed class RecorderController
         _performanceHealthMonitor = performanceHealthMonitor;
         _restartWorkerAsync = restartWorkerAsync;
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
+        _flightRecorder = flightRecorder;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -584,13 +587,20 @@ public sealed class RecorderController
             _soundCues.PlayError(SoundCueOptions.FromSettings(job.Settings));
             LogError(error.ToString());
         }
-        finally
-        {
-            job.LatencyTrace?.Mark(LatencyCheckpoint.CleanupStarted);
-            if (!job.Settings.KeepRecordingsForDiagnostics)
+            finally
             {
-                TryDelete(job.AudioPath);
-            }
+                job.LatencyTrace?.Mark(LatencyCheckpoint.CleanupStarted);
+                if (!job.Settings.KeepRecordingsForDiagnostics)
+                {
+                    if (_flightRecorder is not null)
+                    {
+                        _flightRecorder.Keep(job.AudioPath, job.DictationId);
+                    }
+                    else
+                    {
+                        TryDelete(job.AudioPath);
+                    }
+                }
             job.LatencyTrace?.Mark(LatencyCheckpoint.CleanupFinished);
             if (job.LatencyTrace is not null)
             {

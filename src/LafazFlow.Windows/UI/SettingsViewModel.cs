@@ -17,6 +17,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly LocalModelLibraryService _modelLibrary;
     private readonly VoiceEngineStatusSource? _voiceEngineStatus;
     private readonly string? _logsFolderOverride;
+    private readonly FlightRecorderService _flightRecorder;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
     private string _cudaWhisperCliPath = "";
@@ -58,6 +59,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _engineLastRecoveryText = "No recovery yet";
     private string _engineIdText = "";
     private string _engineActiveBackendText = "Unknown";
+    private string _flightRecorderSummary = "";
     private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
@@ -68,7 +70,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         RuntimeDiagnosticsService runtimeDiagnostics,
         LocalModelLibraryService modelLibrary,
         VoiceEngineStatusSource? voiceEngineStatus,
-        string? logsFolderOverride)
+        string? logsFolderOverride,
+        FlightRecorderService? flightRecorder = null)
     {
         _settingsStore = settingsStore;
         _latencyDiagnostics = latencyDiagnostics;
@@ -77,6 +80,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _modelLibrary = modelLibrary;
         _voiceEngineStatus = voiceEngineStatus;
         _logsFolderOverride = logsFolderOverride;
+        _flightRecorder = flightRecorder ?? new FlightRecorderService();
         _sourceSettings = settings;
         if (_voiceEngineStatus is not null)
         {
@@ -117,6 +121,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         RefreshModelCards();
         RefreshLatencyDiagnostics();
         RefreshHotkeyDiagnostics();
+        RefreshFlightRecorderSummary();
         RefreshRuntimeDiagnostics();
         RefreshVoiceEngineStatus();
     }
@@ -437,6 +442,36 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         "LafazFlow",
         "Recordings");
 
+    public string FlightRecorderFolder => _flightRecorder.Root;
+
+    public string FlightRecorderSummary
+    {
+        get => _flightRecorderSummary;
+        private set => SetProperty(ref _flightRecorderSummary, value);
+    }
+
+    public void RefreshFlightRecorderSummary()
+    {
+        var (count, oldest, newest) = _flightRecorder.GetSnapshot();
+        FlightRecorderSummary = count == 0
+            ? "No recordings retained yet."
+            : $"{count} recording{(count == 1 ? "" : "s")} retained (oldest {oldest:g}, newest {newest:g}).";
+    }
+
+    public int PurgeFlightRecorder()
+    {
+        var removed = _flightRecorder.PurgeAll();
+        RefreshFlightRecorderSummary();
+        return removed;
+    }
+
+    public bool SaveLatestFlightRecorder(string destinationPath)
+    {
+        var saved = _flightRecorder.SaveLatest(destinationPath);
+        RefreshFlightRecorderSummary();
+        return saved;
+    }
+
     public string AppVersion => AppVersionText.Compact;
 
     public string AppVersionWithCommit => AppVersionText.Full;
@@ -477,7 +512,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         RuntimeDiagnosticsService? runtimeDiagnostics = null,
         LocalModelLibraryService? modelLibrary = null,
         VoiceEngineStatusSource? voiceEngineStatus = null,
-        string? logsFolderOverride = null)
+        string? logsFolderOverride = null,
+        FlightRecorderService? flightRecorder = null)
     {
         return new SettingsViewModel(
             settingsStore,
@@ -487,7 +523,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             runtimeDiagnostics ?? new RuntimeDiagnosticsService(),
             modelLibrary ?? new LocalModelLibraryService(),
             voiceEngineStatus,
-            logsFolderOverride);
+            logsFolderOverride,
+            flightRecorder);
     }
 
     public async Task DownloadModelAsync(ModelCardViewModel card, CancellationToken cancellationToken)

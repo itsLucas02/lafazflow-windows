@@ -1123,6 +1123,22 @@
                             <CheckBox Content="Keep recordings for diagnostics" IsChecked="{Binding KeepRecordingsForDiagnostics}" />
                         </StackPanel>
                     </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Dictation Flight Recorder" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="Keeps the last 50 dictations or 48 hours locally so any unexpected result can be replayed. Files never leave this machine and expire automatically."
+                                       Style="{StaticResource HelperTextStyle}" />
+                            <TextBlock Text="{Binding FlightRecorderSummary}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,0,8" />
+                            <WrapPanel>
+                                <Button Content="Open Folder" Width="116" Click="OpenFlightRecorderFolder_OnClick" />
+                                <Button Content="Save Latest Recording" Width="170" Click="SaveLatestFlightRecorder_OnClick" />
+                                <Button Content="Purge All" Width="96" Click="PurgeFlightRecorder_OnClick" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
 

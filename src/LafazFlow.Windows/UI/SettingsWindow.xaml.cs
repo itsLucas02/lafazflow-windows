@@ -198,6 +198,70 @@ public partial class SettingsWindow : WpfFluentWindow
         _viewModel.ClearHotkeyDiagnostics();
     }
 
+    private void OpenFlightRecorderFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(_viewModel.FlightRecorderFolder);
+        OpenFolder(_viewModel.FlightRecorderFolder);
+    }
+
+    private void SaveLatestFlightRecorder_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save latest recording",
+            FileName = "lafazflow-dictation.wav",
+            Filter = "WAV audio (*.wav)|*.wav"
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!_viewModel.SaveLatestFlightRecorder(dialog.FileName))
+            {
+                System.Windows.MessageBox.Show(
+                    this,
+                    "No recording to save yet.",
+                    "Flight Recorder",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (Exception error)
+        {
+            System.Windows.MessageBox.Show(
+                this,
+                $"Could not save the recording: {error.Message}",
+                "Flight Recorder",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void PurgeFlightRecorder_OnClick(object sender, RoutedEventArgs e)
+    {
+        var result = System.Windows.MessageBox.Show(
+            this,
+            "Delete all retained flight-recorder recordings? This cannot be undone.",
+            "Purge Recordings",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var removed = _viewModel.PurgeFlightRecorder();
+        System.Windows.MessageBox.Show(
+            this,
+            removed == 0 ? "No recordings to purge." : $"Deleted {removed} recording{(removed == 1 ? "" : "s")}.",
+            "Flight Recorder",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
     private void TestStartSoundCue_OnClick(object sender, RoutedEventArgs e)
     {
         _soundCues.PlayRecordingStarted(BuildEditedSoundCueOptions());

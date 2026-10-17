@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly ITranscriptionEngine? _workerEngine;
     private readonly PerformanceHealthMonitor _healthMonitor = new();
     private readonly VoiceEngineStatusSource _voiceEngineStatus;
+    private readonly FlightRecorderService _flightRecorder = new();
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
@@ -80,7 +81,8 @@ public partial class MainWindow : Window
                     _workerSupervisor.RestartSessionAsync(
                         settings,
                         cancellationToken,
-                        "Sustained slowdown"));
+                        "Sustained slowdown"),
+            flightRecorder: _flightRecorder);
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,
@@ -120,6 +122,7 @@ public partial class MainWindow : Window
             // StartRecording surfaces the device error if it is still unavailable.
         }
         _ = CheckForUpdatesAsync(openDownloadWhenUpdate: false);
+        _ = Task.Run(() => _flightRecorder.Prune(), CancellationToken.None);
         if (_workerSupervisor is not null)
         {
             _ = Task.Run(async () =>

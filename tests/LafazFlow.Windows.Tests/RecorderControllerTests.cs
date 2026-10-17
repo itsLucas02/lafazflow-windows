@@ -824,6 +824,118 @@ public sealed class RecorderControllerTests
     }
 
     [Fact]
+    public async Task SuccessfulDictationMovesRecordingIntoFlightRecorder()
+    {
+        var ringRoot = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-{Guid.NewGuid():N}");
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-src-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildThreeSecondPcmWav());
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            new FakeTranscriptionService(_ => Task.FromResult("Hello world")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            flightRecorder: new FlightRecorderService(ringRoot));
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.False(File.Exists(audioPath));
+            var ringed = Assert.Single(Directory.GetFiles(ringRoot, "*.wav"));
+            Assert.Matches(@"^\d{8}-\d{6}-[0-9a-f]{8}\.wav$", Path.GetFileName(ringed));
+        }
+        finally
+        {
+            TryDeleteDirectory(ringRoot);
+        }
+    }
+
+    [Fact]
+    public async Task FailedDictationStillKeepsRecordingInFlightRecorder()
+    {
+        var ringRoot = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-{Guid.NewGuid():N}");
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-src-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildThreeSecondPcmWav());
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            new FakeTranscriptionService(_ => Task.FromException<string>(new InvalidOperationException("boom"))),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            flightRecorder: new FlightRecorderService(ringRoot));
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.False(File.Exists(audioPath));
+            Assert.Single(Directory.GetFiles(ringRoot, "*.wav"));
+        }
+        finally
+        {
+            TryDeleteDirectory(ringRoot);
+        }
+    }
+
+    [Fact]
+    public async Task DiagnosticsRetentionLeavesRecordingInPlace()
+    {
+        var ringRoot = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-{Guid.NewGuid():N}");
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-ring-src-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildThreeSecondPcmWav());
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            new FakeTranscriptionService(_ => Task.FromResult("Hello world")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { KeepRecordingsForDiagnostics = true }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            flightRecorder: new FlightRecorderService(ringRoot));
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.True(File.Exists(audioPath));
+            Assert.False(Directory.Exists(ringRoot) && Directory.GetFiles(ringRoot, "*.wav").Length > 0);
+        }
+        finally
+        {
+            TryDeleteDirectory(ringRoot);
+            File.Delete(audioPath);
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+        }
+    }
+
+    [Fact]
     public async Task SuccessfulDictationRecordsPerformanceHealthSample()
     {
         var viewModel = new MiniRecorderViewModel();
