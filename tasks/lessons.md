@@ -464,6 +464,18 @@
 - Rule: Use beam search for final worker decoding, keep preview greedy, and detect repeated multi-word phrases independently of prompt presence. Retry through the existing CLI once rather than stripping duplicate text and concealing lost speech.
 - Verification: Compare identical retained private audio before/after and preserve meaningful middle content and ending, not merely shorter output. Keep audio and transcripts outside Git.
 
+## Route engine families through data, not rebuilds
+- Pattern: LafazFlow's capture-to-paste core assumed whisper.cpp everywhere (worker protocol, settings fingerprint, decode options, VAD flags, prompt injection, model library), so changing model family meant rebuilding the app and changing one model became an architectural project.
+- Rule: Keep capture/UI/paste model-agnostic and route engines through a small interface (`Load`/`Transcribe`/`Cancel`/`Unload`/`Capabilities`) with a data-only model catalog (id, family, format, hash, languages, capabilities, download source). Adding or switching a model family must be a catalog/configuration change; prove it by running a second engine family and a remote OpenAI-compatible endpoint without app changes, and scope settings by capability instead of assuming whisper options exist.
+
+## Keep dictation evidence: record the audio, not just the text
+- Pattern: Intermittent trust failures (missing words or sentences, invented endings such as an unspoken closing courtesy phrase) could not be investigated because the owner could not identify which recording was affected and no retained audio existed; agents kept asking for a recording that could not be produced.
+- Rule: Ship a local auto-expiring flight recorder (ring buffer of recent finalized dictations, private, with purge controls) so every failure class is replayable. Treat identical-audio replay across engines as the required acceptance evidence for trust fixes; never claim a root cause from pasted text alone.
+
+## Inject the target-context fake in recorder tests
+- Pattern: A recorder test constructed `RecorderController` without a `targetTextContext` fake, so it fell back to the real `FocusedTargetTextContextService` and read whatever window was focused on the machine; during a full-suite run it intermittently lowercased the expected `Hello world.` paste while passing in isolation.
+- Rule: Recorder tests must always inject `FakeTargetTextContextService`; never let a unit test read ambient focused-window state. A test whose expectation depends on first-letter casing is deterministic only by environment, not by code.
+
 ## Every reported error needs a durable incident reference
 - Pattern: The phrase-loop fix was committed, tested, installed, and pushed, but its explanation lived only in task/lesson notes until the owner requested a dedicated future reference.
 - Rule: Create or update a linked `docs/references/` incident record for every owner-reported error before declaring completion. Include evidence, cause versus uncertainty, fix, tests, commit, delivery, limitations, and recurrence steps; task notes alone are insufficient.

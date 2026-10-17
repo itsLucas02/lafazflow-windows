@@ -1,6 +1,6 @@
 # Dictation invents endings and loses spoken openings
 
-Date: 8 October 2026, Asia/Kuala_Lumpur. Status: Cutover planning after a second failure report; causes of these specific recordings not yet confirmed. No fix delivered.
+Date: 8 October 2026, Asia/Kuala_Lumpur. Status: Cutover planning after a second failure report; causes of these specific recordings not yet confirmed. No fix delivered. Recurrence reported 17 October 2026 (see below).
 
 Implementation handoff: [full application replacement roadmap](../superpowers/plans/2026-10-10-lafazflow-full-replacement-roadmap.md). This planning documentation is not an owner-install or a fix commit.
 
@@ -32,3 +32,11 @@ Evaluate a pinned Handy version on the owner's machine with a fresh local-only c
 The owner approved the replacement plan. Bun 1.4.2 and Vulkan SDK 1.4.363.0 were installed; the pinned upstream v0.9.8 source passed frozen dependency install, frontend production build, and `tauri build --no-bundle` on Windows. `handy.exe --list-models --json` succeeded, finding Vulkan0 and CPU, but Parakeet was not yet downloaded. This produced only an upstream-branded test executable in `%LOCALAPPDATA%\Temp\opencode\handy-v0.9.8\src-tauri\target\release`; it has **not** been installed or launched as LafazFlow and has not decoded the owner's audio. The repo has no replacement fix commit, test results on failure audio, or owner delivery. Require repeatable replay of labeled affected recordings, deliberately spoken lookalike phrases, quiet final words, long pauses, long dictation, and immediate opening words through the replacement foundation. Check stop-to-paste time, microphone device selection, hotkey and paste reliability in the owner's actual target applications. Do not redirect the canonical taskbar installation or disable the existing app until the LafazFlow-branded replacement passes owner-local acceptance. If implementing inside this repository, the repository delivery script and direct-to-main rules apply; if migrating to a new application/repository, agree on a new canonical install and rollback plan first. Record the delivered build identity and owner acceptance separately.
 
 If this recurs, correlate capture/stop/paste timestamps and installed build with the exact locally retained WAV. Listen locally to the beginning and ending, then replay the same audio under both the existing engine and the candidate foundation. If no recording was retained, obtain an opt-in diagnostic recording of a new occurrence rather than claiming a root cause from text alone. Record the result here.
+
+## Recurrence — 17 October 2026
+
+The owner reports the failure class is still present on the currently installed build: intermittent missing words or whole sentences, and occasional invented endings (for example an unspoken closing courtesy phrase). Frequency is low and unpredictable; the owner cannot identify which recording was affected, and no matching retained WAV exists, so no root cause is confirmed for any occurrence.
+
+Candidate mechanisms already recorded here and in [2026-08-16-dictation-reliability-known-issues.md](2026-08-16-dictation-reliability-known-issues.md) remain hypotheses, not causes: trailing-silence hallucination with VAD disabled for the final pass, the no-speech gate and prompt-leak suppressor rejecting valid quiet audio, and VAD onset cutting the first words.
+
+Owner decision (same date): the replacement must ship a local flight recorder (auto-expiring ring buffer of recent finalized dictations) so this failure class is always replayable; see the [model-agnostic core decision](../superpowers/specs/2026-10-17-model-agnostic-core-decision.md). Until cutover, investigate any new occurrence only from a fresh labeled recording (opt-in diagnostic retention, or the interim flight recorder if the owner approves adding it to the current app); do not treat text alone as evidence.

@@ -441,6 +441,43 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Rollout: canonical install at the per-user Programs path with shortcuts; old artifacts preserved; exactly one app + one owned CUDA worker, worker Ready, no orphan whisper-cli.
 - M11 publication (tag/release) remains unstarted and requires separate explicit owner approval.
 
+## Plan: Model-agnostic core decision and roadmap update (17 Oct 2026)
+- [x] Record the owner decision: port verified behavior onto a model-agnostic core; do not rebuild blind and do not keep patching the whisper-coupled core.
+- [x] Write the decision record: `docs/superpowers/specs/2026-10-17-model-agnostic-core-decision.md` (four-layer architecture, salvage ledger, added requirements, open questions).
+- [x] Update the full replacement roadmap with the decision and new normative requirements (engine catalog + remote OpenAI-compatible endpoint, flight recorder, capability-scoped settings, trust acceptance evidence).
+- [x] Record the 17 Oct recurrence (intermittent missing words/sentences and invented endings, recording unidentified) in the existing incident reference.
+- [x] Add lessons: engine families are catalog data, not rebuilds; dictation evidence requires recorded audio.
+- [x] Owner discussion checkpoint (17 Oct 2026, all recommendations approved): adopt/port (option C); flight recorder always-on with last 50 dictations or 48 h at `%LOCALAPPDATA%\LafazFlow\FlightRecorder` plus save-one and purge controls; interim flight recorder in the current app approved; replacement v1 engine lineup whisper-family + Parakeet V3 + remote OpenAI-compatible endpoint; Phonon-2 as optional remote-endpoint comparison in Stage 1.
+- [ ] Begin Stage 1 execution (re-checkout pinned Handy `14f6f0d3`, Parakeet V3 replay table on retained fixtures) — deferred until after the interim flight-recorder slice.
+
+## Review: Model-agnostic core decision and roadmap update (17 Oct 2026)
+- Decision: adopt/port onto a model-agnostic core (option C) — the replacement must treat model families as catalog data behind a small engine interface; adding/switching a model must never require rebuilding the app.
+- Salvage ledger recorded: capture-state behavior, exactly-once paste, vocabulary catalog, post-processing pipeline, fixtures/harness, install pipeline, and the 688-test behavior spec all port over; whisper worker/protocol/options, WPF capture plumbing, and the whisper-only model library are replaced.
+- New requirements added to the roadmap: flight recorder (auto-expiring local ring buffer, default proposal 50 recordings / 48 h), second engine family + remote OpenAI-compatible endpoint proven without app changes, capability-scoped settings, flight-recorder replay acceptance before cutover.
+- 17 Oct recurrence recorded in the existing 2026-10-08 incident reference; root cause still unconfirmed; no fix claimed.
+- Implementation is gated on the owner discussion checkpoint; M11 remains unstarted.
+
+## Plan: `comment and push` commit homophone fix (17 Oct 2026)
+- [x] Record the owner-reported failure ("commit and push" pasted as "comment and push") in the known-issues reference (section 4).
+- [x] Add regressions: observed phrase, owner sentence shape, and normal-comment preservation.
+- [x] Correct `comment and push` to `commit and push` in the bounded phrase-correction family alongside `come in and push`.
+- [ ] Run focused vocabulary tests, full suite, Release build, and owner-local install; verify from the installed build.
+
+## Review: `comment and push` commit homophone fix (17 Oct 2026)
+- Root cause: the commit-correction family covered `comit`, `git come in`, `git comes in`, `come in and push`, and `comes in and push`, but not the observed `comment and push`; Whisper prefers the more common word `comment` on fast or soft `commit` audio.
+- Fix: `comment and push` → `commit and push` added to `VocabularyCorrectionService` bounded phrase corrections; only the exact phrase rewrites, so normal comment wording (`comment on the pull request`) is untouched; trade-off documented in the known-issues reference.
+- Flake fixed at its root during verification: `FinalDictationUsesTranscriptionEngineAndPastesExactlyOnce` omitted the `targetTextContext` fake, so it read the real focused window during full-suite runs and intermittently lowercased the expected `Hello world.` paste while passing in isolation; it now injects `FakeTargetTextContextService("")` like its sibling tests.
+- Verification: focused vocabulary 179 green; full suite 817 green after the flake fix (the first full run had surfaced the flake); Release build 0 warnings/0 errors; `git diff --check` clean.
+- Delivery: owner-local install via `scripts/install-owner-build.ps1`, then push.
+
+## Plan: Interim dictation flight recorder (current app, approved 17 Oct 2026)
+- [ ] Add a local auto-expiring ring buffer of recent finalized dictations: last 50 recordings or 48 hours, whichever comes first, under `%LOCALAPPDATA%\LafazFlow\FlightRecorder`.
+- [ ] Store the exact finalized WAV sent to the engine, named by timestamp and dictation id only (no transcript text in names or sidecars).
+- [ ] Add Settings controls: retention summary, save-this-one (pin/export the latest), and purge-all; document the local-only boundary.
+- [ ] Prune expired recordings on startup and after each dictation; the recorder must never block or delay dictation.
+- [ ] Regression tests: retention by count, retention by age, purge, save-one pinning, and no change to the normal pipeline.
+- [ ] Focused + full tests, Release build, owner-local install, and a live-dictation check that a replayable WAV is retained.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
