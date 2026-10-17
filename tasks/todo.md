@@ -497,13 +497,20 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Owner-local install from the verified commit follows; a live dictation will create the first retained recording.
 
 ## Plan: Autonomous Stage 1 replacement session (17 Oct 2026, owner away, single approval)
-- [ ] B1: Restore the pinned Handy checkout (`%LOCALAPPDATA%\Temp\opencode\handy-v0.9.8` at `14f6f0d3`) without discarding the existing incremental build cache.
-- [ ] B2: Rebuild the upstream test binary (`bun install --frozen-lockfile`, frontend build, `tauri build --no-bundle`) with the Vulkan SDK on PATH.
-- [ ] B3: Obtain Parakeet V3 in Handy's model store and verify the pinned SHA-256 `43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77`.
-- [ ] B4: Replay retained private fixtures through the headless file path; private results table stays under `%LOCALAPPDATA%\LafazFlow\Benchmarks\`; public-safe summary in `docs/references/`.
-- [ ] B5: Leave the isolated upstream-branded test build launchable for owner trial (separate identity/data/shortcut; no LafazFlow data or hotkey touched) and document how to try it.
-- [ ] Stop conditions honored: no daily-driver install, no quality-gate pass claimed without the replay table, no repo/identity/branding decisions, nothing that disrupts the installed LafazFlow.
+- [x] B1: Restored the pinned Handy checkout (`%LOCALAPPDATA%\Temp\opencode\handy-v0.9.8` at `14f6f0d3`) preserving the incremental build cache.
+- [x] B2: Rebuilt the upstream test binary (`bun install --frozen-lockfile`, frontend build, `tauri build --no-bundle`, Vulkan SDK on PATH; 7m16s incremental).
+- [x] B3: Obtained Parakeet V3 in the portable model store and verified the pinned SHA-256 `43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77` exactly.
+- [x] B4: Replayed the four retained private fixtures through V3 and the current whisper CLI; private results table + summary under `%LOCALAPPDATA%\LafazFlow\Benchmarks\v3-replay-2026-10-17\`; public-safe summary in `docs/references/2026-10-17-parakeet-v3-stage1-replay.md`.
+- [x] B5: Isolated portable trial build prepared at `%LOCALAPPDATA%\Programs\HandyTestBuild` (Ctrl+Space hotkey, Parakeet V3 preselected, portable `Data\`, README.txt) — separate identity/data; no LafazFlow data or hotkey touched.
+- [x] Stop conditions honored: no daily-driver install, no repo/identity/branding decisions, installed LafazFlow untouched.
 - [ ] Phase C checkpoint for the owner after the trial: decide the Stage 2 home (rebrand in this repo vs dedicated source) and begin identity replacement.
+
+## Review: Autonomous Stage 1 replacement session (17 Oct 2026)
+- Builds and artifacts: pinned Handy `14f6f0d3` rebuilt into an upstream test binary; Parakeet V3 (`parakeet-tdt-0.6b-v3-int8`) downloaded with the pinned hash verified; portable trial build prepared and smoke-tested (headless transcribe returns the expected fixture text).
+- Replay result (four retained M1 fixtures, normalized comparison): identical normalized text between V3 and the current whisper engine on 2/4 fixtures; mean word similarity 0.9705 (V3) vs 0.9775 (whisper); endings preserved 3/4 for both; all remaining deltas explained (one V3 stutter token, retention-time post-processing, one shared snapshot artifact). Zero hallucinations/omissions/language drift across 8 runs.
+- Timing: V3 CPU warm 1183-1369 ms for 22.3 s audio (~16-19x realtime), load ~1 s; whisper CUDA stays the latency leader (~0.9-1.3 s end-to-end including load on the same files).
+- Trial artifact: `%LOCALAPPDATA%\Programs\HandyTestBuild` — Ctrl+Space hold/toggle hotkey, V3 selected, portable data directory, removable by deleting the folder.
+- Not claimed: no quality-gate pass beyond this small corpus, no daily-driver switch, no Stage 2 decisions; live microphone trials and flight-recorder audio drive the next round.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
