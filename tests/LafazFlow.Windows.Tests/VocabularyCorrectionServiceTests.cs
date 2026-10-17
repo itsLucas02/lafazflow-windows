@@ -222,11 +222,21 @@ public sealed class VocabularyCorrectionServiceTests
     [InlineData("Run git come in now.", "Run git commit now.")]
     [InlineData("Please come in and push.", "Please commit and push.")]
     [InlineData("It comes in and push.", "It commit and push.")]
+    [InlineData("I was speaking earlier about comment and push.", "I was speaking earlier about commit and push.")]
+    [InlineData("Please comment and push the fix.", "Please commit and push the fix.")]
     public void ApplyDefaultsFixesCommitCodingVariants(string input, string expected)
     {
         var corrected = VocabularyCorrectionService.ApplyDefaults(input);
 
         Assert.Equal(expected, corrected);
+    }
+
+    [Fact]
+    public void ApplyDefaultsPreservesNormalCommentSentences()
+    {
+        var corrected = VocabularyCorrectionService.ApplyDefaults("Please comment on the pull request.");
+
+        Assert.Equal("Please comment on the pull request.", corrected);
     }
 
     [Fact]

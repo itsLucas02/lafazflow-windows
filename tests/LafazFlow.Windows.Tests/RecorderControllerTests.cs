@@ -810,6 +810,7 @@ public sealed class RecorderControllerTests
             CreateSettingsStore(),
             new SoundCueService(),
             () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
             transcriptionEngine: engine);
 
         controller.StartRecording();

@@ -1,6 +1,6 @@
 # LafazFlow Dictation Reliability — Known Issues Reference
 
-**Date:** 16/08/2026 (Asia/Kuala_Lumpur)
+**Date:** 16/08/2026 (Asia/Kuala_Lumpur) — updated 17/10/2026 (section 4).
 **Status:** Living reference for agents and maintainers. Update this file when symptoms, root causes, or fixes change. Do not paste transcripts, prompts, credentials, or personal data into this document.
 
 > **25 September 2026 capture update:** Section 2 describes the August `WaveIn` implementation and is historical. The current owner build uses raw-mode WASAPI with native-format capture and 16 kHz conversion. For the investigation, evidence, current code path, and recurrence procedure, see [First-word capture reliability: investigation and handoff](2026-09-25-first-word-capture-investigation.md). Do not use the August `WaveIn` description to diagnose the current build.
@@ -99,7 +99,19 @@ The brand name `DeepSeek` is phonetically ambiguous: whisper produces `DeepSeq`,
 
 Whisper's VAD can shift the first-word boundary on ambiguous audio onsets between builds and runs (observed: "please remember…" vs "at least remember…" on a retained fixture). This is inherent to the engine and is not a regression. Integration tests therefore assert substantive equivalence (normalized edit-distance ratio ≤ 0.15 plus preserved ending word) instead of exact raw equality, and cancel/preemption assertions accept either `Aborted` or `Ok` (cancellation is best-effort; a completed decode returning `Ok` is correct behavior). The invariants that matter — the worker stays healthy after a cancel, and a final request never waits behind preview — remain strictly asserted.
 
-## 3. What has already been done (context for future agents)
+## 4. Coding homophones: `commit and push` heard as `comment and push`
+
+### Symptom
+
+During normal dictation the owner spoke "commit and push" but the pasted text read "comment and push" (reported 17/10/2026 while dictating a repository instruction into the running app). Whisper can prefer the more common word `comment` on fast or softly-spoken `commit` audio. The existing corrections covered `comit`, `git come in`, `git comes in`, `come in and push`, and `comes in and push`, but not `comment`.
+
+### Fix (implemented 17/10/2026)
+
+- `VocabularyCorrectionService` now corrects the observed phrase `comment and push` to `commit and push`, the same bounded-phrase family as the existing `come in and push` rule.
+- Real comment usage is preserved: only the exact phrase is rewritten — `comment on the pull request`, `left a comment`, and plain `comment` stay untouched (regression tests).
+- Bounded trade-off (same as `come in and push`): a literal instruction to "comment and push" would also become `commit and push`; the owner's developer-dictation focus accepts this. Revisit only if a real comment-and-push dictation is ever observed.
+
+## 5. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.
 - **v1.1.0 public release** (`5d1a014` tag `v1.1.0`): CPU worker + Official CPU CLI package, tag/version validation workflow, backend compatibility checks (CUDA settings never silently run a CPU worker).
@@ -108,14 +120,14 @@ Whisper's VAD can shift the first-word boundary on ambiguous audio onsets betwee
 - **Repetition-leak guard generalized** (16/08/2026): standalone repetition loops (same token 15+ times, dominating ≥80% of the transcript) now fail both the live preview and the final paste.
 - **Mic readiness + fallback** (16/08/2026): first-audio gate with automatic device fallback and persisted preferred microphone (schema 18).
 
-## 4. Open decisions awaiting owner approval
+## 6. Open decisions awaiting owner approval
 
 - Generalize the repetition-leak guard (section 1).
 - DeepSeek phonetic family + prompt anchoring (separate discussion; includes the "deep sea" ambiguity rule).
 - Live capture-readiness gate and microphone device management (section 2).
 - Full microphone selector UI in Settings (auto-fallback and fast failure are done).
 
-## 5. Cross-references
+## 7. Cross-references
 
 - `src/LafazFlow.Windows/Services/PromptLeakDetector.cs`
 - `src/LafazFlow.Windows/Services/RollingWhisperLiveTranscriptPreviewService.cs`

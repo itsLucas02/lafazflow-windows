@@ -26,7 +26,8 @@ public static partial class VocabularyCorrectionService
             (PhraseRegex("git come in"), "git commit"),
             (PhraseRegex("git comes in"), "git commit"),
             (PhraseRegex("come in and push"), "commit and push"),
-            (PhraseRegex("comes in and push"), "commit and push")
+            (PhraseRegex("comes in and push"), "commit and push"),
+            (PhraseRegex("comment and push"), "commit and push")
         ]);
 
         return corrections.ToArray();
