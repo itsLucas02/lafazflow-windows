@@ -15,11 +15,18 @@ Status: Stage 1 of the [full replacement roadmap](../superpowers/plans/2026-10-1
 | --- | --- | --- | --- |
 | Parakeet V3 | 0.9705 | 1/4 | 3/4 |
 | Whisper (current) | 0.9775 | 2/4 | 3/4 |
+| Phonon-2 (optional third comparison) | 0.9575 | 1/4 | 3/4 |
 
-- The engines produced **byte-identical normalized text on 2 of 4 fixtures**. Remaining deltas: one extra stutter token from V3 on one fixture, and retained-transcript differences explained by LafazFlow post-processing applied at retention time (for example `road map` normalized to `roadmap`); no missing or invented content was observed for either engine on this corpus.
-- One fixture's retained-transcript ending differs from **both** engines identically (a shared snapshot artifact, not engine-specific).
+- The engines produced **byte-identical normalized text on 2 of 4 fixtures** (V3 vs whisper). Remaining deltas: one extra stutter token from V3 on one fixture, and retained-transcript differences explained by LafazFlow post-processing applied at retention time (for example `road map` normalized to `roadmap`); no missing or invented content was observed for any engine on this corpus.
+- One fixture's retained-transcript ending differs from **all three** engines identically (a shared snapshot artifact, not engine-specific).
 - V3 timing (CPU, one-shot per process): model load 0.9-1.1 s; inference 240 ms (6.3 s audio) to 2017 ms (35.6 s audio); warm repeats 1183-1369 ms for 22.3 s audio (~16-19x realtime). The CUDA whisper CLI completed the same files end-to-end in ~0.9-1.3 s including load, so whisper remains the latency leader on this machine while V3 is viable with no GPU at all.
-- No hallucinations, omission runs, or language drift occurred across 8 replay runs.
+- No hallucinations, omission runs, or language drift occurred across 12 replay runs (4 fixtures × 3 engines).
+
+## Phonon-2 (optional approved comparison)
+
+- Setup: isolated Python 3.13 virtual environment, `fermion-research` CPU engine (Windows PyTorch CPU build); the Phonon-2 profile was fetched once to `~/.cache/fermion/speech` (~164 MB); entirely on-device.
+- One-shot process overhead after the first fetch: ~3.0-4.0 s per file including interpreter and model load; these are not warm inference numbers and are not comparable to the in-process figures above.
+- Accuracy on this corpus sits marginally below both primary engines (0.9575 vs 0.9705 and 0.9775), consistent with Phonon-2 being a distilled Parakeet V3; it remains an interesting lightweight candidate but has no native/GGML/ONNX runtime today, so it stays watch-only as recorded in the decision record.
 
 ## Owner trial artifact
 

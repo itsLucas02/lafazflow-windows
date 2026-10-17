@@ -510,6 +510,7 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Replay result (four retained M1 fixtures, normalized comparison): identical normalized text between V3 and the current whisper engine on 2/4 fixtures; mean word similarity 0.9705 (V3) vs 0.9775 (whisper); endings preserved 3/4 for both; all remaining deltas explained (one V3 stutter token, retention-time post-processing, one shared snapshot artifact). Zero hallucinations/omissions/language drift across 8 runs.
 - Timing: V3 CPU warm 1183-1369 ms for 22.3 s audio (~16-19x realtime), load ~1 s; whisper CUDA stays the latency leader (~0.9-1.3 s end-to-end including load on the same files).
 - Trial artifact: `%LOCALAPPDATA%\Programs\HandyTestBuild` — Ctrl+Space hold/toggle hotkey, V3 selected, portable data directory, removable by deleting the folder.
+- Optional approved comparison executed: Phonon-2 (CPU Python engine, isolated venv, on-device) replayed on the same fixtures — mean 0.9575, exact 1/4, endings 3/4, same shared artifact on the failing fixture; stays watch-only (no native runtime), documented in the same reference.
 - Not claimed: no quality-gate pass beyond this small corpus, no daily-driver switch, no Stage 2 decisions; live microphone trials and flight-recorder audio drive the next round.
 
 ## Agreed product direction
