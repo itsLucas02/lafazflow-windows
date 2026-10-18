@@ -15,6 +15,10 @@ public sealed class ClipboardPasteService : IClipboardPasteService
     private const uint InputKeyboard = 1;
     private const uint KeyEventKeyUp = 0x0002;
     private const int PasteRetryDelayMs = 90;
+    /// <summary>Clipboard writes are synchronous; this only lets the data settle.</summary>
+    private const int ClipboardSettleDelayMs = 25;
+    /// <summary>Only paid when the target is not already the foreground window.</summary>
+    private const int FocusSettleDelayMs = 35;
 
     public async Task<ClipboardPasteResult> PasteAsync(
         string text,
@@ -31,12 +35,12 @@ public sealed class ClipboardPasteService : IClipboardPasteService
             : null;
 
         await SetTextWithRetryAsync(text, cancellationToken);
-        await Task.Delay(50, cancellationToken);
+        await Task.Delay(ClipboardSettleDelayMs, cancellationToken);
 
-        if (targetWindow != IntPtr.Zero)
+        if (targetWindow != IntPtr.Zero && GetForegroundWindow() != targetWindow)
         {
             SetForegroundWindow(targetWindow);
-            await Task.Delay(50, cancellationToken);
+            await Task.Delay(FocusSettleDelayMs, cancellationToken);
         }
 
         await SendPasteGestureWithRetryAsync(profile, cancellationToken);
@@ -296,6 +300,9 @@ public sealed class ClipboardPasteService : IClipboardPasteService
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
