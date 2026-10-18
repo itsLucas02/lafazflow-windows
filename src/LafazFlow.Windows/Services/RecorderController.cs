@@ -554,14 +554,24 @@ public sealed class RecorderController
             {
                 // The persistent worker's speech-presence gate can return an empty
                 // result for quiet-but-audible speech. Retry once through the CLI
-                // path with identical settings before declaring no speech.
+                // path before declaring no speech. The retry must re-run speech
+                // detection (VAD) when configured: a raw energy floor alone would
+                // let noise-only takes hallucinate text like "Thank you.".
                 LogInfo("FINAL engine returned empty text for audible audio; retrying through the CLI path.");
+                var retryDecodeOptions = runtime.DecodeOptions.EnableVad
+                    ? runtime.DecodeOptions
+                    : finalDecodeOptions;
                 transcript = await TranscribeThroughCliAsync(
                     job,
                     runtime,
                     prompt,
-                    finalDecodeOptions,
+                    retryDecodeOptions,
                     cancellationToken);
+                if (IsSilenceHallucinationPhrase(transcript))
+                {
+                    LogInfo("Retry result matched a known silence-hallucination phrase; discarding it.");
+                    transcript = "";
+                }
             }
 
             if (string.IsNullOrWhiteSpace(transcript))
@@ -681,6 +691,29 @@ public sealed class RecorderController
                 _latencyReporter.Report(job.LatencyTrace);
             }
         }
+    }
+
+    /// <summary>
+    /// Compacted phrases Whisper is known to invent on noise-only audio. They are
+    /// only discarded on the empty-engine retry path, where the first-pass speech
+    /// gate already found no speech, so a real dictation of these words cannot be
+    /// lost by the ordinary path.
+    /// </summary>
+    private static readonly HashSet<string> SilenceHallucinationPhrases = new(StringComparer.Ordinal)
+    {
+        "thankyou",
+        "thanks",
+        "thankyouverymuch",
+        "thanksforwatching",
+        "pleasesubscribe",
+        "bye",
+        "you"
+    };
+
+    private static bool IsSilenceHallucinationPhrase(string transcript)
+    {
+        var normalized = new string(transcript.Where(char.IsLetter).ToArray()).ToLowerInvariant();
+        return normalized.Length > 0 && SilenceHallucinationPhrases.Contains(normalized);
     }
 
     private async Task<string> TranscribeThroughCliAsync(

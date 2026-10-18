@@ -1022,6 +1022,87 @@ public sealed class RecorderControllerTests
         }
     }
 
+    [Fact]
+    public async Task EmptyEngineRetryDiscardsSilenceHallucinationPhrases()
+    {
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-retry-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000 * 2, 0.35));
+        var viewModel = new MiniRecorderViewModel();
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var cli = new FakeTranscriptionService(_ => Task.FromResult("Thank you."));
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            cli,
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Single(cli.InitialPrompts);
+            Assert.Empty(paste.Texts);
+            Assert.Contains("No speech", viewModel.StatusDetail);
+        }
+        finally
+        {
+            File.Delete(audioPath);
+        }
+    }
+
+    [Fact]
+    public async Task EmptyEngineRetryUsesVadDecodeOptionsWhenConfigured()
+    {
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-retry-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000 * 2, 0.35));
+        var viewModel = new MiniRecorderViewModel();
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var cli = new FakeTranscriptionService(_ => Task.FromResult("Recovered quiet speech"));
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            cli,
+            paste,
+            CreateSettingsStore(settings => settings with
+            {
+                TranscriptionProfile = TranscriptionProfile.Quality,
+                EnableVad = true
+            }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            var retryOptions = Assert.Single(cli.DecodeOptions);
+            Assert.True(retryOptions.EnableVad);
+            Assert.Single(paste.Texts);
+            Assert.Contains("Recovered quiet speech", paste.Texts[0]);
+        }
+        finally
+        {
+            File.Delete(audioPath);
+        }
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -1708,6 +1789,8 @@ public sealed class RecorderControllerTests
 
         public List<string> InitialPrompts { get; } = [];
 
+        public List<WhisperDecodeOptions> DecodeOptions { get; } = [];
+
         public Task<string> TranscribeAsync(
             string whisperCliPath,
             string modelPath,
@@ -1718,6 +1801,7 @@ public sealed class RecorderControllerTests
             CancellationToken cancellationToken)
         {
             InitialPrompts.Add(initialPrompt);
+            DecodeOptions.Add(decodeOptions);
             return _transcribeAsync(audioPath);
         }
     }

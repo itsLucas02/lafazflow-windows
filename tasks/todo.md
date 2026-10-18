@@ -541,6 +541,19 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Full suite 834 green.
 - [ ] Owner-local install; confirm the pill shows v1.1.3 and About shows the build number.
 
+## Plan: Fix empty-retry hallucination regression — the "Thank you" incident (19 Oct 2026)
+- [x] Reproduce with the retained take: worker gate correctly returned empty, the energy-only retry (peak floor 0.02; this take's noise peaked at 0.0282) sent it to the CLI, which hallucinated "Thank you." and pasted it.
+- [x] Retry now re-runs speech detection via the VAD-enabled decode options when configured, and discards results from a bounded silence-hallucination phrase family on the retry path only.
+- [x] Verified on the exact failing WAV: VAD-off reproduces "Thank you."; VAD-on returns empty (rejected, nothing pasted).
+- [x] Regression tests: hallucination phrase discarded; retry uses VAD options when configured; existing retry tests unchanged. Focused recorder 46 green; full suite 836 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + push.
+
+## Review: Fix empty-retry hallucination regression (19 Oct 2026)
+- Root cause: the 18 Oct empty-result retry used a raw energy floor as its only gate; a 1.78 s noise-only take (peak 0.0282, RMS 0.0048) crossed it, the CLI decoded non-speech audio, and whisper invented "Thank you." — the first verified reproduction of the original invented-courtesy-phrase family, with the audio retained.
+- Fix: retry uses `runtime.DecodeOptions` (VAD-enabled) when configured, so Silero re-runs before any decode; a bounded hallucination-phrase guard discards "thank you"/"thanks"/"bye"-family results on the retry path only (the ordinary path, where speech was detected, is untouched).
+- Evidence captured in the 2026-10-08 incident reference; known-issues section 2 refined; lesson updated ("an energy check may decide whether to retry, but the retry must never bypass speech detection").
+- Not claimed: the retry still relies on the configured profile having VAD enabled (owner's Quality profile does); Fast-profile retries keep the phrase guard as the backstop.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

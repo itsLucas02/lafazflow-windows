@@ -42,3 +42,13 @@ Candidate mechanisms already recorded here and in [2026-08-16-dictation-reliabil
 Owner decision (same date): the replacement must ship a local flight recorder (auto-expiring ring buffer of recent finalized dictations) so this failure class is always replayable; see the [model-agnostic core decision](../superpowers/specs/2026-10-17-model-agnostic-core-decision.md). Until cutover, investigate any new occurrence only from a fresh labeled recording (opt-in diagnostic retention, or the interim flight recorder if the owner approves adding it to the current app); do not treat text alone as evidence.
 
 **Update 17 October 2026:** the interim flight recorder is now live in the owner build — every finalized dictation (successful or failed) is retained in `%LOCALAPPDATA%\LafazFlow\FlightRecorder` (last 50 recordings or 48 hours, local-only, purgeable in Settings → Diagnostics). The next occurrence of this failure class can and must be investigated by replaying the exact retained WAV through both the installed engine and candidate replacement engines before any root cause is claimed.
+
+## Verified reproduction — 19 October 2026 (fixed the same day)
+
+The first fully-evidenced occurrence of this family, captured by the retained recordings:
+
+- The owner dictated three takes back to back; the middle take was deliberately silent. Its retained WAV (1.78 s, peak 0.0282, RMS 0.0048) contains no speech.
+- Chain from the log: the worker's speech-presence gate **correctly** returned empty, but the interim empty-result retry (added 18 October) used a raw energy floor (peak ≥ 0.02) without re-running speech detection. This take's noise transient (0.0282) exceeded the floor, the retry sent it to the CLI, and the CLI hallucinated **"Thank you."** — which was pasted. The worker's protection had been bypassed by the app's own retry.
+- Offline reproduction on the exact retained file: whisper with final-pass options (VAD off) returns "Thank you."; whisper with VAD enabled returns nothing.
+- Fix (same day): the empty-result retry now re-runs speech detection by using the VAD-enabled decode options when configured, and any retry result matching a small silence-hallucination phrase family ("thank you", "thanks", "bye", …) is discarded as no-speech. Regressions cover both; verified on the exact failing WAV (VAD-on → empty).
+- Lesson recorded: an energy check may decide *whether* to retry, but the retry must never bypass speech detection.

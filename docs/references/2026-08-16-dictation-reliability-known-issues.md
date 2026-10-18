@@ -91,7 +91,7 @@ The owner reported that occasionally, especially after a long dictation, nothing
 
 **Fix (implemented 18/10/2026)**
 
-- `RecorderController.ProcessJobAsync`: when the final engine succeeds but returns empty text and the finalized audio is audible (analyzer peak ≥ 0.02), retry once through the CLI path with identical settings before declaring no speech.
+- `RecorderController.ProcessJobAsync`: when the final engine succeeds but returns empty text and the finalized audio is audible (analyzer peak ≥ 0.02), retry once through the CLI path before declaring no speech. **Refined 19/10/2026 after a verified regression:** the retry now re-runs speech detection (VAD-enabled decode options when configured) and discards results matching a bounded silence-hallucination phrase family — the original energy-only retry let a noise-only take hallucinate "Thank you." See the [2026-10-08 incident reference](2026-10-08-trailing-invented-speech.md) for the full evidence chain.
 - Empty results on near-silent captures (peak < 0.02) now raise the honest "Microphone input was silent…" message instead of "No speech was transcribed".
 - Regression tests: audible+empty engine → CLI retry pastes; near-silent+empty → no retry + silent message; audible+empty engine+empty CLI → no-speech message.
 
