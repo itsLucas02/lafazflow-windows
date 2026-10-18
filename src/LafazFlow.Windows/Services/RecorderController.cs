@@ -28,6 +28,14 @@ public sealed class RecorderController
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly TimeSpan _micReadinessTimeout;
     private readonly FlightRecorderService? _flightRecorder;
+
+    /// <summary>
+    /// Peak-level floor for retrying an empty final-engine result through the CLI
+    /// path. Below this the audio is treated as a dead/silent capture; above it
+    /// the audio is audible and the worker's speech-presence gate may have
+    /// falsely rejected quiet speech.
+    /// </summary>
+    private const double EmptyEngineRetryMinPeakLevel = 0.02;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -470,43 +478,42 @@ public sealed class RecorderController
                     engineTrace.InferenceMs = engineResult.InferenceMs;
                 }
             }
-            else if (_transcriptionTiming is not null)
-            {
-                var timed = await _transcriptionTiming.TranscribeWithTimingAsync(
-                    runtime.CliPath,
-                    runtime.ModelPath,
-                    job.AudioPath,
-                    prompt,
-                    job.Settings.WhisperThreads,
-                    finalDecodeOptions,
-                    cancellationToken);
-                transcript = timed.Text;
-                if (timed.Timing is { } timing)
-                {
-                    if (job.LatencyTrace is { } trace)
-                    {
-                        trace.ModelLoadMs = timing.LoadMs;
-                        trace.InferenceMs = timing.EncodeMs.HasValue || timing.DecodeMs.HasValue
-                            ? (timing.EncodeMs ?? 0) + (timing.DecodeMs ?? 0)
-                            : null;
-                    }
-                }
-            }
             else
             {
-                transcript = await _transcription.TranscribeAsync(
-                    runtime.CliPath,
-                    runtime.ModelPath,
-                    job.AudioPath,
+                transcript = await TranscribeThroughCliAsync(
+                    job,
+                    runtime,
                     prompt,
-                    job.Settings.WhisperThreads,
                     finalDecodeOptions,
                     cancellationToken);
             }
 
             job.LatencyTrace?.Mark(LatencyCheckpoint.WhisperFinished);
+            if (string.IsNullOrWhiteSpace(transcript)
+                && engineResult is not null
+                && signal.IsUsable
+                && signal.PeakLevel >= EmptyEngineRetryMinPeakLevel)
+            {
+                // The persistent worker's speech-presence gate can return an empty
+                // result for quiet-but-audible speech. Retry once through the CLI
+                // path with identical settings before declaring no speech.
+                LogInfo("FINAL engine returned empty text for audible audio; retrying through the CLI path.");
+                transcript = await TranscribeThroughCliAsync(
+                    job,
+                    runtime,
+                    prompt,
+                    finalDecodeOptions,
+                    cancellationToken);
+            }
+
             if (string.IsNullOrWhiteSpace(transcript))
             {
+                if (signal.IsUsable && signal.PeakLevel < EmptyEngineRetryMinPeakLevel)
+                {
+                    throw new InvalidOperationException(
+                        "Microphone input was silent. Check the Windows input device, mic mute, and input volume.");
+                }
+
                 throw new InvalidOperationException(
                     "No speech was transcribed. Check the microphone input and try again.");
             }
@@ -616,6 +623,44 @@ public sealed class RecorderController
                 _latencyReporter.Report(job.LatencyTrace);
             }
         }
+    }
+
+    private async Task<string> TranscribeThroughCliAsync(
+        DictationJob job,
+        WhisperRuntimeOptions runtime,
+        string prompt,
+        WhisperDecodeOptions finalDecodeOptions,
+        CancellationToken cancellationToken)
+    {
+        if (_transcriptionTiming is not null)
+        {
+            var timed = await _transcriptionTiming.TranscribeWithTimingAsync(
+                runtime.CliPath,
+                runtime.ModelPath,
+                job.AudioPath,
+                prompt,
+                job.Settings.WhisperThreads,
+                finalDecodeOptions,
+                cancellationToken);
+            if (timed.Timing is { } timing && job.LatencyTrace is { } trace)
+            {
+                trace.ModelLoadMs = timing.LoadMs;
+                trace.InferenceMs = timing.EncodeMs.HasValue || timing.DecodeMs.HasValue
+                    ? (timing.EncodeMs ?? 0) + (timing.DecodeMs ?? 0)
+                    : null;
+            }
+
+            return timed.Text;
+        }
+
+        return await _transcription.TranscribeAsync(
+            runtime.CliPath,
+            runtime.ModelPath,
+            job.AudioPath,
+            prompt,
+            job.Settings.WhisperThreads,
+            finalDecodeOptions,
+            cancellationToken);
     }
 
     private static void TryDelete(string path)

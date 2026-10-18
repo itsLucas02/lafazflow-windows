@@ -82,6 +82,21 @@ Handy enumerates input devices via cpal, exposes each device with its name and w
 
 The microphone selector UI (choosing a device in Settings) remains a candidate follow-up; automatic fallback and fast failure are implemented.
 
+#### False "no speech" rejection of audible takes (fixed 18/10/2026)
+
+The owner reported that occasionally, especially after a long dictation, nothing pastes at all ("suddenly when about to paste, it doesn't paste"). Log triage on 18/10/2026: 57 of 464 LATENCY rows are `status=failed`. The recent failures split into two classes:
+
+- **Dead microphone takes:** CAPTURE diagnostics show the whole take at near-zero level (`onset_100ms_rms=0.0000`; full-file peak 208/32768 and 245/32768) — the Razer Seiren Mini occasionally delivers a silent stream (USB/Windows device-level glitch). Nothing could have been transcribed; the app correctly refused to paste.
+- **False rejection of audible audio (real bug):** one failed take (peak 2772/32768, ~8.5%) replayed offline through **both** engines transcribes perfectly ("Testing one two three testing one two three over") — the persistent worker's Silero speech-presence gate had returned an empty result for quiet-but-audible speech, and the app pasted nothing.
+
+**Fix (implemented 18/10/2026)**
+
+- `RecorderController.ProcessJobAsync`: when the final engine succeeds but returns empty text and the finalized audio is audible (analyzer peak ≥ 0.02), retry once through the CLI path with identical settings before declaring no speech.
+- Empty results on near-silent captures (peak < 0.02) now raise the honest "Microphone input was silent…" message instead of "No speech was transcribed".
+- Regression tests: audible+empty engine → CLI retry pastes; near-silent+empty → no retry + silent message; audible+empty engine+empty CLI → no-speech message.
+
+**Open follow-ups:** a live in-recording "microphone is silent" warning and automatic device recovery for the dead-stream class remain candidate slices (tracked in `tasks/todo.md`).
+
 ## 3. DeepSeek phonetic family and "their/there/they're" priming
 
 ### Symptom

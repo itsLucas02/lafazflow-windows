@@ -992,9 +992,10 @@ public sealed class RecorderControllerTests
         Assert.False(sample.IsCold);
     }
 
-    private static byte[] BuildThreeSecondPcmWav()
+    private static byte[] BuildThreeSecondPcmWav() => BuildPcmWav(16000 * 3, 0.35);
+
+    private static byte[] BuildPcmWav(int sampleCount, double amplitude)
     {
-        var sampleCount = 16000 * 3;
         var dataSize = sampleCount * 2;
         var bytes = new byte[44 + dataSize];
         Buffer.BlockCopy("RIFF"u8.ToArray(), 0, bytes, 0, 4);
@@ -1013,8 +1014,8 @@ public sealed class RecorderControllerTests
         var tone = new byte[2];
         for (var i = 0; i < sampleCount; i++)
         {
-            // A gentle 440 Hz tone keeps the fixture audible (non-silent) without clipping.
-            var sample = (short)(Math.Sin(2 * Math.PI * 440 * i / 16000.0) * short.MaxValue * 0.35);
+            // A gentle tone keeps the fixture audible (non-silent) without clipping.
+            var sample = (short)(Math.Sin(2 * Math.PI * 440 * i / 16000.0) * short.MaxValue * amplitude);
             BitConverter.GetBytes(sample).CopyTo(tone, 0);
             Buffer.BlockCopy(tone, 0, bytes, 44 + (i * 2), 2);
         }
@@ -1079,6 +1080,121 @@ public sealed class RecorderControllerTests
         Assert.Equal(RecordingState.Error, viewModel.State);
         Assert.Contains("worker_unavailable", viewModel.StatusDetail);
     }
+
+    [Fact]
+    public async Task EmptyEngineResultRetriesThroughCliOnAudibleAudio()
+    {
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-retry-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000 * 3, 0.35));
+        var viewModel = new MiniRecorderViewModel();
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var cli = new FakeTranscriptionService(_ => Task.FromResult("Testing one two three"));
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            cli,
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Single(cli.InitialPrompts);
+            Assert.Single(paste.Texts);
+            Assert.Contains("Testing one two three", paste.Texts[0]);
+        }
+        finally
+        {
+            File.Delete(audioPath);
+        }
+    }
+
+    [Fact]
+    public async Task EmptyEngineResultOnSilentAudioDoesNotRetry()
+    {
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-retry-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000, 0.006));
+        var viewModel = new MiniRecorderViewModel();
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var cli = new FakeTranscriptionService(_ => Task.FromResult("should not be used"));
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            cli,
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Empty(cli.InitialPrompts);
+            Assert.Empty(paste.Texts);
+            Assert.Contains("silent", viewModel.StatusDetail);
+        }
+        finally
+        {
+            File.Delete(audioPath);
+        }
+    }
+
+    [Fact]
+    public async Task EmptyEngineAndEmptyCliReportsNoSpeech()
+    {
+        var audioPath = Path.Combine(Path.GetTempPath(), $"lafazflow-retry-{Guid.NewGuid():N}.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000 * 3, 0.35));
+        var viewModel = new MiniRecorderViewModel();
+        var paste = new FakeClipboardPasteService();
+        var engine = new FakeTranscriptionEngine((path, settings, id) =>
+            Task.FromResult(new TranscriptionEngineResult("", true, null, null, null)));
+        var cli = new FakeTranscriptionService(_ => Task.FromResult(""));
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(audioPath),
+            cli,
+            paste,
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Single(cli.InitialPrompts);
+            Assert.Empty(paste.Texts);
+            Assert.Contains("No speech", viewModel.StatusDetail);
+        }
+        finally
+        {
+            File.Delete(audioPath);
+        }
+    }
+
 
     [Fact]
     public async Task PromptLeakFromEngineDoesNotPaste()
