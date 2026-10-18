@@ -1103,6 +1103,37 @@ public sealed class RecorderControllerTests
         }
     }
 
+    [Fact]
+    public async Task StopCancelsLivePreviewBeforeAudioDrain()
+    {
+        var order = new List<string>();
+        var audio = new FakeAudioCaptureService("order.wav")
+        {
+            OnStopAsyncEntered = () => order.Add("capture")
+        };
+        var preview = new FakeLiveTranscriptPreviewService
+        {
+            OnStopAsyncEntered = () => order.Add("preview")
+        };
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            livePreview: preview,
+            targetTextContext: new FakeTargetTextContextService(""));
+
+        controller.StartRecording();
+        await controller.ToggleAsync();
+        await controller.WaitForPendingTranscriptionsAsync();
+
+        Assert.Equal(["preview", "capture"], order);
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -1702,6 +1733,8 @@ public sealed class RecorderControllerTests
             AudioLevelChanged?.Invoke(level);
         }
 
+        public Action? OnStopAsyncEntered { get; set; }
+
         public Task? StopGate { get; set; }
 
         public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1733,6 +1766,7 @@ public sealed class RecorderControllerTests
 
         public async Task<AudioCaptureFinalization> StopAsync()
         {
+            OnStopAsyncEntered?.Invoke();
             StopStarted.TrySetResult();
             if (StopGate is not null)
             {
@@ -1975,6 +2009,7 @@ public sealed class RecorderControllerTests
 
         public async Task StopAsync()
         {
+            OnStopAsyncEntered?.Invoke();
             if (StopGate is not null)
             {
                 await StopGate;
@@ -1983,6 +2018,8 @@ public sealed class RecorderControllerTests
             Stopped = true;
             _stopped.TrySetResult();
         }
+
+        public Action? OnStopAsyncEntered { get; set; }
 
         public void EmitPartial(string text)
         {

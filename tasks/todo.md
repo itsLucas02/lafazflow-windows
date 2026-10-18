@@ -554,6 +554,19 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Evidence captured in the 2026-10-08 incident reference; known-issues section 2 refined; lesson updated ("an energy check may decide whether to retry, but the retry must never bypass speech detection").
 - Not claimed: the retry still relies on the configured profile having VAD enabled (owner's Quality profile does); Fast-profile retries keep the phrase guard as the backstop.
 
+## Plan: Dictation performance investigation and P0 fixes (19 Oct 2026)
+- [x] Extract per-phase latency statistics from the log (last 150 completed dictations): activation 11 ms median, drain 214 ms median (p99 ~1 s), warm worker 238 ms median / 627 ms p90, paste ~120 ms, stop→pasted 606 ms median.
+- [x] Write the living performance reference: `docs/references/2026-10-19-performance-investigation.md` with data, findings, and the P0–P5 plan.
+- [x] P0a: cancel live preview before the audio drain (was ~220 ms late, letting the worker stay busy); ordering regression test added.
+- [x] P0b: instrument the drain sub-phases (`stop_call_ms`, `stop_total_ms` in the CAPTURE final log line) so the next analysis attributes the 214 ms precisely.
+- [x] Full suite 837 green; Release build 0 warnings/0 errors.
+- [ ] P0c: after a day of dictations, read the new capture sub-phase data and reduce the dominant drain cost (target median ≤ 100 ms).
+- [ ] P1: audit ClipboardPasteService fixed delays (50/50 + 3×40 ms) and trim safely (target ≤ 80 ms).
+- [ ] P2: re-measure warm worker p90 after the preview-ordering fix; try worker flash attention as a one-flag experiment gated on corpus quality.
+- [ ] P3 (structural, replacement core): incremental chunked decoding with commit/stitch so stop-time decode only handles the tail.
+- [ ] P4: prewarm the mini-recorder shell at launch to remove first-show activation spikes (~283 ms p99).
+- [ ] P5: recalibrate the performance-health slow-run rule after P0–P2.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

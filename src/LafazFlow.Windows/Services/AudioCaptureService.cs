@@ -100,6 +100,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
 
     public async Task<AudioCaptureFinalization> StopAsync()
     {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         CaptureSession? session;
         string preference;
         lock (_sessionLock)
@@ -115,6 +116,7 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
             throw new InvalidOperationException("No active microphone recording.");
         }
 
+        var stopCallStarted = stopwatch.ElapsedMilliseconds;
         try
         {
             _warmInput?.StopRecording();
@@ -123,11 +125,14 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         {
             session.SignalStopped(error);
         }
+        var stopCallMs = stopwatch.ElapsedMilliseconds - stopCallStarted;
 
         var finalization = await session.StopAsync(_stopDeadline);
         try
         {
-            LogCaptureFailure(session.DiagnosticSummary(finalization));
+            LogCaptureFailure(
+                session.DiagnosticSummary(finalization)
+                + $" stop_call_ms={stopCallMs} stop_total_ms={stopwatch.ElapsedMilliseconds}");
         }
         catch
         {

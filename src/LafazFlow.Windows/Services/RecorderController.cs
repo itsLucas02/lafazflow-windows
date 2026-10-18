@@ -366,6 +366,9 @@ public sealed class RecorderController
             var queued = false;
             try
             {
+                // Cancel live preview first so the worker is free by the time the
+                // final decode arrives; the audio drain below overlaps with it.
+                _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainStarted);
                 var finalization = await _audioCapture.StopAsync();
                 latencyTrace?.Mark(LatencyCheckpoint.AudioDrainFinished);
@@ -378,7 +381,6 @@ public sealed class RecorderController
                         $"Recording could not be finalized ({(string.IsNullOrWhiteSpace(finalization.ErrorKind) ? "unknown" : finalization.ErrorKind)}).");
                 }
 
-                _ = StopLivePreviewAsync(latencyTrace);
                 latencyTrace?.Mark(LatencyCheckpoint.QueueEnqueued);
                 _ = _queue.Enqueue(
                     new DictationJob(
