@@ -51,6 +51,35 @@ public sealed class AudioCaptureServiceTests
     }
 
     [Fact]
+    public async Task StopAsyncReturnsBeforeNextRecordingWarmUpCompletes()
+    {
+        var input = new FakeAudioInputDevice();
+        var startGate = new ManualResetEventSlim(false);
+        var replacement = new FakeAudioInputDevice { StartGate = startGate };
+        var inputs = new Queue<IAudioInputDevice>([input, replacement]);
+        var writer = new FakeAudioCaptureWriter();
+        var root = Directory.CreateTempSubdirectory("LafazFlowAudioCapture-").FullName;
+        try
+        {
+            using var service = new AudioCaptureService(_ => inputs.Dequeue(), (_, _) => writer);
+            service.Start(root);
+            input.Emit([1, 0, 2, 0]);
+
+            // The warm replacement for the next recording is still gated; the stop
+            // handoff must complete regardless.
+            var finalization = await service.StopAsync().WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Equal(AudioCaptureFinalizeState.Finalized, finalization.State);
+            Assert.Equal([1, 0, 2, 0], writer.Bytes);
+        }
+        finally
+        {
+            startGate.Set();
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task StopReturnsFinalizedAudioWhenNextWarmUpFails()
     {
         var input = new FakeAudioInputDevice();
@@ -362,12 +391,16 @@ public sealed class AudioCaptureServiceTests
 
         public Exception? StartError { get; init; }
 
+        public ManualResetEventSlim? StartGate { get; init; }
+
         public void StartRecording()
         {
             if (StartError is not null)
             {
                 throw StartError;
             }
+
+            StartGate?.Wait(TimeSpan.FromSeconds(5));
         }
 
         public void StopRecording()

@@ -103,12 +103,14 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         CaptureSession? session;
         string preference;
+        int warmGenerationAtStop;
         lock (_sessionLock)
         {
             session = _activeSession;
             _activeSession = null;
             _stoppingSession = session;
             preference = _warmPreference;
+            warmGenerationAtStop = _warmGeneration;
         }
 
         if (session is null)
@@ -141,15 +143,31 @@ public sealed class AudioCaptureService : IAudioCaptureService, IDisposable
         lock (_sessionLock)
         {
             _stoppingSession = null;
-            try
-            {
-                ReplaceWarmInput(preference);
-            }
-            catch (Exception error)
-            {
-                LogCaptureFailure($"Microphone could not be readied for the next recording: {error.Message}");
-            }
         }
+
+        // Ready the microphone for the NEXT recording off this dictation's critical
+        // path. The device stop above already captured and finalized the audio tail;
+        // only the handoff to transcription must stay fast. If the next recording
+        // starts before this completes, Start() warms the input synchronously itself.
+        _ = Task.Run(() =>
+        {
+            lock (_sessionLock)
+            {
+                if (_activeSession is not null || _warmGeneration != warmGenerationAtStop)
+                {
+                    return;
+                }
+
+                try
+                {
+                    ReplaceWarmInput(preference);
+                }
+                catch (Exception error)
+                {
+                    LogCaptureFailure($"Microphone could not be readied for the next recording: {error.Message}");
+                }
+            }
+        }, CancellationToken.None);
         return finalization;
     }
 

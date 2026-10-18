@@ -561,11 +561,13 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] P0b: instrument the drain sub-phases (`stop_call_ms`, `stop_total_ms` in the CAPTURE final log line) so the next analysis attributes the 214 ms precisely.
 - [x] Full suite 837 green; Release build 0 warnings/0 errors.
 - [ ] P0c: after a day of dictations, read the new capture sub-phase data and reduce the dominant drain cost (target median ≤ 100 ms).
+  - [x] P0c executed the same day: instrumentation proved the drain was `ReplaceWarmInput` (next-recording mic re-open) blocking the handoff, not the device stop (13–31 ms). Warm replacement now runs on a background task with a generation guard; regression test gates the replacement and proves `StopAsync` returns anyway. Expected drain ~20–50 ms.
 - [ ] P1: audit ClipboardPasteService fixed delays (50/50 + 3×40 ms) and trim safely (target ≤ 80 ms).
 - [ ] P2: re-measure warm worker p90 after the preview-ordering fix; try worker flash attention as a one-flag experiment gated on corpus quality.
 - [ ] P3 (structural, replacement core): incremental chunked decoding with commit/stitch so stop-time decode only handles the tail.
 - [ ] P4: prewarm the mini-recorder shell at launch to remove first-show activation spikes (~283 ms p99).
 - [ ] P5: recalibrate the performance-health slow-run rule after P0–P2.
+- [ ] Verify the drain drop in live `LATENCY` rows after a few dictations on the next build.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
