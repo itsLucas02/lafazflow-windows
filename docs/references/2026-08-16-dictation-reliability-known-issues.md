@@ -126,7 +126,17 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 - Real comment usage is preserved: only the exact phrase is rewritten — `comment on the pull request`, `left a comment`, and plain `comment` stay untouched (regression tests).
 - Bounded trade-off (same as `come in and push`): a literal instruction to "comment and push" would also become `commit and push`; the owner's developer-dictation focus accepts this. Revisit only if a real comment-and-push dictation is ever observed.
 
-## 5. What has already been done (context for future agents)
+## 5. Punctuation behavior: unintended question marks, missing question marks, premature sentence breaks
+
+**Reported 18/10/2026** (owner, dictating with the installed build): question marks appear in unintended places; question marks are missing where expected; and periods sometimes split what the owner intends as one sentence ("I don't yet finish my sentence yet LafazFlow already put a period").
+
+**Mechanism (confirmed behavior, not yet a parameterized root cause):** sentence-final punctuation is emitted by the Whisper model itself, per take. LafazFlow repairs only a small, high-confidence set of continuation patterns (for example `so that`, `and then`, `because`, `which means`) and converts statement-like trailing `?` to `.`. Everything outside those patterns is preserved as the model emitted it — so identical speech can be punctuated differently across takes, and continuation clauses outside the repair list keep the model's period.
+
+**Evidence path:** `LATENCY` rows record raw/formatted/clipboard final-character categories and character counts per dictation, so a specific occurrence can be located; the finalized WAV is retained (diagnostics retention / flight recorder). Reproduction requires the owner's example text (what was said vs what was pasted).
+
+**Direction:** do not broaden heuristic repair lists one phrase at a time (see the August lessons on whack-a-mole). Collect owner examples, repair only deterministic patterns with negative regressions, and treat the model-agnostic replacement's user-owned rule layer plus an optional local polish stage as the structural fix.
+
+## 6. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.
 - **v1.1.0 public release** (`5d1a014` tag `v1.1.0`): CPU worker + Official CPU CLI package, tag/version validation workflow, backend compatibility checks (CUDA settings never silently run a CPU worker).
@@ -135,14 +145,14 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 - **Repetition-leak guard generalized** (16/08/2026): standalone repetition loops (same token 15+ times, dominating ≥80% of the transcript) now fail both the live preview and the final paste.
 - **Mic readiness + fallback** (16/08/2026): first-audio gate with automatic device fallback and persisted preferred microphone (schema 18).
 
-## 6. Open decisions awaiting owner approval
+## 7. Open decisions awaiting owner approval
 
 - Generalize the repetition-leak guard (section 1).
 - DeepSeek phonetic family + prompt anchoring (separate discussion; includes the "deep sea" ambiguity rule).
 - Live capture-readiness gate and microphone device management (section 2).
 - Full microphone selector UI in Settings (auto-fallback and fast failure are done).
 
-## 7. Cross-references
+## 8. Cross-references
 
 - `src/LafazFlow.Windows/Services/PromptLeakDetector.cs`
 - `src/LafazFlow.Windows/Services/RollingWhisperLiveTranscriptPreviewService.cs`

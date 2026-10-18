@@ -521,6 +521,12 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Verification: focused recorder tests 41 green; full suite 831 green; Release build 0 warnings/0 errors.
 - Not claimed: the dead-stream device class itself is not fixed by this slice; the follow-up (live warning + device recovery) is listed above.
 
+## Plan: Punctuation behavior evidence and repairs (18 Oct 2026)
+- [x] Record the owner's punctuation report (unintended/missing question marks, premature periods) in the known-issues reference (section 5) with the confirmed mechanism and evidence path.
+- [ ] Collect 3-5 concrete owner examples (spoken sentence vs pasted result, with approximate time) and locate the corresponding LATENCY rows/recordings.
+- [ ] Repair only deterministic patterns that the examples prove, each with a negative regression; do not broaden heuristic lists phrase by phrase.
+- [ ] Carry the structural fix (user-owned rule layer + optional local polish) into the replacement requirements.
+
 ## Review: Autonomous Stage 1 replacement session (17 Oct 2026)
 - Builds and artifacts: pinned Handy `14f6f0d3` rebuilt into an upstream test binary; Parakeet V3 (`parakeet-tdt-0.6b-v3-int8`) downloaded with the pinned hash verified; portable trial build prepared and smoke-tested (headless transcribe returns the expected fixture text).
 - Replay result (four retained M1 fixtures, normalized comparison): identical normalized text between V3 and the current whisper engine on 2/4 fixtures; mean word similarity 0.9705 (V3) vs 0.9775 (whisper); endings preserved 3/4 for both; all remaining deltas explained (one V3 stutter token, retention-time post-processing, one shared snapshot artifact). Zero hallucinations/omissions/language drift across 8 runs.
