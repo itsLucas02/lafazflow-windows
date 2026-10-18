@@ -8,8 +8,8 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Resources\Icons\LafazFlow.ico</ApplicationIcon>
-    <Version>1.1.2</Version>
-    <InformationalVersion>1.1.2</InformationalVersion>
+    <Version>1.1.3</Version>
+    <InformationalVersion>1.1.3</InformationalVersion>
     <AssemblyVersion Condition="'$(LafazFlowBuildNumber)' != ''">$(Version).$(LafazFlowBuildNumber)</AssemblyVersion>
   </PropertyGroup>
 

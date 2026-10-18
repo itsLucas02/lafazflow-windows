@@ -535,6 +535,12 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Optional approved comparison executed: Phonon-2 (CPU Python engine, isolated venv, on-device) replayed on the same fixtures — mean 0.9575, exact 1/4, endings 3/4, same shared artifact on the failing fixture; stays watch-only (no native runtime), documented in the same reference.
 - Not claimed: no quality-gate pass beyond this small corpus, no daily-driver switch, no Stage 2 decisions; live microphone trials and flight-recorder audio drive the next round.
 
+## Plan: Version visibility bump to v1.1.3 (18 Oct 2026)
+- [x] Bump version authorities (csproj `Version`/`InformationalVersion`, installer `MyAppVersion`, version-consistency test) from 1.1.2 to 1.1.3.
+- [x] Keep the compact pill showing the semantic version and the exact build number in Settings → About (`AppVersionText.Full`, for example "v1.1.3 build 45"); the build number comes from commits since `v1.1.0`.
+- [x] Full suite 834 green.
+- [ ] Owner-local install; confirm the pill shows v1.1.3 and About shows the build number.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
