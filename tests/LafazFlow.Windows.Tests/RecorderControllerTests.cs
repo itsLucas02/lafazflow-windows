@@ -924,6 +924,104 @@ public sealed class RecorderControllerTests
         }
     }
 
+    [Fact]
+    public async Task SilentMicrophoneShowsLiveWarningDuringRecording()
+    {
+        var audio = new FakeAudioCaptureService("silent.wav") { EmitLevelOnStart = false };
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            micSilenceWarningDelay: TimeSpan.FromMilliseconds(100));
+
+        controller.StartRecording();
+        await Task.Delay(800);
+
+        try
+        {
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+            Assert.Contains("silent", viewModel.StatusText);
+        }
+        finally
+        {
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AudibleRecordingDoesNotShowSilentWarning()
+    {
+        var audio = new FakeAudioCaptureService("audible.wav");
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            micSilenceWarningDelay: TimeSpan.FromMilliseconds(100));
+
+        controller.StartRecording();
+        await Task.Delay(800);
+
+        try
+        {
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+            Assert.Equal("", viewModel.StatusText);
+        }
+        finally
+        {
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SilentWarningClearsWhenAudioReturns()
+    {
+        var audio = new FakeAudioCaptureService("silent-then-audible.wav") { EmitLevelOnStart = false };
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            micSilenceWarningDelay: TimeSpan.FromMilliseconds(100));
+
+        controller.StartRecording();
+        await Task.Delay(600);
+        Assert.Contains("silent", viewModel.StatusText);
+
+        try
+        {
+            audio.EmitAudioLevel(0.5);
+            await Task.Delay(400);
+            Assert.Equal("", viewModel.StatusText);
+        }
+        finally
+        {
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -1516,6 +1614,13 @@ public sealed class RecorderControllerTests
 
         public string? ActiveInputDeviceName { get; private set; }
 
+        public bool EmitLevelOnStart { get; set; } = true;
+
+        public void EmitAudioLevel(double level)
+        {
+            AudioLevelChanged?.Invoke(level);
+        }
+
         public Task? StopGate { get; set; }
 
         public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1532,7 +1637,11 @@ public sealed class RecorderControllerTests
             StartCount++;
             CurrentPath = _paths.Dequeue();
             ActiveInputDeviceName = preferredInputDeviceName ?? "fake-mic";
-            AudioLevelChanged?.Invoke(0.5);
+            if (EmitLevelOnStart)
+            {
+                AudioLevelChanged?.Invoke(0.5);
+            }
+
             return CurrentPath;
         }
 

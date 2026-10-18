@@ -36,6 +36,17 @@ public sealed class RecorderController
     /// falsely rejected quiet speech.
     /// </summary>
     private const double EmptyEngineRetryMinPeakLevel = 0.02;
+
+    /// <summary>
+    /// Peak-level floor for the live silent-microphone warning. The capture level
+    /// is a per-buffer peak in 0..1; dead USB streams sit well below this while
+    /// even quiet speech exceeds it.
+    /// </summary>
+    private const double MicSilenceWarningLevel = 0.01;
+
+    private readonly TimeSpan _micSilenceWarningDelay;
+    private double _currentSessionMaxLevel;
+    private bool _micSilenceWarningActive;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -65,7 +76,8 @@ public sealed class RecorderController
         PerformanceHealthMonitor? performanceHealthMonitor = null,
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
         TimeSpan? micReadinessTimeout = null,
-        FlightRecorderService? flightRecorder = null)
+        FlightRecorderService? flightRecorder = null,
+        TimeSpan? micSilenceWarningDelay = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -87,6 +99,7 @@ public sealed class RecorderController
         _restartWorkerAsync = restartWorkerAsync;
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
         _flightRecorder = flightRecorder;
+        _micSilenceWarningDelay = micSilenceWarningDelay ?? TimeSpan.FromSeconds(2.5);
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -95,7 +108,16 @@ public sealed class RecorderController
         _queue.PendingCountChanged += count =>
             _ = _window.InvokeAsync(() => _viewModel.PendingTranscriptionCount = count);
         _audioCapture.AudioLevelChanged += level =>
+        {
+            _currentSessionMaxLevel = Math.Max(_currentSessionMaxLevel, level);
+            if (_micSilenceWarningActive && level >= MicSilenceWarningLevel)
+            {
+                _micSilenceWarningActive = false;
+                _ = _window.InvokeAsync(() => _viewModel.ClearMicrophoneWarning());
+            }
+
             _ = _window.InvokeAsync(() => _viewModel.AudioLevel = level);
+        };
         _audioCapture.AudioChunkAvailable += audioChunk =>
             _livePreview.AcceptAudioChunk(audioChunk);
     }
@@ -185,6 +207,8 @@ public sealed class RecorderController
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingStart);
         _runCancellation = new CancellationTokenSource();
         _soundCues.StopAll();
+        _currentSessionMaxLevel = 0;
+        _micSilenceWarningActive = false;
         var recordingsRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",
@@ -221,6 +245,7 @@ public sealed class RecorderController
             if (await _audioCapture.WaitForFirstAudioAsync(_micReadinessTimeout))
             {
                 LogInfo($"MIC ready using={_audioCapture.ActiveInputDeviceName ?? "Windows default"}");
+                await MonitorMicrophoneSilenceAsync(cancellationToken);
                 return;
             }
 
@@ -229,6 +254,39 @@ public sealed class RecorderController
                 await AbortSilentRecordingAsync(settings);
             }
         }, CancellationToken.None);
+    }
+
+    private async Task MonitorMicrophoneSilenceAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(_micSilenceWarningDelay, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        var stillRecording = false;
+        await _window.InvokeAsync(() => stillRecording = _viewModel.State == RecordingState.Recording);
+        if (!stillRecording || _currentSessionMaxLevel >= MicSilenceWarningLevel)
+        {
+            return;
+        }
+
+        _micSilenceWarningActive = true;
+        await _window.InvokeAsync(() =>
+        {
+            _viewModel.SetTransientStatusDetail(
+                "The microphone is delivering silence. Check the Windows input device, mic mute, and input volume.");
+            _viewModel.SetMicrophoneWarning("Mic silent - check device");
+        });
+        LogInfo("MIC silent during recording; live warning shown.");
     }
 
     private async Task AbortSilentRecordingAsync(AppSettings settings)

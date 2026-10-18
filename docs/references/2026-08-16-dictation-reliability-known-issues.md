@@ -95,7 +95,7 @@ The owner reported that occasionally, especially after a long dictation, nothing
 - Empty results on near-silent captures (peak < 0.02) now raise the honest "Microphone input was silent…" message instead of "No speech was transcribed".
 - Regression tests: audible+empty engine → CLI retry pastes; near-silent+empty → no retry + silent message; audible+empty engine+empty CLI → no-speech message.
 
-**Open follow-ups:** a live in-recording "microphone is silent" warning and automatic device recovery for the dead-stream class remain candidate slices (tracked in `tasks/todo.md`).
+**Open follow-ups:** ~~a live in-recording "microphone is silent" warning~~ (delivered 18/10/2026: the recorder shell swaps its level meter for a "Mic silent - check device" warning within ~2.5s when the take stays below the level floor, and clears it when audio returns) and automatic device recovery for the dead-stream class remain candidates (tracked in `tasks/todo.md`).
 
 ## 3. DeepSeek phonetic family and "their/there/they're" priming
 

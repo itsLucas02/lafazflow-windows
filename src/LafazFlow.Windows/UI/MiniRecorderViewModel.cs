@@ -137,6 +137,26 @@ public sealed class MiniRecorderViewModel : INotifyPropertyChanged
         StatusDetail = message;
     }
 
+    public void SetMicrophoneWarning(string message)
+    {
+        if (State != RecordingState.Recording)
+        {
+            return;
+        }
+
+        StatusText = message;
+    }
+
+    public void ClearMicrophoneWarning()
+    {
+        if (State != RecordingState.Recording)
+        {
+            return;
+        }
+
+        StatusText = "";
+    }
+
     public string AppVersion { get; } = AppVersionText.Compact;
 
     public bool IsRecording => State == RecordingState.Recording;
