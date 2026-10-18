@@ -505,6 +505,22 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Stop conditions honored: no daily-driver install, no repo/identity/branding decisions, installed LafazFlow untouched.
 - [ ] Phase C checkpoint for the owner after the trial: decide the Stage 2 home (rebrand in this repo vs dedicated source) and begin identity replacement.
 
+## Plan: Fix false "no speech" rejection and no-paste failures (18 Oct 2026)
+- [x] Triage: 57 failed LATENCY rows; classify dead-silent takes vs false rejections using CAPTURE diagnostics + offline replay.
+- [x] Prove the false-rejection case: replay the failed take through both engines (perfect transcript from a file the app had rejected).
+- [x] Implement energy-gated CLI retry for empty final-engine results on audible audio; honest silent-capture message for peak < 0.02.
+- [x] Regression tests (audible+empty→retry pastes; near-silent+empty→no retry + silent message; both-empty→no-speech message).
+- [x] Full suite 831 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + live verification.
+- [ ] Follow-up slice (candidate): live "microphone is silent" warning during recording and automatic device recovery for the dead-stream class.
+
+## Review: Fix false "no speech" rejection and no-paste failures (18 Oct 2026)
+- Root cause of the lost-dictation class: the worker's speech-presence gate returns an empty result for quiet-but-audible speech → the app showed "No speech" and pasted nothing; the second class is a dead microphone stream (device-level, peak < 1%) where nothing existed to transcribe and the message was misleading.
+- Fix: one CLI retry with identical settings when an empty engine result is paired with audible audio (peak ≥ 0.02); peak < 0.02 produces the honest silent-capture message.
+- Evidence: the owner's failed take (peak 2772/32768) transcribes perfectly through both engines offline; CAPTURE diagnostics distinguish dead takes (onset rms/peak 0.0000).
+- Verification: focused recorder tests 41 green; full suite 831 green; Release build 0 warnings/0 errors.
+- Not claimed: the dead-stream device class itself is not fixed by this slice; the follow-up (live warning + device recovery) is listed above.
+
 ## Review: Autonomous Stage 1 replacement session (17 Oct 2026)
 - Builds and artifacts: pinned Handy `14f6f0d3` rebuilt into an upstream test binary; Parakeet V3 (`parakeet-tdt-0.6b-v3-int8`) downloaded with the pinned hash verified; portable trial build prepared and smoke-tested (headless transcribe returns the expected fixture text).
 - Replay result (four retained M1 fixtures, normalized comparison): identical normalized text between V3 and the current whisper engine on 2/4 fixtures; mean word similarity 0.9705 (V3) vs 0.9775 (whisper); endings preserved 3/4 for both; all remaining deltas explained (one V3 stutter token, retention-time post-processing, one shared snapshot artifact). Zero hallucinations/omissions/language drift across 8 runs.

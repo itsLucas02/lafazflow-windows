@@ -472,6 +472,10 @@
 - Pattern: Intermittent trust failures (missing words or sentences, invented endings such as an unspoken closing courtesy phrase) could not be investigated because the owner could not identify which recording was affected and no retained audio existed; agents kept asking for a recording that could not be produced.
 - Rule: Ship a local auto-expiring flight recorder (ring buffer of recent finalized dictations, private, with purge controls) so every failure class is replayable. Treat identical-audio replay across engines as the required acceptance evidence for trust fixes; never claim a root cause from pasted text alone.
 
+## Retry empty engine results on audible audio; report dead captures honestly
+- Pattern: A dictation was silently lost when the persistent worker's Silero speech-presence gate returned an empty result for quiet-but-audible speech; the app displayed "No speech was transcribed" and pasted nothing, while offline replay of the same WAV produced a perfect transcript on both engines. Separately, genuinely dead microphone takes (device-level, full-file peak < 1%) were reported with the same misleading message.
+- Rule: Treat an empty final-engine result as retryable when the finalized WAV has audible energy (analyzer peak ≥ 0.02): retry once through the CLI path with identical settings before declaring no speech. Keep peak < 0.02 on an honest "microphone was silent" message, and retain the WAV for evidence. Verify corrections against the exact failing file, not a similarly-shaped one.
+
 ## Inject the target-context fake in recorder tests
 - Pattern: A recorder test constructed `RecorderController` without a `targetTextContext` fake, so it fell back to the real `FocusedTargetTextContextService` and read whatever window was focused on the machine; during a full-suite run it intermittently lowercased the expected `Hello world.` paste while passing in isolation.
 - Rule: Recorder tests must always inject `FakeTargetTextContextService`; never let a unit test read ambient focused-window state. A test whose expectation depends on first-letter casing is deterministic only by environment, not by code.
