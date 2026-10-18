@@ -512,7 +512,7 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] Regression tests (audible+empty→retry pastes; near-silent+empty→no retry + silent message; both-empty→no-speech message).
 - [x] Full suite 831 green; Release build 0 warnings/0 errors.
 - [ ] Owner-local install + live verification.
-- [ ] Follow-up slice (candidate): live "microphone is silent" warning during recording and automatic device recovery for the dead-stream class.
+- [x] Follow-up delivered (18 Oct): live "mic silent" warning during recording (shell swaps the meter for "Mic silent - check device" after ~2.5s below the level floor; clears when audio returns). Automatic device recovery for the dead-stream class remains a candidate.
 
 ## Review: Fix false "no speech" rejection and no-paste failures (18 Oct 2026)
 - Root cause of the lost-dictation class: the worker's speech-presence gate returns an empty result for quiet-but-audible speech → the app showed "No speech" and pasted nothing; the second class is a dead microphone stream (device-level, peak < 1%) where nothing existed to transcribe and the message was misleading.

@@ -476,6 +476,10 @@
 - Pattern: A dictation was silently lost when the persistent worker's Silero speech-presence gate returned an empty result for quiet-but-audible speech; the app displayed "No speech was transcribed" and pasted nothing, while offline replay of the same WAV produced a perfect transcript on both engines. Separately, genuinely dead microphone takes (device-level, full-file peak < 1%) were reported with the same misleading message.
 - Rule: Treat an empty final-engine result as retryable when the finalized WAV has audible energy (analyzer peak ≥ 0.02): retry once through the CLI path with identical settings before declaring no speech. Keep peak < 0.02 on an honest "microphone was silent" message, and retain the WAV for evidence. Verify corrections against the exact failing file, not a similarly-shaped one.
 
+## Warn about dead capture in the moment, not after the take
+- Pattern: Dead microphone takes (device-level silence) were only discovered at stop time via a message, after the owner had already spoken a long dictation into nothing; the recorder shell showed a live level meter that stayed flat but never explained why.
+- Rule: Track the session's maximum capture level and, after a short window (~2.5s) below a small level floor, swap the recorder shell's meter for a short "Mic silent - check device" warning (tooltip explains), clearing it automatically when audio returns. The warning must never abort the recording; the user decides whether to stop.
+
 ## Inject the target-context fake in recorder tests
 - Pattern: A recorder test constructed `RecorderController` without a `targetTextContext` fake, so it fell back to the real `FocusedTargetTextContextService` and read whatever window was focused on the machine; during a full-suite run it intermittently lowercased the expected `Hello world.` paste while passing in isolation.
 - Rule: Recorder tests must always inject `FakeTargetTextContextService`; never let a unit test read ambient focused-window state. A test whose expectation depends on first-letter casing is deterministic only by environment, not by code.
