@@ -1214,6 +1214,140 @@ public sealed class RecorderControllerTests
         }
     }
 
+    [Fact]
+    public async Task BackgroundJobFailureDoesNotOverwriteNewerRecordingState()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-xsession-").FullName;
+        var first = Path.Combine(root, "first.wav");
+        var second = Path.Combine(root, "second.wav");
+        File.WriteAllBytes(first, BuildPcmWav(16000, 0.35));
+        File.WriteAllBytes(second, BuildPcmWav(16000, 0.35));
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var engine = new FakeTranscriptionEngine(async (path, settings, id) =>
+        {
+            await gate.Task;
+            throw new InvalidOperationException("worker_unavailable");
+        });
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            new FakeAudioCaptureService(first, second),
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            transcriptionEngine: engine);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            controller.StartRecording();
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+
+            gate.TrySetResult();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+            Assert.DoesNotContain("worker_unavailable", viewModel.StatusDetail);
+
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StaleSilenceMonitorDoesNotWarnInNewerRecording()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-xsession-").FullName;
+        var first = Path.Combine(root, "first.wav");
+        var second = Path.Combine(root, "second.wav");
+        File.WriteAllBytes(first, BuildPcmWav(16000, 0.35));
+        File.WriteAllBytes(second, BuildPcmWav(16000, 0.35));
+        var audio = new FakeAudioCaptureService(first, second) { EmitLevelOnStart = false };
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            micSilenceWarningDelay: TimeSpan.FromMilliseconds(300));
+
+        try
+        {
+            controller.StartRecording();
+            await Task.Delay(100);
+            await controller.ToggleAsync();
+            controller.StartRecording();
+            audio.EmitAudioLevel(0.5);
+
+            await Task.Delay(500);
+
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+            Assert.Equal("", viewModel.StatusText);
+
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task StaleCaptureSessionIsClearedAfterAlreadyActiveFailure()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-xsession-").FullName;
+        var audioPath = Path.Combine(root, "take.wav");
+        File.WriteAllBytes(audioPath, BuildPcmWav(16000, 0.35));
+        var audio = new FakeAudioCaptureService(audioPath)
+        {
+            StartError = new InvalidOperationException("A microphone recording is already active.")
+        };
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""));
+
+        try
+        {
+            controller.StartRecording();
+            await audio.StopStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.Equal(RecordingState.Error, viewModel.State);
+
+            audio.StartError = null;
+            controller.StartRecording();
+            Assert.Equal(RecordingState.Recording, viewModel.State);
+
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try

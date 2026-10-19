@@ -583,6 +583,21 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Verification: focused parsing/settings 32 green; full suite 842 green; Release build clean.
 - Not claimed: the recovery picks the next enumerated device by rotation; whether a specific alternate microphone is *good* remains the user's choice, and the saved preference is respected again after one normal take.
 
+## Plan: Fix cross-session deadlock after rapid takes (20 Oct 2026)
+- [x] Reproduce from the live log: take 1's retry still running while take 2 recorded; take 1's failure set `Error` over take 2; take 1's silence monitor warned into take 2; the stale capture session then made every start throw "A microphone recording is already active".
+- [x] Failed background jobs no longer set the error state/sound while a newer recording is active (still logged).
+- [x] Readiness/silence monitors carry a session generation and never act on a newer session.
+- [x] `StartRecording` self-heals a stale capture session on the "already active" failure so the next toggle works.
+- [x] Regression tests: stale job failure keeps `Recording`; stale silence monitor does not warn; stale-session failure clears the capture and the next start succeeds. Focused recorder 52 green.
+- [x] Full suite 845 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + push.
+
+## Review: Cross-session deadlock fix (20 Oct 2026)
+- Root cause confirmed from the owner's live log; the CLI retry window made the pre-existing cross-session race reachable within seconds of rapid back-to-back dictation.
+- Three guards: dispatcher-checked error gating for stale jobs, session-generation guards for monitors, and stale-capture self-heal on "already active".
+- Verification: 3 new regression tests; recorder 52 green; full suite 845 green; Release clean.
+- Not claimed: the underlying rapid-back-to-back design is intentional (queue while transcribing); the fix isolates sessions rather than changing that behavior.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

@@ -149,7 +149,22 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 
 **Verification:** the 25 previously failing Settings tests pass, the full suite is green, and the corrupted historical line in the live log no longer breaks Settings.
 
-## 7. What has already been done (context for future agents)
+## 7. Cross-session handoff deadlock: "A microphone recording is already active" (fixed 20/10/2026)
+
+**Symptom (owner):** after one deliberately silent take, every later dictation showed the same failure and could not recover without restarting the app; the app remained running in this state.
+
+**Evidence chain (live log):** rapid back-to-back takes. Take 1's background job was still retrying through the CLI when take 2 started recording. Take 1 then failed ("No speech was transcribed") and its error handler called `SetError` while take 2 was actively recording; take 1's delayed live-silence monitor also fired into take 2 (warning ~60 ms after take 2 started). The recorder UI state became `Error` while the capture session stayed open. Every later toggle treated `Error` as idle and tried to start, and `AudioCaptureService.Start` threw `InvalidOperationException: A microphone recording is already active.` forever.
+
+**Fixes:**
+- A failed background job never paints its error/sound over a newer recording (`ProcessJobAsync` catch checks the current state under the dispatcher; failures are still logged).
+- Readiness and silence monitors are session-generation-guarded: a stale monitor can neither abort nor warn into a newer recording.
+- `StartRecording` self-heals a stale capture session: on the specific "already active" failure it clears the stale session in the background so the next toggle starts cleanly.
+
+**Regression tests:** background-job failure during a newer recording keeps `Recording`; a stale silence monitor does not warn in the newer session; the stale-session failure triggers capture stop and the next start succeeds.
+
+**Note:** the CLI retry (18 Oct) lengthened the background-job window, which made this pre-existing cross-session race reachable within seconds of rapid dictation.
+
+## 8. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.
 - **v1.1.0 public release** (`5d1a014` tag `v1.1.0`): CPU worker + Official CPU CLI package, tag/version validation workflow, backend compatibility checks (CUDA settings never silently run a CPU worker).
@@ -158,14 +173,14 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 - **Repetition-leak guard generalized** (16/08/2026): standalone repetition loops (same token 15+ times, dominating ≥80% of the transcript) now fail both the live preview and the final paste.
 - **Mic readiness + fallback** (16/08/2026): first-audio gate with automatic device fallback and persisted preferred microphone (schema 18).
 
-## 8. Open decisions awaiting owner approval
+## 9. Open decisions awaiting owner approval
 
 - Generalize the repetition-leak guard (section 1).
 - DeepSeek phonetic family + prompt anchoring (separate discussion; includes the "deep sea" ambiguity rule).
 - Live capture-readiness gate and microphone device management (section 2).
 - Full microphone selector UI in Settings (auto-fallback and fast failure are done).
 
-## 9. Cross-references
+## 10. Cross-references
 
 - `src/LafazFlow.Windows/Services/PromptLeakDetector.cs`
 - `src/LafazFlow.Windows/Services/RollingWhisperLiveTranscriptPreviewService.cs`

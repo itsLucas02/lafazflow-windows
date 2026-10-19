@@ -50,6 +50,7 @@ public sealed class RecorderController
     private int _consecutiveSilentTakes;
     private string? _recoveryInputName;
     private int _recoveryDeviceAttempt;
+    private int _sessionGeneration;
     private readonly Func<IReadOnlyList<string>> _microphoneDeviceNames;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
@@ -216,6 +217,7 @@ public sealed class RecorderController
         _soundCues.StopAll();
         _currentSessionMaxLevel = 0;
         _micSilenceWarningActive = false;
+        var sessionGeneration = ++_sessionGeneration;
         var recordingsRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LafazFlow",
@@ -234,6 +236,15 @@ public sealed class RecorderController
             _currentLatencyTrace.Fail(error);
             _latencyReporter.Report(_currentLatencyTrace);
             _currentLatencyTrace = null;
+            if (error is InvalidOperationException
+                && error.Message.Contains("already active", StringComparison.OrdinalIgnoreCase))
+            {
+                // A stale capture session from an interrupted cross-session handoff
+                // would otherwise block every future recording. Clear it so the next
+                // toggle can start cleanly.
+                _ = RecoverStaleCaptureAsync();
+            }
+
             _viewModel.SetError(ShortError(error));
             _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
             _window.ShowBottomCenter();
@@ -245,7 +256,19 @@ public sealed class RecorderController
         _window.ShowBottomCenter();
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
         StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
-        StartMicReadinessMonitor(settings, _runCancellation.Token);
+        StartMicReadinessMonitor(settings, _runCancellation.Token, sessionGeneration);
+    }
+
+    private async Task RecoverStaleCaptureAsync()
+    {
+        try
+        {
+            await _audioCapture.StopAsync();
+            LogInfo("MIC recovery: cleared a stale capture session after a cross-session handoff.");
+        }
+        catch
+        {
+        }
     }
 
     /// <summary>
@@ -297,25 +320,30 @@ public sealed class RecorderController
         LogInfo($"MIC recovery: previous input delivered silence twice; next recording will use '{candidate}'.");
     }
 
-    private void StartMicReadinessMonitor(AppSettings settings, CancellationToken cancellationToken)
+    private void StartMicReadinessMonitor(AppSettings settings, CancellationToken cancellationToken, int sessionGeneration)
     {
         _ = Task.Run(async () =>
         {
             if (await _audioCapture.WaitForFirstAudioAsync(_micReadinessTimeout))
             {
+                if (sessionGeneration != _sessionGeneration)
+                {
+                    return;
+                }
+
                 LogInfo($"MIC ready using={_audioCapture.ActiveInputDeviceName ?? "Windows default"}");
-                await MonitorMicrophoneSilenceAsync(cancellationToken);
+                await MonitorMicrophoneSilenceAsync(cancellationToken, sessionGeneration);
                 return;
             }
 
-            if (!cancellationToken.IsCancellationRequested)
+            if (!cancellationToken.IsCancellationRequested && sessionGeneration == _sessionGeneration)
             {
                 await AbortSilentRecordingAsync(settings);
             }
         }, CancellationToken.None);
     }
 
-    private async Task MonitorMicrophoneSilenceAsync(CancellationToken cancellationToken)
+    private async Task MonitorMicrophoneSilenceAsync(CancellationToken cancellationToken, int sessionGeneration)
     {
         try
         {
@@ -326,7 +354,7 @@ public sealed class RecorderController
             return;
         }
 
-        if (cancellationToken.IsCancellationRequested)
+        if (cancellationToken.IsCancellationRequested || sessionGeneration != _sessionGeneration)
         {
             return;
         }
@@ -719,9 +747,24 @@ public sealed class RecorderController
         {
             capturedError = error;
             var message = ShortError(error);
-            await _window.InvokeAsync(() => _viewModel.SetError(message));
-            ScheduleTransientErrorDismiss(message);
-            _soundCues.PlayError(SoundCueOptions.FromSettings(job.Settings));
+            var newerRecordingActive = false;
+            await _window.InvokeAsync(() =>
+            {
+                newerRecordingActive = _viewModel.State == RecordingState.Recording;
+                if (!newerRecordingActive)
+                {
+                    _viewModel.SetError(message);
+                }
+            });
+
+            if (!newerRecordingActive)
+            {
+                // A failed background job must never paint its error over a newer
+                // recording that started during the cross-session handoff.
+                ScheduleTransientErrorDismiss(message);
+                _soundCues.PlayError(SoundCueOptions.FromSettings(job.Settings));
+            }
+
             LogError(error.ToString());
         }
             finally
