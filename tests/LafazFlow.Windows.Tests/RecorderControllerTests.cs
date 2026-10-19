@@ -1134,6 +1134,86 @@ public sealed class RecorderControllerTests
         Assert.Equal(["preview", "capture"], order);
     }
 
+    [Fact]
+    public async Task TwoConsecutiveSilentTakesSwitchMicrophoneForNextRecording()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-mic-recovery-").FullName;
+        var silentOne = Path.Combine(root, "silent1.wav");
+        var silentTwo = Path.Combine(root, "silent2.wav");
+        var audible = Path.Combine(root, "audible.wav");
+        File.WriteAllBytes(silentOne, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(silentTwo, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(audible, BuildPcmWav(16000 * 3, 0.35));
+        var audio = new FakeAudioCaptureService(silentOne, silentTwo, audible);
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { MicrophoneDeviceName = "Razer Seiren Mini" }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            microphoneDeviceNames: () => ["Razer Seiren Mini", "Alternate Mic"]);
+
+        try
+        {
+            for (var take = 0; take < 3; take++)
+            {
+                controller.StartRecording();
+                await controller.ToggleAsync();
+                await controller.WaitForPendingTranscriptionsAsync();
+            }
+
+            Assert.Equal(
+                ["Razer Seiren Mini", "Razer Seiren Mini", "Alternate Mic"],
+                audio.RequestedDevices);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SingleSilentTakeDoesNotSwitchMicrophone()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-mic-recovery-").FullName;
+        var silent = Path.Combine(root, "silent.wav");
+        var audible = Path.Combine(root, "audible.wav");
+        File.WriteAllBytes(silent, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(audible, BuildPcmWav(16000 * 3, 0.35));
+        var audio = new FakeAudioCaptureService(silent, audible);
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { MicrophoneDeviceName = "Razer Seiren Mini" }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            microphoneDeviceNames: () => ["Razer Seiren Mini", "Alternate Mic"]);
+
+        try
+        {
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+            controller.StartRecording();
+            await controller.ToggleAsync();
+            await controller.WaitForPendingTranscriptionsAsync();
+
+            Assert.Equal(["Razer Seiren Mini", "Razer Seiren Mini"], audio.RequestedDevices);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -1735,6 +1815,8 @@ public sealed class RecorderControllerTests
 
         public Action? OnStopAsyncEntered { get; set; }
 
+        public List<string?> RequestedDevices { get; } = [];
+
         public Task? StopGate { get; set; }
 
         public TaskCompletionSource StopStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1750,6 +1832,7 @@ public sealed class RecorderControllerTests
 
             StartCount++;
             CurrentPath = _paths.Dequeue();
+            RequestedDevices.Add(preferredInputDeviceName);
             ActiveInputDeviceName = preferredInputDeviceName ?? "fake-mic";
             if (EmitLevelOnStart)
             {

@@ -71,6 +71,19 @@ public sealed partial class LatencyDiagnosticLogStore
         }
     }
 
+    private static Dictionary<string, string> ParseFields(string text)
+    {
+        // Tolerate interleaved/corrupted lines: the first occurrence of a key wins
+        // instead of throwing on duplicates.
+        var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Text.RegularExpressions.Match match in KeyValueRegex().Matches(text))
+        {
+            fields.TryAdd(match.Groups["key"].Value, match.Groups["value"].Value);
+        }
+
+        return fields;
+    }
+
     public static LatencyDiagnosticRow? ParseLine(string line)
     {
         if (!IsLatencyLine(line))
@@ -80,12 +93,7 @@ public sealed partial class LatencyDiagnosticLogStore
 
         var timestamp = ParseTimestamp(line);
         var latencyStart = line.IndexOf("LATENCY ", StringComparison.Ordinal);
-        var fields = KeyValueRegex()
-            .Matches(line[(latencyStart + "LATENCY ".Length)..])
-            .ToDictionary(
-                match => match.Groups["key"].Value,
-                match => match.Groups["value"].Value,
-                StringComparer.OrdinalIgnoreCase);
+        var fields = ParseFields(line[(latencyStart + "LATENCY ".Length)..]);
 
         return new LatencyDiagnosticRow(
             timestamp,

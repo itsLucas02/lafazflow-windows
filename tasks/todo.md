@@ -569,6 +569,20 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] P5: slow-run thresholds recalibrated to 500 ms / 1.6x (baseline ~238 ms); sustained 3-of-5 + 10-min cooldown unchanged; boundary test updated.
 - [x] P1 verified live: paste 41–63 ms (was ~120 ms); drain 27–62 ms typical.
 
+## Plan: Microphone auto-recovery and diagnostics-log hardening (20 Oct 2026)
+- [x] Microphone auto-recovery: after two consecutive takes captured below the speech floor (peak < 0.02), the next recording is routed to an alternate enumerated device (rotating per attempt), without rewriting the saved preference; one normal take clears the override; a single deliberate-silent take never switches.
+- [x] Regression tests: two silent takes → alternate device on the next recording; single silent take keeps the preferred device.
+- [x] Diagnostics-log corruption: serialized `BoundedLogFileWriter.AppendLine` under a process-wide lock; preview logger routed through it; both diagnostic parsers made tolerant (first key wins, no throw on interleaved lines).
+- [x] Regression tests: interleaved duplicate-key HOTKEY and LATENCY lines parse without throwing. This fixed 25 failing SettingsViewModelTests caused by a real corrupted line in the live log (Settings could fail to load).
+- [x] Full suite 842 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + push.
+
+## Review: Microphone auto-recovery and diagnostics-log hardening (20 Oct 2026)
+- Microphone recovery closes the dead-stream loop: the live warning stays the immediate signal, and repeated dead takes now route the next recording to another device automatically; the user's saved microphone preference is never overwritten.
+- Log hardening: the 25 failures were not test flakiness — they exposed real log interleaving between the hotkey writer and the worker logger, plus both parsers throwing on duplicate keys through `ToDictionary`. Writer serialization + tolerant parsing + preview-logger routing fix the class, and historical corrupted lines no longer break Settings.
+- Verification: focused parsing/settings 32 green; full suite 842 green; Release build clean.
+- Not claimed: the recovery picks the next enumerated device by rotation; whether a specific alternate microphone is *good* remains the user's choice, and the saved preference is respected again after one normal take.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

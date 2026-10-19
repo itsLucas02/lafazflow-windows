@@ -8,8 +8,17 @@ public static class BoundedLogFileWriter
     private const long MaxLogBytes = 2 * 1024 * 1024;
     private const long FallbackTailBytes = 1024 * 1024;
     private static readonly TimeSpan RetentionWindow = TimeSpan.FromDays(7);
+    private static readonly object Gate = new();
 
     public static void AppendLine(string logPath, string line)
+    {
+        lock (Gate)
+        {
+            AppendLineCore(logPath, line);
+        }
+    }
+
+    private static void AppendLineCore(string logPath, string line)
     {
         try
         {

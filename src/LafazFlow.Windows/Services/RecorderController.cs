@@ -47,6 +47,10 @@ public sealed class RecorderController
     private readonly TimeSpan _micSilenceWarningDelay;
     private double _currentSessionMaxLevel;
     private bool _micSilenceWarningActive;
+    private int _consecutiveSilentTakes;
+    private string? _recoveryInputName;
+    private int _recoveryDeviceAttempt;
+    private readonly Func<IReadOnlyList<string>> _microphoneDeviceNames;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -77,7 +81,8 @@ public sealed class RecorderController
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
         TimeSpan? micReadinessTimeout = null,
         FlightRecorderService? flightRecorder = null,
-        TimeSpan? micSilenceWarningDelay = null)
+        TimeSpan? micSilenceWarningDelay = null,
+        Func<IReadOnlyList<string>>? microphoneDeviceNames = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -100,6 +105,8 @@ public sealed class RecorderController
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
         _flightRecorder = flightRecorder;
         _micSilenceWarningDelay = micSilenceWarningDelay ?? TimeSpan.FromSeconds(2.5);
+        _microphoneDeviceNames = microphoneDeviceNames
+            ?? (() => MicrophoneDeviceCatalog.ListDevices().Select(device => device.Name).ToList());
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -215,7 +222,10 @@ public sealed class RecorderController
             "Recordings");
         try
         {
-            _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
+            var preferredMicrophone = string.IsNullOrWhiteSpace(_recoveryInputName)
+                ? settings.MicrophoneDeviceName
+                : _recoveryInputName;
+            _currentAudioPath = _audioCapture.Start(recordingsRoot, preferredMicrophone);
         }
         catch (Exception error)
         {
@@ -236,6 +246,55 @@ public sealed class RecorderController
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecorderShown);
         StartLivePreview(settings, _runCancellation.Token, _currentLatencyTrace);
         StartMicReadinessMonitor(settings, _runCancellation.Token);
+    }
+
+    /// <summary>
+    /// After two consecutive takes captured at silence level, the microphone is
+    /// treated as a dead stream (driver/USB start race). The next recording is
+    /// routed to an alternate enumerated device without rewriting the saved
+    /// preference; a normal take clears the override.
+    /// </summary>
+    private void RecordMicrophoneHealth(AudioSignalAnalysis signal, AppSettings settings)
+    {
+        if (!signal.IsUsable)
+        {
+            return;
+        }
+
+        if (signal.PeakLevel >= EmptyEngineRetryMinPeakLevel)
+        {
+            _consecutiveSilentTakes = 0;
+            _recoveryInputName = null;
+            return;
+        }
+
+        _consecutiveSilentTakes++;
+        if (_consecutiveSilentTakes < 2)
+        {
+            return;
+        }
+
+        _consecutiveSilentTakes = 0;
+        var names = _microphoneDeviceNames();
+        if (names.Count == 0)
+        {
+            return;
+        }
+
+        var preference = settings.MicrophoneDeviceName ?? "";
+        var candidate = preference;
+        for (var tries = 0; tries < names.Count; tries++)
+        {
+            candidate = names[_recoveryDeviceAttempt % names.Count];
+            _recoveryDeviceAttempt++;
+            if (!string.Equals(candidate, preference, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+        }
+
+        _recoveryInputName = candidate;
+        LogInfo($"MIC recovery: previous input delivered silence twice; next recording will use '{candidate}'.");
     }
 
     private void StartMicReadinessMonitor(AppSettings settings, CancellationToken cancellationToken)
@@ -506,6 +565,7 @@ public sealed class RecorderController
         try
         {
             var signal = AudioSignalAnalyzer.AnalyzeWav(job.AudioPath);
+            RecordMicrophoneHealth(signal, job.Settings);
             if (signal.IsEffectivelySilent)
             {
                 throw new InvalidOperationException(

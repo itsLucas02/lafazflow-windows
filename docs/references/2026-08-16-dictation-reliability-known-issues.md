@@ -95,7 +95,7 @@ The owner reported that occasionally, especially after a long dictation, nothing
 - Empty results on near-silent captures (peak < 0.02) now raise the honest "Microphone input was silent…" message instead of "No speech was transcribed".
 - Regression tests: audible+empty engine → CLI retry pastes; near-silent+empty → no retry + silent message; audible+empty engine+empty CLI → no-speech message.
 
-**Open follow-ups:** ~~a live in-recording "microphone is silent" warning~~ (delivered 18/10/2026: the recorder shell swaps its level meter for a "Mic silent - check device" warning within ~2.5s when the take stays below the level floor, and clears it when audio returns) and automatic device recovery for the dead-stream class remain candidates (tracked in `tasks/todo.md`).
+**Follow-ups delivered:** the live "microphone is silent" warning (18/10/2026 — the shell swaps its level meter for "Mic silent - check device" within ~2.5s when the take stays below the level floor and clears it when audio returns), and automatic device recovery for the dead-stream class (20/10/2026 — after two consecutive takes captured below the speech floor, the *next* recording is routed to an alternate enumerated device, rotating per attempt and never rewriting the saved preference; one normal take clears the override, and a deliberate one-off silence never switches devices).
 
 ## 3. DeepSeek phonetic family and "their/there/they're" priming
 
@@ -136,7 +136,20 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 
 **Direction:** do not broaden heuristic repair lists one phrase at a time (see the August lessons on whack-a-mole). Collect owner examples, repair only deterministic patterns with negative regressions, and treat the model-agnostic replacement's user-owned rule layer plus an optional local polish stage as the structural fix.
 
-## 6. What has already been done (context for future agents)
+## 6. Diagnostics log corruption and Settings load failure (fixed 20/10/2026)
+
+**Symptom:** opening Settings could throw after the app had been running a while. Discovered while running the test suite: 25 `SettingsViewModelTests` failed with `ArgumentException: An item with the same key has already been added. Key: state`.
+
+**Cause chain:** two independent writers (the hotkey diagnostics writer and the supervisor's WORKER logger) could interleave into `lafazflow.log`. One HOTKEY line lost its newline mid-write (`...targe`) and a WORKER line was concatenated onto it, producing a single line with two `state=` keys. Both diagnostic stores parsed lines with `ToDictionary`, which throws on duplicate keys, and the exception propagated through Settings loading. The preview logger also bypassed `BoundedLogFileWriter` with a raw `File.AppendAllText`.
+
+**Fix (20/10/2026):**
+- `BoundedLogFileWriter.AppendLine` now serializes trim + append under a process-wide lock, so in-process writers cannot interleave.
+- The preview logger routes through `BoundedLogFileWriter` instead of `File.AppendAllText`.
+- `HotkeyDiagnosticLogStore` and `LatencyDiagnosticLogStore` parse tolerantly: the first occurrence of a key wins and corrupted/interleaved lines never throw. Regression tests cover both parsers with duplicate-key lines.
+
+**Verification:** the 25 previously failing Settings tests pass, the full suite is green, and the corrupted historical line in the live log no longer breaks Settings.
+
+## 7. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.
 - **v1.1.0 public release** (`5d1a014` tag `v1.1.0`): CPU worker + Official CPU CLI package, tag/version validation workflow, backend compatibility checks (CUDA settings never silently run a CPU worker).
@@ -145,14 +158,14 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 - **Repetition-leak guard generalized** (16/08/2026): standalone repetition loops (same token 15+ times, dominating ≥80% of the transcript) now fail both the live preview and the final paste.
 - **Mic readiness + fallback** (16/08/2026): first-audio gate with automatic device fallback and persisted preferred microphone (schema 18).
 
-## 7. Open decisions awaiting owner approval
+## 8. Open decisions awaiting owner approval
 
 - Generalize the repetition-leak guard (section 1).
 - DeepSeek phonetic family + prompt anchoring (separate discussion; includes the "deep sea" ambiguity rule).
 - Live capture-readiness gate and microphone device management (section 2).
 - Full microphone selector UI in Settings (auto-fallback and fast failure are done).
 
-## 8. Cross-references
+## 9. Cross-references
 
 - `src/LafazFlow.Windows/Services/PromptLeakDetector.cs`
 - `src/LafazFlow.Windows/Services/RollingWhisperLiveTranscriptPreviewService.cs`

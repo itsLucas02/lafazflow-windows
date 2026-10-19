@@ -441,10 +441,9 @@ public sealed class RollingWhisperLiveTranscriptPreviewService : ILiveTranscript
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "LafazFlow",
                 "Logs");
-            Directory.CreateDirectory(logRoot);
-            File.AppendAllText(
+            BoundedLogFileWriter.AppendLine(
                 Path.Combine(logRoot, "lafazflow.log"),
-                $"[{DateTimeOffset.Now:O}] {message}{Environment.NewLine}");
+                $"[{DateTimeOffset.Now:O}] {message}");
         }
         catch
         {

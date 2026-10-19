@@ -51,6 +51,19 @@ public sealed partial class HotkeyDiagnosticLogStore
         return lines.Length - retained.Length;
     }
 
+    private static Dictionary<string, string> ParseFields(string text)
+    {
+        // Tolerate interleaved/corrupted lines: the first occurrence of a key wins
+        // instead of throwing on duplicates (which used to break the Settings page).
+        var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (System.Text.RegularExpressions.Match match in KeyValueRegex().Matches(text))
+        {
+            fields.TryAdd(match.Groups["key"].Value, match.Groups["value"].Value);
+        }
+
+        return fields;
+    }
+
     public static HotkeyDiagnosticEvent? ParseLine(string line)
     {
         if (!IsHotkeyLine(line))
@@ -60,12 +73,7 @@ public sealed partial class HotkeyDiagnosticLogStore
 
         var timestamp = ParseTimestamp(line);
         var hotkeyStart = line.IndexOf("HOTKEY ", StringComparison.Ordinal);
-        var fields = KeyValueRegex()
-            .Matches(line[(hotkeyStart + "HOTKEY ".Length)..])
-            .ToDictionary(
-                match => match.Groups["key"].Value,
-                match => match.Groups["value"].Value,
-                StringComparer.OrdinalIgnoreCase);
+        var fields = ParseFields(line[(hotkeyStart + "HOTKEY ".Length)..]);
 
         return new HotkeyDiagnosticEvent(
             timestamp,
