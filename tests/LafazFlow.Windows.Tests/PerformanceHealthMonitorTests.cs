@@ -33,7 +33,7 @@ public sealed class PerformanceHealthMonitorTests
         }
 
         Assert.True(monitor.IsSlow(fingerprint, Sample(fingerprint, 1100, 10000)));
-        Assert.False(monitor.IsSlow(fingerprint, Sample(fingerprint, 1000, 10000)));
+        Assert.False(monitor.IsSlow(fingerprint, Sample(fingerprint, 700, 10000)));
         Assert.False(monitor.IsSlow(fingerprint, Sample(fingerprint, 1100, 100000)));
     }
 

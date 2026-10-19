@@ -17,9 +17,9 @@ public sealed class PerformanceHealthMonitorOptions
 
     public int WindowSize { get; init; } = 30;
 
-    public long SlowInferenceDeltaMs { get; init; } = 750;
+    public long SlowInferenceDeltaMs { get; init; } = 500;
 
-    public double SlowRtfFactor { get; init; } = 1.75;
+    public double SlowRtfFactor { get; init; } = 1.6;
 
     public int DegradationWindow { get; init; } = 5;
 

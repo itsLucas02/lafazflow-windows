@@ -114,6 +114,24 @@ public partial class MiniRecorderWindow : Window, IMiniRecorderWindow
         AnimateDouble(_shellTranslate, TranslateTransform.YProperty, MiniRecorderVisualSpec.WindowExitTranslateY, MiniRecorderVisualSpec.WindowExitMilliseconds, ExitEase());
     }
 
+    /// <summary>
+    /// Forces window creation and layout during app startup so the first real
+    /// dictation does not pay the one-time show cost on the hotkey path.
+    /// </summary>
+    public void Prewarm()
+    {
+        var workArea = SystemParameters.WorkArea;
+        Left = workArea.Left + (workArea.Width - Width) / 2;
+        Top = workArea.Bottom - Height - 24;
+        CancelWindowAnimations();
+        Opacity = 0;
+        Show();
+        UpdateLayout();
+        base.Hide();
+        _isHiding = false;
+        Opacity = 0;
+    }
+
     private void CancelWindowAnimations()
     {
         BeginAnimation(OpacityProperty, null);

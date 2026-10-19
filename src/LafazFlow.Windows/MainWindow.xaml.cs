@@ -123,6 +123,14 @@ public partial class MainWindow : Window
         }
         _ = CheckForUpdatesAsync(openDownloadWhenUpdate: false);
         _ = Task.Run(() => _flightRecorder.Prune(), CancellationToken.None);
+        try
+        {
+            // Best-effort: remove the one-time first-show cost from the hotkey path.
+            _miniRecorderWindow.Prewarm();
+        }
+        catch
+        {
+        }
         if (_workerSupervisor is not null)
         {
             _ = Task.Run(async () =>

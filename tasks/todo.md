@@ -565,9 +565,9 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] P1: paste path trimmed — clipboard settle 50→25 ms; foreground re-assert + delay skipped when the target is already foreground (normal case). Saves ~75 ms typical / ~40 ms worst case.
 - [x] P2: flash attention evaluated on the retained corpus: identical text and identical wall times vs non-FA; reverted (no benefit, keep the proven kernel path). Note recorded: this is a laptop RTX 4070 idling at ~210 MHz under the Balanced plan — power state can multiply latency and must be equal before comparing benchmark runs.
 - [ ] P3 (structural, replacement core): incremental chunked decoding with commit/stitch so stop-time decode only handles the tail.
-- [ ] P4: prewarm the mini-recorder shell at launch to remove first-show activation spikes (~283 ms p99).
-- [ ] P5: recalibrate the performance-health slow-run rule after P0–P2.
-- [ ] Verify P1 in live `LATENCY` paste rows on the next build (expect ~40-60 ms instead of ~120 ms).
+- [x] P4: mini-recorder shell prewarmed at startup (opacity-0 show + layout + hide); first-show cost removed from the hotkey path.
+- [x] P5: slow-run thresholds recalibrated to 500 ms / 1.6x (baseline ~238 ms); sustained 3-of-5 + 10-min cooldown unchanged; boundary test updated.
+- [x] P1 verified live: paste 41–63 ms (was ~120 ms); drain 27–62 ms typical.
 
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
