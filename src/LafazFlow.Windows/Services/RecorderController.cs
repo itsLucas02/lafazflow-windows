@@ -50,6 +50,7 @@ public sealed class RecorderController
     private int _consecutiveSilentTakes;
     private string? _recoveryInputName;
     private int _recoveryDeviceAttempt;
+    private bool _micRecoveryDisabledForSession;
     private int _sessionGeneration;
     private readonly Func<IReadOnlyList<string>> _microphoneDeviceNames;
     private readonly DictationQueueProcessor _queue;
@@ -231,25 +232,50 @@ public sealed class RecorderController
         }
         catch (Exception error)
         {
-            _runCancellation.Dispose();
-            _runCancellation = null;
-            _currentLatencyTrace.Fail(error);
-            _latencyReporter.Report(_currentLatencyTrace);
-            _currentLatencyTrace = null;
-            if (error is InvalidOperationException
-                && error.Message.Contains("already active", StringComparison.OrdinalIgnoreCase))
+            var startError = error;
+            if (!string.IsNullOrWhiteSpace(_recoveryInputName))
             {
-                // A stale capture session from an interrupted cross-session handoff
-                // would otherwise block every future recording. Clear it so the next
-                // toggle can start cleanly.
-                _ = RecoverStaleCaptureAsync();
+                // A recovery device that cannot actually start (unsupported channel
+                // count, disconnected endpoint, etc.) must never lock dictation. Drop
+                // the override, stop auto-recovery for this session, and retry once
+                // on the user's preferred microphone.
+                LogInfo(
+                    $"MIC recovery: '{_recoveryInputName}' could not start ({startError.GetType().Name}); reverting to the preferred microphone.");
+                _recoveryInputName = null;
+                _micRecoveryDisabledForSession = true;
+                try
+                {
+                    _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
+                    startError = null;
+                }
+                catch (Exception retryError)
+                {
+                    startError = retryError;
+                }
             }
 
-            _viewModel.SetError(ShortError(error));
-            _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
-            _window.ShowBottomCenter();
-            LogError(error.ToString());
-            return;
+            if (startError is not null)
+            {
+                _runCancellation.Dispose();
+                _runCancellation = null;
+                _currentLatencyTrace.Fail(startError);
+                _latencyReporter.Report(_currentLatencyTrace);
+                _currentLatencyTrace = null;
+                if (startError is InvalidOperationException
+                    && startError.Message.Contains("already active", StringComparison.OrdinalIgnoreCase))
+                {
+                    // A stale capture session from an interrupted cross-session handoff
+                    // would otherwise block every future recording. Clear it so the next
+                    // toggle can start cleanly.
+                    _ = RecoverStaleCaptureAsync();
+                }
+
+                _viewModel.SetError(ShortError(startError));
+                _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
+                _window.ShowBottomCenter();
+                LogError(startError.ToString());
+                return;
+            }
         }
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
@@ -298,6 +324,11 @@ public sealed class RecorderController
         }
 
         _consecutiveSilentTakes = 0;
+        if (_micRecoveryDisabledForSession)
+        {
+            return;
+        }
+
         var names = _microphoneDeviceNames();
         if (names.Count == 0)
         {
@@ -314,6 +345,21 @@ public sealed class RecorderController
             {
                 break;
             }
+        }
+
+        try
+        {
+            // Prove the candidate can actually be opened before committing to it;
+            // endpoints that fail here (unsupported channel count, disconnected, etc.)
+            // must never take over the next recording.
+            _audioCapture.WarmUp(candidate);
+        }
+        catch (Exception error)
+        {
+            _micRecoveryDisabledForSession = true;
+            LogInfo(
+                $"MIC recovery: candidate '{candidate}' could not be opened ({error.GetType().Name}); keeping the current microphone.");
+            return;
         }
 
         _recoveryInputName = candidate;

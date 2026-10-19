@@ -1348,6 +1348,95 @@ public sealed class RecorderControllerTests
         }
     }
 
+    [Fact]
+    public async Task RecoveryCandidateThatFailsWarmUpIsRejected()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-mic-recovery-").FullName;
+        var silentOne = Path.Combine(root, "silent1.wav");
+        var silentTwo = Path.Combine(root, "silent2.wav");
+        var audible = Path.Combine(root, "audible.wav");
+        File.WriteAllBytes(silentOne, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(silentTwo, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(audible, BuildPcmWav(16000 * 3, 0.35));
+        var audio = new FakeAudioCaptureService(silentOne, silentTwo, audible);
+        audio.UnopenableOnWarmUp.Add("Bad Mic");
+        var controller = new RecorderController(
+            new MiniRecorderViewModel(),
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { MicrophoneDeviceName = "Razer Seiren Mini" }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            microphoneDeviceNames: () => ["Razer Seiren Mini", "Bad Mic"]);
+
+        try
+        {
+            for (var take = 0; take < 3; take++)
+            {
+                controller.StartRecording();
+                await controller.ToggleAsync();
+                await controller.WaitForPendingTranscriptionsAsync();
+            }
+
+            Assert.Equal(
+                ["Razer Seiren Mini", "Razer Seiren Mini", "Razer Seiren Mini"],
+                audio.RequestedDevices);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryStartFailureFallsBackToPreferredDevice()
+    {
+        var root = Directory.CreateTempSubdirectory("lafazflow-mic-recovery-").FullName;
+        var silentOne = Path.Combine(root, "silent1.wav");
+        var silentTwo = Path.Combine(root, "silent2.wav");
+        var audibleOne = Path.Combine(root, "audible1.wav");
+        var audibleTwo = Path.Combine(root, "audible2.wav");
+        File.WriteAllBytes(silentOne, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(silentTwo, BuildPcmWav(16000, 0.006));
+        File.WriteAllBytes(audibleOne, BuildPcmWav(16000 * 3, 0.35));
+        File.WriteAllBytes(audibleTwo, BuildPcmWav(16000 * 3, 0.35));
+        var audio = new FakeAudioCaptureService(silentOne, silentTwo, audibleOne, audibleTwo);
+        audio.UnopenableOnStart.Add("Bad Mic");
+        var viewModel = new MiniRecorderViewModel();
+        var controller = new RecorderController(
+            viewModel,
+            new FakeMiniRecorderWindow(),
+            audio,
+            new FakeTranscriptionService(_ => Task.FromResult("unused")),
+            new FakeClipboardPasteService(),
+            CreateSettingsStore(settings => settings with { MicrophoneDeviceName = "Razer Seiren Mini" }),
+            new SoundCueService(),
+            () => (IntPtr)111,
+            targetTextContext: new FakeTargetTextContextService(""),
+            microphoneDeviceNames: () => ["Razer Seiren Mini", "Bad Mic"]);
+
+        try
+        {
+            for (var take = 0; take < 4; take++)
+            {
+                controller.StartRecording();
+                await controller.ToggleAsync();
+                await controller.WaitForPendingTranscriptionsAsync();
+            }
+
+            Assert.Equal(
+                ["Razer Seiren Mini", "Razer Seiren Mini", "Bad Mic", "Razer Seiren Mini", "Razer Seiren Mini"],
+                audio.RequestedDevices);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static void TryDeleteDirectory(string path)
     {
         try
@@ -1942,6 +2031,18 @@ public sealed class RecorderControllerTests
 
         public bool EmitLevelOnStart { get; set; } = true;
 
+        public HashSet<string> UnopenableOnWarmUp { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public HashSet<string> UnopenableOnStart { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public void WarmUp(string? preferredInputDeviceName = null)
+        {
+            if (preferredInputDeviceName is not null && UnopenableOnWarmUp.Contains(preferredInputDeviceName))
+            {
+                throw new NotSupportedException("Unsupported microphone channel count: 4");
+            }
+        }
+
         public void EmitAudioLevel(double level)
         {
             AudioLevelChanged?.Invoke(level);
@@ -1959,14 +2060,19 @@ public sealed class RecorderControllerTests
 
         public string Start(string outputDirectory, string? preferredInputDeviceName = null)
         {
+            RequestedDevices.Add(preferredInputDeviceName);
             if (StartError is not null)
             {
                 throw StartError;
             }
 
+            if (preferredInputDeviceName is not null && UnopenableOnStart.Contains(preferredInputDeviceName))
+            {
+                throw new NotSupportedException("Unsupported microphone channel count: 4");
+            }
+
             StartCount++;
             CurrentPath = _paths.Dequeue();
-            RequestedDevices.Add(preferredInputDeviceName);
             ActiveInputDeviceName = preferredInputDeviceName ?? "fake-mic";
             if (EmitLevelOnStart)
             {

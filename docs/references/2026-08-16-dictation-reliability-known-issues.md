@@ -164,6 +164,8 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 
 **Note:** the CLI retry (18 Oct) lengthened the background-job window, which made this pre-existing cross-session race reachable within seconds of rapid dictation.
 
+**Second occurrence (same pattern, different error):** the microphone auto-recovery could select an endpoint that cannot actually open — a 4-channel capture endpoint failed with `NotSupportedException: Unsupported microphone channel count: 4`. The escape hatch added above only matched the "already active" message, so the bad override persisted and every later dictation failed identically until restart. Fixed in the same slice: (a) recovery candidates are **warm-opened for validation before being committed**, and any candidate that cannot open is rejected (recovery disabled for the session); (b) **any** start failure while a recovery override is active now clears the override, disables auto-recovery for the session, and retries the start once on the user's preferred microphone. Two regression tests cover a candidate that fails validation and a candidate whose start fails (fallback to the preferred device).
+
 ## 8. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.

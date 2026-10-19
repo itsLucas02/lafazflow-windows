@@ -482,7 +482,11 @@
 
 ## Recover the microphone only on repeated dead takes
 - Pattern: A dead USB capture stream is indistinguishable from deliberate silence within a single take; auto-switching on one silent take would surprise the user, while never switching leaves the dead stream in place for the next dictation. In this app, the warm input is already re-opened after every stop, so the useful recovery is choosing a different device when silence persists.
-- Rule: Count consecutive takes captured below the speech floor (peak < 0.02). After two in a row, route the NEXT recording to an alternate enumerated device (rotating per attempt, never rewriting the saved preference); one normal take clears the override. Keep the live warning as the immediate signal, and never switch during an active session.
+- Rule: Count consecutive takes captured below the speech floor (peak < 0.02). After two in a row, route the NEXT recording to an alternate enumerated device (rotating per attempt, never rewriting the saved preference); one normal take clears the override. Keep the live warning as the immediate signal, and never switch during an active session. Validate the candidate with a warm open before committing, and treat ANY start failure while an override is active as a hard reset back to the preferred device.
+
+## Every automatic override needs a universal escape path
+- Pattern: Two successive incidents trapped dictation from the same automation: first the override retried under "A microphone recording is already active", then under "Unsupported microphone channel count: 4". Each fix had matched a specific error string while the actual failure class was "the override cannot work".
+- Rule: When an automatic behavior overrides the user's proven configuration (device, model, settings), any failure while the override is active must clear it, disable the automation for the session, and retry once on the user's configuration. Validate candidates before committing. Never key an escape path on one observed error message; test at least one unexpected failure type for every automation.
 
 ## Serialize log writes and parse logs tolerantly
 - Pattern: Two writers appending to `lafazflow.log` interleaved mid-line; the resulting line contained duplicate keys, both diagnostic parsers used `ToDictionary`, and the exception propagated into Settings loading (25 tests failed with a duplicate-key `ArgumentException`).

@@ -598,6 +598,18 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Verification: 3 new regression tests; recorder 52 green; full suite 845 green; Release clean.
 - Not claimed: the underlying rapid-back-to-back design is intentional (queue while transcribing); the fix isolates sessions rather than changing that behavior.
 
+## Plan: Fix "Unsupported microphone" recovery trap (20 Oct 2026)
+- [x] Root cause from the live log: the auto-recovery selected a 4-channel endpoint; `NativePcm16Resampler` rejects >2 channels and the escape hatch only matched "already active", so the override persisted and every start failed.
+- [x] Candidates are warm-opened for validation before being committed; unopenable candidates are rejected and recovery is disabled for the session.
+- [x] Any start failure while a recovery override is active clears the override, disables recovery for the session, and retries once on the user's preferred microphone.
+- [x] Regression tests: candidate failing warm-up is never used; candidate whose start fails falls back to the preferred device and the following take uses it. Focused 68 green.
+- [x] Full suite 847 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + push.
+
+## Review: "Unsupported microphone" recovery trap (20 Oct 2026)
+- This is the second incident from the same design flaw: the escape path keyed on one error string instead of the failure class, so a different start failure (channel count) trapped dictation. The fix now guarantees the automation can never outlive a failure: validate before use, clear the override on any failure, disable recovery for the session, and retry on the user's proven device.
+- Verification: focused 68 green including both new tests; full suite 847 green; Release clean.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
