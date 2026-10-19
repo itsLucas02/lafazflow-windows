@@ -47,12 +47,7 @@ public sealed class RecorderController
     private readonly TimeSpan _micSilenceWarningDelay;
     private double _currentSessionMaxLevel;
     private bool _micSilenceWarningActive;
-    private int _consecutiveSilentTakes;
-    private string? _recoveryInputName;
-    private int _recoveryDeviceAttempt;
-    private bool _micRecoveryDisabledForSession;
     private int _sessionGeneration;
-    private readonly Func<IReadOnlyList<string>> _microphoneDeviceNames;
     private readonly DictationQueueProcessor _queue;
     private AppSettings _lastSettings = AppSettings.Default;
     private bool _firstDictation = true;
@@ -83,8 +78,7 @@ public sealed class RecorderController
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
         TimeSpan? micReadinessTimeout = null,
         FlightRecorderService? flightRecorder = null,
-        TimeSpan? micSilenceWarningDelay = null,
-        Func<IReadOnlyList<string>>? microphoneDeviceNames = null)
+        TimeSpan? micSilenceWarningDelay = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -107,8 +101,6 @@ public sealed class RecorderController
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
         _flightRecorder = flightRecorder;
         _micSilenceWarningDelay = micSilenceWarningDelay ?? TimeSpan.FromSeconds(2.5);
-        _microphoneDeviceNames = microphoneDeviceNames
-            ?? (() => MicrophoneDeviceCatalog.ListDevices().Select(device => device.Name).ToList());
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -225,57 +217,29 @@ public sealed class RecorderController
             "Recordings");
         try
         {
-            var preferredMicrophone = string.IsNullOrWhiteSpace(_recoveryInputName)
-                ? settings.MicrophoneDeviceName
-                : _recoveryInputName;
-            _currentAudioPath = _audioCapture.Start(recordingsRoot, preferredMicrophone);
+            _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
         }
         catch (Exception error)
         {
-            var startError = error;
-            if (!string.IsNullOrWhiteSpace(_recoveryInputName))
+            _runCancellation.Dispose();
+            _runCancellation = null;
+            _currentLatencyTrace.Fail(error);
+            _latencyReporter.Report(_currentLatencyTrace);
+            _currentLatencyTrace = null;
+            if (error is InvalidOperationException
+                && error.Message.Contains("already active", StringComparison.OrdinalIgnoreCase))
             {
-                // A recovery device that cannot actually start (unsupported channel
-                // count, disconnected endpoint, etc.) must never lock dictation. Drop
-                // the override, stop auto-recovery for this session, and retry once
-                // on the user's preferred microphone.
-                LogInfo(
-                    $"MIC recovery: '{_recoveryInputName}' could not start ({startError.GetType().Name}); reverting to the preferred microphone.");
-                _recoveryInputName = null;
-                _micRecoveryDisabledForSession = true;
-                try
-                {
-                    _currentAudioPath = _audioCapture.Start(recordingsRoot, settings.MicrophoneDeviceName);
-                    startError = null;
-                }
-                catch (Exception retryError)
-                {
-                    startError = retryError;
-                }
+                // A stale capture session from an interrupted cross-session handoff
+                // would otherwise block every future recording. Clear it so the next
+                // toggle can start cleanly.
+                _ = RecoverStaleCaptureAsync();
             }
 
-            if (startError is not null)
-            {
-                _runCancellation.Dispose();
-                _runCancellation = null;
-                _currentLatencyTrace.Fail(startError);
-                _latencyReporter.Report(_currentLatencyTrace);
-                _currentLatencyTrace = null;
-                if (startError is InvalidOperationException
-                    && startError.Message.Contains("already active", StringComparison.OrdinalIgnoreCase))
-                {
-                    // A stale capture session from an interrupted cross-session handoff
-                    // would otherwise block every future recording. Clear it so the next
-                    // toggle can start cleanly.
-                    _ = RecoverStaleCaptureAsync();
-                }
-
-                _viewModel.SetError(ShortError(startError));
-                _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
-                _window.ShowBottomCenter();
-                LogError(startError.ToString());
-                return;
-            }
+            _viewModel.SetError(ShortError(error));
+            _soundCues.PlayError(SoundCueOptions.FromSettings(settings));
+            _window.ShowBottomCenter();
+            LogError(error.ToString());
+            return;
         }
         _currentLatencyTrace.Mark(LatencyCheckpoint.RecordingReady);
         _viewModel.State = RecordingState.Recording;
@@ -295,75 +259,6 @@ public sealed class RecorderController
         catch
         {
         }
-    }
-
-    /// <summary>
-    /// After two consecutive takes captured at silence level, the microphone is
-    /// treated as a dead stream (driver/USB start race). The next recording is
-    /// routed to an alternate enumerated device without rewriting the saved
-    /// preference; a normal take clears the override.
-    /// </summary>
-    private void RecordMicrophoneHealth(AudioSignalAnalysis signal, AppSettings settings)
-    {
-        if (!signal.IsUsable)
-        {
-            return;
-        }
-
-        if (signal.PeakLevel >= EmptyEngineRetryMinPeakLevel)
-        {
-            _consecutiveSilentTakes = 0;
-            _recoveryInputName = null;
-            return;
-        }
-
-        _consecutiveSilentTakes++;
-        if (_consecutiveSilentTakes < 2)
-        {
-            return;
-        }
-
-        _consecutiveSilentTakes = 0;
-        if (_micRecoveryDisabledForSession)
-        {
-            return;
-        }
-
-        var names = _microphoneDeviceNames();
-        if (names.Count == 0)
-        {
-            return;
-        }
-
-        var preference = settings.MicrophoneDeviceName ?? "";
-        var candidate = preference;
-        for (var tries = 0; tries < names.Count; tries++)
-        {
-            candidate = names[_recoveryDeviceAttempt % names.Count];
-            _recoveryDeviceAttempt++;
-            if (!string.Equals(candidate, preference, StringComparison.OrdinalIgnoreCase))
-            {
-                break;
-            }
-        }
-
-        try
-        {
-            // Prove the candidate can actually be opened before committing to it;
-            // endpoints that fail here (unsupported channel count, disconnected, etc.)
-            // must never take over the next recording.
-            _audioCapture.WarmUp(candidate);
-        }
-        catch (Exception error)
-        {
-            _micRecoveryDisabledForSession = true;
-            LogInfo(
-                $"MIC recovery: candidate '{candidate}' could not be opened ({error.GetType().Name}); keeping the current microphone.");
-            return;
-        }
-
-        _recoveryInputName = candidate;
-        LogInfo($"MIC recovery: previous input delivered silence twice; next recording will use '{candidate}'.");
     }
 
     private void StartMicReadinessMonitor(AppSettings settings, CancellationToken cancellationToken, int sessionGeneration)
@@ -639,7 +534,6 @@ public sealed class RecorderController
         try
         {
             var signal = AudioSignalAnalyzer.AnalyzeWav(job.AudioPath);
-            RecordMicrophoneHealth(signal, job.Settings);
             if (signal.IsEffectivelySilent)
             {
                 throw new InvalidOperationException(

@@ -610,6 +610,18 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - This is the second incident from the same design flaw: the escape path keyed on one error string instead of the failure class, so a different start failure (channel count) trapped dictation. The fix now guarantees the automation can never outlive a failure: validate before use, clear the override on any failure, disable recovery for the session, and retry on the user's proven device.
 - Verification: focused 68 green including both new tests; full suite 847 green; Release clean.
 
+## Plan: Remove automatic microphone switching (20 Oct 2026)
+- [x] Third incident: spamming silent takes ran the recovery validation (`WarmUp(candidate)`) from the background job thread while the next recording was already active; the warm-input replacement wedged the capture lock, the UI thread blocked (hotkey detections logged, no toggles), and the pill never appeared.
+- [x] Removed the entire auto device switching feature (override, rotation, candidate validation, constructor knob, and its four tests). Kept the live silence warning, honest stop-time messages, stale-session self-heal, and session-generation guards.
+- [x] Known-issues sections 2 and 7 updated with all three incidents and the removal decision; lessons updated.
+- [x] Full suite 843 green; Release build 0 warnings/0 errors.
+- [ ] Owner-local install + push.
+
+## Review: Remove automatic microphone switching (20 Oct 2026)
+- The feature caused three trapping incidents in one day. The root pattern: automatic device switching interacts with the warm-capture lifecycle and cannot be made trustworthy cheaply; silence alone cannot distinguish deliberate silence from a dead stream.
+- Final behavior: the app warns live when the microphone delivers silence, reports dead takes honestly, self-heals stale capture sessions, and never overrides the user's chosen microphone.
+- Verification: full suite 843 green; Release clean; installed build restarts the frozen app.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
