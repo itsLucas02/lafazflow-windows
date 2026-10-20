@@ -289,9 +289,9 @@
         </Style>
 
         <Style TargetType="ScrollBar">
-            <Setter Property="Width" Value="8" />
+            <Setter Property="Width" Value="6" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#3A3A40" />
+            <Setter Property="Foreground" Value="#333338" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
@@ -320,13 +320,16 @@
                                             <ControlTemplate TargetType="Thumb">
                                                 <Border x:Name="ThumbSurface"
                                                         Background="{TemplateBinding Background}"
-                                                        CornerRadius="3" />
+                                                        CornerRadius="2"
+                                                        Opacity="0.55" />
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="ThumbSurface" Property="Background" Value="#7A7A84" />
+                                                        <Setter TargetName="ThumbSurface" Property="Opacity" Value="1" />
+                                                        <Setter TargetName="ThumbSurface" Property="Background" Value="#4A4A52" />
                                                     </Trigger>
                                                     <Trigger Property="IsDragging" Value="True">
-                                                        <Setter TargetName="ThumbSurface" Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        <Setter TargetName="ThumbSurface" Property="Opacity" Value="1" />
+                                                        <Setter TargetName="ThumbSurface" Property="Background" Value="#6E6E78" />
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -349,7 +352,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="Orientation" Value="Horizontal">
                                 <Setter Property="Width" Value="Auto" />
-                                <Setter Property="Height" Value="8" />
+                                <Setter Property="Height" Value="6" />
                                 <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal" />
                                 <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
                                 <Setter TargetName="DecreaseButton" Property="Command" Value="{x:Static ScrollBar.PageLeftCommand}" />

@@ -255,7 +255,7 @@ public sealed class SettingsWindowXamlTests
         Assert.DoesNotContain("CornerRadius\" Value=\"999\"", xaml);
         Assert.Contains("<Style TargetType=\"ScrollBar\">", xaml);
         Assert.Contains("x:Name=\"ScrollThumb\"", xaml);
-        Assert.Contains("Value=\"#3A3A40\"", xaml);
+        Assert.Contains("Value=\"#333338\"", xaml);
         Assert.Contains("ScrollBar.PageLeftCommand", xaml);
         Assert.Contains("ScrollBar.PageRightCommand", xaml);
     }
