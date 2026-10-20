@@ -255,7 +255,7 @@ public sealed class SettingsWindowXamlTests
         Assert.DoesNotContain("CornerRadius\" Value=\"999\"", xaml);
         Assert.Contains("<Style TargetType=\"ScrollBar\">", xaml);
         Assert.Contains("x:Name=\"ScrollThumb\"", xaml);
-        Assert.Contains("Value=\"#4B5662\"", xaml);
+        Assert.Contains("Value=\"#3A3A40\"", xaml);
         Assert.Contains("ScrollBar.PageLeftCommand", xaml);
         Assert.Contains("ScrollBar.PageRightCommand", xaml);
     }
@@ -416,6 +416,20 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("Opacity = 0;", codeBehind);
     }
 
+    [Fact]
+    public void SettingsWindowContainsHistoryPageWithCopyAction()
+    {
+        var repoRoot = FindRepoRoot();
+        var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
+        var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
+
+        Assert.Contains("local:SettingsSection.History", xaml);
+        Assert.Contains("ItemsSource=\"{Binding RecentDictations}\"", xaml);
+        Assert.Contains("Text=\"{Binding DictationHistoryMessage}\"", xaml);
+        Assert.Contains("Click=\"CopyDictationHistoryItem_OnClick\"", xaml);
+        Assert.Contains("Content=\"Clear History\"", xaml);
+        Assert.DoesNotContain("Content=\"Save Latest Recording\" Width=", xaml);
+    }
     private static string FindRepoRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

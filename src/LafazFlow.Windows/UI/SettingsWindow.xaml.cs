@@ -198,6 +198,47 @@ public partial class SettingsWindow : WpfFluentWindow
         _viewModel.ClearHotkeyDiagnostics();
     }
 
+    private void CopyDictationHistoryItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DictationHistoryItem item })
+        {
+            return;
+        }
+
+        try
+        {
+            System.Windows.Clipboard.SetText(item.Text);
+            _viewModel.SetDictationHistoryFeedback("Copied to the clipboard.");
+        }
+        catch (Exception error)
+        {
+            _viewModel.SetDictationHistoryFeedback($"Could not copy: {error.GetType().Name}.");
+        }
+    }
+
+    private void RefreshHistory_OnClick(object sender, RoutedEventArgs e)
+    {
+        _viewModel.RefreshDictationHistory();
+    }
+
+    private void ClearHistory_OnClick(object sender, RoutedEventArgs e)
+    {
+        var result = System.Windows.MessageBox.Show(
+            this,
+            "Clear the local dictation history? This cannot be undone.",
+            "Clear History",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var removed = _viewModel.ClearDictationHistory();
+        _viewModel.SetDictationHistoryFeedback(
+            removed == 0 ? "History is already empty." : "Dictation history cleared.");
+    }
+
     private void OpenFlightRecorderFolder_OnClick(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(_viewModel.FlightRecorderFolder);

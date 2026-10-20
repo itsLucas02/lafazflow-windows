@@ -48,3 +48,11 @@ Owner feedback: “spacing is very bad… everything feels smudged… I hate the
 - **Spacing:** content inset `40,32,24,24`; scroll content padded `0,0,28,40` so content never touches the scrollbar and pages end with breathing room; cards padding 24 with 20 gaps; page header → cards 28; nav rows 12/11 with 4 gaps; sidebar padding 18/22 with 28 header gap; window 1000×720.
 - **Type rhythm:** default body 13 without a global line-height (global line-height clipped large titles); subtitle/help use explicit 20/18 line heights.
 - No binding or behavioral changes.
+## Revision 3 — scrollbar, History page, button sizing (same day)
+
+- **Scrollbar:** slimmed to an 8px track with a 1px-inset 6px thumb, neutral `#3A3A40` idle / lighter hover; drag uses the window emphasis tone. Quiet and modern instead of a heavy bar.
+- **History page (new section, second in the sidebar):** lists the last 50 dictated texts, newest first, with timestamp and a per-item **Copy** button so text that pasted in the wrong place can be recovered. Stored only on this machine in `%LOCALAPPDATA%\LafazFlow\history.json`; **Clear History** is confirmed first. Empty state explains the page.
+- **Button sizing:** every fixed `Width` on buttons became `MinWidth`, so long labels grow instead of clipping; wrap panels reflow when space is tight.
+- No binding or behavioral changes outside the new history recording (append on successful paste only).
+
+Verification: history store round-trip/cap/clear/corrupt-file tests; XAML assertions for the History page and scrollbar token; full suite 849 green.

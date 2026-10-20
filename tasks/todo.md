@@ -631,6 +631,13 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - [x] XAML regression assertions updated (window width, radii); full suite 843 green.
 - [ ] Owner visual check on the installed build.
 
+## Plan: Scrollbar, dictation History page, button sizing (20 Oct 2026)
+- [x] Slim the settings scrollbar (8px track, 6px inset thumb, neutral tones).
+- [x] New History settings section: last 50 dictated texts (newest first) with timestamp, per-item Copy, Refresh, and confirmed Clear History; local-only JSON at `%LOCALAPPDATA%\LafazFlow\history.json`; recorded only on successful paste.
+- [x] Fixed button clipping: every fixed button Width became MinWidth so long labels grow instead of clipping.
+- [x] Tests: history store round-trip, cap, clear, corrupt-file recovery, blank ignore; XAML History/scrollbar assertions. Full suite 849 green.
+- [ ] Owner-local install + visual check.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.

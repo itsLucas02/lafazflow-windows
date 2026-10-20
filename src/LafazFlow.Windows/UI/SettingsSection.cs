@@ -3,6 +3,7 @@ namespace LafazFlow.Windows.UI;
 public enum SettingsSection
 {
     Overview,
+    History,
     Dictation,
     Models,
     Vocabulary,

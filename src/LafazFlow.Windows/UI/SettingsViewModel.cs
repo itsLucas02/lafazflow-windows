@@ -18,6 +18,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly VoiceEngineStatusSource? _voiceEngineStatus;
     private readonly string? _logsFolderOverride;
     private readonly FlightRecorderService _flightRecorder;
+    private readonly DictationHistoryStore _dictationHistory;
     private AppSettings _sourceSettings;
     private string _whisperCliPath = "";
     private string _cudaWhisperCliPath = "";
@@ -60,6 +61,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private string _engineIdText = "";
     private string _engineActiveBackendText = "Unknown";
     private string _flightRecorderSummary = "";
+    private string _dictationHistoryMessage = "";
     private SettingsSection _selectedSection = SettingsSection.Overview;
 
     private SettingsViewModel(
@@ -71,7 +73,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         LocalModelLibraryService modelLibrary,
         VoiceEngineStatusSource? voiceEngineStatus,
         string? logsFolderOverride,
-        FlightRecorderService? flightRecorder = null)
+        FlightRecorderService? flightRecorder = null,
+        DictationHistoryStore? dictationHistory = null)
     {
         _settingsStore = settingsStore;
         _latencyDiagnostics = latencyDiagnostics;
@@ -81,6 +84,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _voiceEngineStatus = voiceEngineStatus;
         _logsFolderOverride = logsFolderOverride;
         _flightRecorder = flightRecorder ?? new FlightRecorderService();
+        _dictationHistory = dictationHistory ?? new DictationHistoryStore();
         _sourceSettings = settings;
         if (_voiceEngineStatus is not null)
         {
@@ -122,6 +126,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         RefreshLatencyDiagnostics();
         RefreshHotkeyDiagnostics();
         RefreshFlightRecorderSummary();
+        RefreshDictationHistory();
         RefreshRuntimeDiagnostics();
         RefreshVoiceEngineStatus();
     }
@@ -444,6 +449,44 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public string FlightRecorderFolder => _flightRecorder.Root;
 
+    public ObservableCollection<DictationHistoryItem> RecentDictations { get; } = [];
+
+    public bool HasDictationHistory => RecentDictations.Count > 0;
+
+    public string DictationHistoryMessage
+    {
+        get => _dictationHistoryMessage;
+        private set => SetProperty(ref _dictationHistoryMessage, value);
+    }
+
+    public void RefreshDictationHistory()
+    {
+        RecentDictations.Clear();
+        foreach (var entry in _dictationHistory.LoadRecent())
+        {
+            RecentDictations.Add(new DictationHistoryItem(
+                entry.Text,
+                entry.Timestamp.ToLocalTime().ToString("MMM d, HH:mm")));
+        }
+
+        DictationHistoryMessage = RecentDictations.Count == 0
+            ? "No dictations yet. New dictations appear here, stored only on this computer."
+            : $"{RecentDictations.Count} recent dictation{(RecentDictations.Count == 1 ? "" : "s")}, stored only on this computer.";
+        OnPropertyChanged(nameof(HasDictationHistory));
+    }
+
+    public int ClearDictationHistory()
+    {
+        var removed = _dictationHistory.Clear();
+        RefreshDictationHistory();
+        return removed;
+    }
+
+    public void SetDictationHistoryFeedback(string message)
+    {
+        DictationHistoryMessage = message;
+    }
+
     public string FlightRecorderSummary
     {
         get => _flightRecorderSummary;
@@ -462,6 +505,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         var removed = _flightRecorder.PurgeAll();
         RefreshFlightRecorderSummary();
+        RefreshDictationHistory();
         return removed;
     }
 
@@ -469,6 +513,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         var saved = _flightRecorder.SaveLatest(destinationPath);
         RefreshFlightRecorderSummary();
+        RefreshDictationHistory();
         return saved;
     }
 
@@ -513,7 +558,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         LocalModelLibraryService? modelLibrary = null,
         VoiceEngineStatusSource? voiceEngineStatus = null,
         string? logsFolderOverride = null,
-        FlightRecorderService? flightRecorder = null)
+        FlightRecorderService? flightRecorder = null,
+        DictationHistoryStore? dictationHistory = null)
     {
         return new SettingsViewModel(
             settingsStore,
@@ -524,7 +570,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             modelLibrary ?? new LocalModelLibraryService(),
             voiceEngineStatus,
             logsFolderOverride,
-            flightRecorder);
+            flightRecorder,
+            dictationHistory);
     }
 
     public async Task DownloadModelAsync(ModelCardViewModel card, CancellationToken cancellationToken)
@@ -938,3 +985,5 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         return true;
     }
 }
+
+public sealed record DictationHistoryItem(string Text, string Timestamp);

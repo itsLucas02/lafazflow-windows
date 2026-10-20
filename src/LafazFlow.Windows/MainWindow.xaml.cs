@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private readonly PerformanceHealthMonitor _healthMonitor = new();
     private readonly VoiceEngineStatusSource _voiceEngineStatus;
     private readonly FlightRecorderService _flightRecorder = new();
+    private readonly DictationHistoryStore _dictationHistory = new();
     private SettingsWindow? _settingsWindow;
     private bool _shellInitialized;
 
@@ -82,7 +83,8 @@ public partial class MainWindow : Window
                         settings,
                         cancellationToken,
                         "Sustained slowdown"),
-            flightRecorder: _flightRecorder);
+            flightRecorder: _flightRecorder,
+            dictationHistory: _dictationHistory);
         _trayIcon = new TrayIconService(
             _miniRecorderViewModel,
             ShowSettingsFromShell,
@@ -327,7 +329,8 @@ public partial class MainWindow : Window
 
             _settingsWindow = new SettingsWindow(SettingsViewModel.Load(
                 _settingsStore,
-                voiceEngineStatus: _voiceEngineStatus));
+                voiceEngineStatus: _voiceEngineStatus,
+                dictationHistory: _dictationHistory));
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
             _settingsWindow.Show();
             _settingsWindow.Activate();

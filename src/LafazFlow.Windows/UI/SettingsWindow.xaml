@@ -289,9 +289,9 @@
         </Style>
 
         <Style TargetType="ScrollBar">
-            <Setter Property="Width" Value="10" />
+            <Setter Property="Width" Value="8" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#4B5662" />
+            <Setter Property="Foreground" Value="#3A3A40" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
@@ -315,7 +315,7 @@
                                 <Track.Thumb>
                                     <Thumb x:Name="ScrollThumb"
                                            Background="{TemplateBinding Foreground}"
-                                           Margin="2">
+                                           Margin="1">
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
                                                 <Border x:Name="ThumbSurface"
@@ -349,7 +349,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="Orientation" Value="Horizontal">
                                 <Setter Property="Width" Value="Auto" />
-                                <Setter Property="Height" Value="10" />
+                                <Setter Property="Height" Value="8" />
                                 <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal" />
                                 <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
                                 <Setter TargetName="DecreaseButton" Property="Command" Value="{x:Static ScrollBar.PageLeftCommand}" />
@@ -671,22 +671,79 @@
                                Margin="0,0,0,12" />
                     <WrapPanel>
                         <ui:Button Content="Test Transcription"
-                                   Width="142"
+                                   MinWidth="142"
                                    Appearance="Primary"
                                    Margin="0,0,8,8"
                                    Click="TestTranscription_OnClick" />
                         <ui:Button Content="Test Microphone"
-                                   Width="128"
+                                   MinWidth="128"
                                    Margin="0,0,8,8"
                                    Click="TestMicrophone_OnClick" />
                         <ui:Button Content="Refresh Status"
-                                   Width="116"
+                                   MinWidth="116"
                                    Margin="0,0,8,8"
                                    Click="RefreshRuntimeDiagnostics_OnClick" />
                     </WrapPanel>
                 </StackPanel>
             </ScrollViewer>
 
+            <ScrollViewer>
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer" BasedOn="{StaticResource SectionScrollStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static local:SettingsSection.History}">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <TextBlock Text="History" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="Your recent dictations, kept only on this computer so you can recover text that pasted in the wrong place."
+                               Style="{StaticResource SectionSubtitleStyle}" />
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Recent dictations" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBlock Text="{Binding DictationHistoryMessage}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,0,10" />
+                            <ItemsControl ItemsSource="{Binding RecentDictations}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource BorderBrushMuted}"
+                                                BorderThickness="0,0,0,1"
+                                                Padding="0,14">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                                    <TextBlock Text="{Binding Text}"
+                                                               TextWrapping="Wrap"
+                                                               LineHeight="20" />
+                                                    <TextBlock Text="{Binding Timestamp}"
+                                                               FontSize="11"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               Margin="0,6,0,0" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1"
+                                                        Content="Copy"
+                                                        VerticalAlignment="Top"
+                                                        Click="CopyDictationHistoryItem_OnClick" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <WrapPanel Margin="0,16,0,0">
+                                <Button Content="Refresh" Click="RefreshHistory_OnClick" />
+                                <Button Content="Clear History" Click="ClearHistory_OnClick" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
             <ScrollViewer>
                 <ScrollViewer.Style>
                     <Style TargetType="ScrollViewer" BasedOn="{StaticResource SectionScrollStyle}">
@@ -740,8 +797,8 @@
                             <TextBlock Text="Current Model" Style="{StaticResource FieldLabelStyle}" />
                             <TextBlock Text="{Binding CurrentModelSummary}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,0,10" />
                             <WrapPanel>
-                                <Button Content="Import Local Model" Width="132" Click="ImportLocalModel_OnClick" />
-                                <Button Content="Open Model Folder" Width="136" Click="OpenModelDirectory_OnClick" />
+                                <Button Content="Import Local Model" MinWidth="132" Click="ImportLocalModel_OnClick" />
+                                <Button Content="Open Model Folder" MinWidth="136" Click="OpenModelDirectory_OnClick" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -822,9 +879,9 @@
                                             <TextBlock Text="{Binding DownloadProgressLabel}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" Margin="0,10,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Top">
-                                            <Button Content="{Binding PrimaryActionLabel}" Width="150" IsEnabled="{Binding CanPrimaryAction}" Click="PrimaryModelAction_OnClick" />
-                                            <Button Content="Open Folder" Width="150" IsEnabled="{Binding CanOpenFolder}" Click="OpenModelFolder_OnClick" />
-                                            <Button Content="Delete" Width="150" IsEnabled="{Binding CanDelete}" Click="DeleteModel_OnClick" />
+                                            <Button Content="{Binding PrimaryActionLabel}" MinWidth="150" IsEnabled="{Binding CanPrimaryAction}" Click="PrimaryModelAction_OnClick" />
+                                            <Button Content="Open Folder" MinWidth="150" IsEnabled="{Binding CanOpenFolder}" Click="OpenModelFolder_OnClick" />
+                                            <Button Content="Delete" MinWidth="150" IsEnabled="{Binding CanDelete}" Click="DeleteModel_OnClick" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -1100,9 +1157,9 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                             <WrapPanel>
-                                <Button Content="Refresh Checks" Width="124" Click="RefreshRuntimeDiagnostics_OnClick" />
-                                <Button Content="Test Microphone" Width="128" Click="TestMicrophone_OnClick" />
-                                <Button Content="Test Transcription" Width="142" Click="TestTranscription_OnClick" />
+                                <Button Content="Refresh Checks" MinWidth="124" Click="RefreshRuntimeDiagnostics_OnClick" />
+                                <Button Content="Test Microphone" MinWidth="128" Click="TestMicrophone_OnClick" />
+                                <Button Content="Test Transcription" MinWidth="142" Click="TestTranscription_OnClick" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -1139,9 +1196,9 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                             <WrapPanel>
-                                <Button Content="Refresh" Width="86" Click="RefreshLatency_OnClick" />
-                                <Button Content="Open Logs" Width="92" Click="OpenLogsFolder_OnClick" />
-                                <Button Content="Clear Latency" Width="106" Click="ClearLatency_OnClick" />
+                                <Button Content="Refresh" MinWidth="86" Click="RefreshLatency_OnClick" />
+                                <Button Content="Open Logs" MinWidth="92" Click="OpenLogsFolder_OnClick" />
+                                <Button Content="Clear Latency" MinWidth="106" Click="ClearLatency_OnClick" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -1168,8 +1225,8 @@
                                 </DataGrid.Columns>
                             </DataGrid>
                             <WrapPanel>
-                                <Button Content="Refresh Hotkey" Width="116" Click="RefreshHotkey_OnClick" />
-                                <Button Content="Clear Hotkey" Width="106" Click="ClearHotkey_OnClick" />
+                                <Button Content="Refresh Hotkey" MinWidth="116" Click="RefreshHotkey_OnClick" />
+                                <Button Content="Clear Hotkey" MinWidth="106" Click="ClearHotkey_OnClick" />
                             </WrapPanel>
                             <CheckBox Content="Keep recordings for diagnostics" IsChecked="{Binding KeepRecordingsForDiagnostics}" />
                         </StackPanel>
@@ -1184,9 +1241,9 @@
                                        Foreground="{StaticResource TextSecondaryBrush}"
                                        Margin="0,0,0,8" />
                             <WrapPanel>
-                                <Button Content="Open Folder" Width="116" Click="OpenFlightRecorderFolder_OnClick" />
-                                <Button Content="Save Latest Recording" Width="170" Click="SaveLatestFlightRecorder_OnClick" />
-                                <Button Content="Purge All" Width="96" Click="PurgeFlightRecorder_OnClick" />
+                                <Button Content="Open Folder" MinWidth="116" Click="OpenFlightRecorderFolder_OnClick" />
+                                <Button Content="Save Latest Recording" MinWidth="170" Click="SaveLatestFlightRecorder_OnClick" />
+                                <Button Content="Purge All" MinWidth="96" Click="PurgeFlightRecorder_OnClick" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -1238,7 +1295,7 @@
                                 <TextBox Grid.Column="0" Text="{Binding RecordingsFolder, Mode=OneWay}" IsReadOnly="True" />
                                 <Button Grid.Column="1" Content="Open" Click="OpenRecordingsFolder_OnClick" />
                             </Grid>
-                            <Button Content="Reset Settings" Width="118" Click="ResetSettings_OnClick" />
+                            <Button Content="Reset Settings" MinWidth="118" Click="ResetSettings_OnClick" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -1258,10 +1315,10 @@
                            TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Cancel"
-                            Width="86"
+                            MinWidth="86"
                             Click="Cancel_OnClick" />
                     <Button Content="Save"
-                            Width="86"
+                            MinWidth="86"
                             Style="{StaticResource PrimaryButtonStyle}"
                             Click="Save_OnClick" />
                 </StackPanel>

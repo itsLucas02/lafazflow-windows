@@ -28,6 +28,7 @@ public sealed class RecorderController
     private readonly TimeSpan _transientErrorDismissDelay;
     private readonly TimeSpan _micReadinessTimeout;
     private readonly FlightRecorderService? _flightRecorder;
+    private readonly DictationHistoryStore? _dictationHistory;
 
     /// <summary>
     /// Peak-level floor for retrying an empty final-engine result through the CLI
@@ -78,7 +79,8 @@ public sealed class RecorderController
         Func<AppSettings, CancellationToken, Task>? restartWorkerAsync = null,
         TimeSpan? micReadinessTimeout = null,
         FlightRecorderService? flightRecorder = null,
-        TimeSpan? micSilenceWarningDelay = null)
+        TimeSpan? micSilenceWarningDelay = null,
+        DictationHistoryStore? dictationHistory = null)
     {
         _viewModel = viewModel;
         _window = window;
@@ -101,6 +103,7 @@ public sealed class RecorderController
         _micReadinessTimeout = micReadinessTimeout ?? TimeSpan.FromSeconds(4);
         _flightRecorder = flightRecorder;
         _micSilenceWarningDelay = micSilenceWarningDelay ?? TimeSpan.FromSeconds(2.5);
+        _dictationHistory = dictationHistory;
         _queue = new DictationQueueProcessor(ProcessJobAsync);
         if (_performanceHealthMonitor is not null)
         {
@@ -681,6 +684,7 @@ public sealed class RecorderController
                 }
             });
             _soundCues.PlayCompleted(SoundCueOptions.FromSettings(job.Settings));
+            _dictationHistory?.Append(transcript);
             succeeded = true;
         }
         catch (Exception error)
