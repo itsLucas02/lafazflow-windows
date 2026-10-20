@@ -56,3 +56,6 @@ Owner feedback: “spacing is very bad… everything feels smudged… I hate the
 - No binding or behavioral changes outside the new history recording (append on successful paste only).
 
 Verification: history store round-trip/cap/clear/corrupt-file tests; XAML assertions for the History page and scrollbar token; full suite 849 green.
+## Revision 4 — scrollbar width actually applied (same day)
+
+The 10 → 8 → 6 px width changes never took effect. The Wpf.Ui ScrollViewer template places a **local `Width`** on its internal ScrollBar; a local value beats any style setter, while our thumb template still applied (which is why only the dimming changed). Fix: `SectionScrollStyle` now carries its own ScrollViewer `ControlTemplate` (named `PART_ScrollContentPresenter` + a single vertical ScrollBar), so the ScrollBar style controls the real width. The bar is now 6 logical px (~12 physical at 200% scaling) with the dimmed thumb.
