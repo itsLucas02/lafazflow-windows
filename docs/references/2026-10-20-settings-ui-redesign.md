@@ -39,3 +39,12 @@ Reference for the visual system applied to `SettingsWindow.xaml`. Inspired by Ha
 ## Verification
 
 Full suite 843 green (XAML regression assertions updated for the new width/radii). Visual check on the installed build is the remaining acceptance step.
+
+## Revision 2 — neutral palette and spacing pass (same day)
+
+Owner feedback: “spacing is very bad… everything feels smudged… I hate the color.” Applied:
+
+- **Palette:** removed the teal cast. Neutral charcoal: background `#0F0F10`, sidebar `#151517`, cards `#1A1A1D`, borders `#2A2A2F`, controls `#121214`, text `#F4F4F5` / `#A6A6AD`. Accent/emphasis is white (`#EDEDF0`), selection surfaces are white at 8% alpha; green is reserved for the “ready” dot only.
+- **Spacing:** content inset `40,32,24,24`; scroll content padded `0,0,28,40` so content never touches the scrollbar and pages end with breathing room; cards padding 24 with 20 gaps; page header → cards 28; nav rows 12/11 with 4 gaps; sidebar padding 18/22 with 28 header gap; window 1000×720.
+- **Type rhythm:** default body 13 without a global line-height (global line-height clipped large titles); subtitle/help use explicit 20/18 line heights.
+- No binding or behavioral changes.
