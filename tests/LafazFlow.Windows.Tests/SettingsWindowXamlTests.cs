@@ -9,7 +9,7 @@ public sealed class SettingsWindowXamlTests
         var xamlPath = Path.Combine(repoRoot, "src", "LafazFlow.Windows", "UI", "SettingsWindow.xaml");
         var xaml = File.ReadAllText(Path.GetFullPath(xamlPath));
 
-        Assert.Contains("Width=\"860\"", xaml);
+        Assert.Contains("Width=\"960\"", xaml);
         Assert.Contains("ItemsSource=\"{Binding SettingsSections}\"", xaml);
         Assert.Contains("SelectedItem=\"{Binding SelectedSection}\"", xaml);
         Assert.Contains("local:SettingsSection.Overview", xaml);
@@ -281,7 +281,7 @@ public sealed class SettingsWindowXamlTests
         Assert.Contains("BorderBrush=\"{Binding StatusBorder}\"", xaml);
         Assert.Contains("Foreground=\"{Binding StatusForeground}\"", xaml);
         Assert.Contains("CornerRadius=\"6\"", xaml);
-        Assert.Contains("CornerRadius=\"5\"", xaml);
+        Assert.Contains("CornerRadius=\"8\"", xaml);
         Assert.Contains("Foreground=\"{StaticResource TextPrimaryBrush}\"", xaml);
         Assert.Contains("Content=\"{Binding PrimaryActionLabel}\"", xaml);
         Assert.Contains("Click=\"PrimaryModelAction_OnClick\"", xaml);

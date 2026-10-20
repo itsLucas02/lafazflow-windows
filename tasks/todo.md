@@ -622,6 +622,15 @@ The report separates initial model-load/readiness allocation, warmup allocation,
 - Final behavior: the app warns live when the microphone delivers silence, reports dead takes honestly, self-heals stale capture sessions, and never overrides the user's chosen microphone.
 - Verification: full suite 843 green; Release clean; installed build restarts the frozen app.
 
+## Plan: Settings UI redesign (20 Oct 2026)
+- [x] Recon: current SettingsWindow shell (860x660, 220 px sidebar, 12 px body, 8 px cards) vs Handy's structure (sidebar + grouped cards + type hierarchy).
+- [x] Apply design tokens: refined dark surfaces/borders, Segoe UI Variable, body 13, page title 26, helper 12; cards radius 12/padding 20/16 gap; window 960x700.
+- [x] Sidebar: accent app mark, "On-device dictation" caption, nav rows with hover surface + 3 px selected accent bar, version footer.
+- [x] Controls: rounded text boxes and combo boxes with hover/focus borders; buttons radius 8, min height 32/34; aligned input heights.
+- [x] No nav animations (keyboard-initiated frequency rule); pill/recorder untouched; all bindings/handlers unchanged.
+- [x] XAML regression assertions updated (window width, radii); full suite 843 green.
+- [ ] Owner visual check on the installed build.
+
 ## Agreed product direction
 - Reproduce the proven keep-the-model-ready behaviour used by VoiceInk, Handy, and FluidVoice with an original Windows implementation.
 - Use Handy as the primary Windows lifecycle reference, FluidVoice as the audio-finalization and measurement reference, and VoiceInk as the simple persistent-model reference.
