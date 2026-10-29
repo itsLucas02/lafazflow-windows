@@ -8,6 +8,7 @@ public sealed class NativePcm16ResamplerTests
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(4)]
     public void ConvertsNativeFloatMicAudioToContinuous16kMonoPcm(int channels)
     {
         var converter = new NativePcm16Resampler(WaveFormat.CreateIeeeFloatWaveFormat(48000, channels));

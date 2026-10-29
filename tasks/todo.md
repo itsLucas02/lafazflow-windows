@@ -2817,3 +2817,22 @@ The owner rejects an in-place Whisper worker/CLI repair and reports that spoken 
 ### Review — documentation-only handoff
 
 - No model was downloaded or tested against the owner's speech in this session. Upstream source build and headless model listing succeeded; no LafazFlow-branded executable or owner-install was produced. The old installed app remains in place. Resume at V3 acquisition and audio comparison, not branding/install.
+
+## Plan: Multichannel microphone capture after Razer disconnect (29 Oct 2026)
+
+- [x] Reproduce from the live log: eight `Unsupported microphone channel count: 4` failures on 29/10/2026 after Windows fell back to the Intel array.
+- [x] Replace the 1-2 channel restriction with an equal-weight mono downmix for any native channel count before the 16 kHz resampler.
+- [x] Add the 4-channel case to the converter theory; keep 1- and 2-channel behavior unchanged.
+- [x] Verify focused tests, the full solution suite, and the real default microphone hardware path.
+- [x] Record the incident reference and update the living known-issues sections and lessons.
+
+- Reference: [Multichannel microphone capture failure](../docs/references/2026-10-29-multichannel-microphone-capture.md).
+- Evidence: live log error, installed build `1.1.3+b3d030f` (build 59), current default `Microphone Array (Intel(R) Smart Sound Technology for Digital Microphones)` with `4 channels` float mix format.
+- Verification: 3 focused converter tests pass (1/2/4 channels); full suite 850/850; real-hardware `WasapiAudioInputDevice` test passes on the 4-channel default.
+- Delivery: source/tests committed and installed through `scripts/install-owner-build.ps1`; installed build/version and running process verified before push.
+
+## Review: Multichannel microphone capture fix (29 Oct 2026)
+
+- The failure was a format assumption, not a disconnected-device policy problem. The app correctly kept the user-selected device; it simply could not open a 4-channel native mix format.
+- The fix is limited to the capture converter. No automatic device switching was reintroduced, preserving the 20/10/2026 decision.
+- Limit: equal-weight averaging is verified for format handling, not for array speech quality. If the Intel array produces poor transcripts, compare first-channel selection and a driver-processed endpoint on the same retained audio.

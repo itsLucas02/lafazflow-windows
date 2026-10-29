@@ -530,3 +530,7 @@
 ## Do not prefer an older speech model on language scope alone
 - Pattern: Recommending Parakeet V2 first because the owner dictates in English overlooked that the selected Windows reference app recommends V3, which also supports English. English-only training does not prove better results on this owner's recordings.
 - Rule: Use the upstream-supported recommended model as the first baseline when it supports the owner's language, then compare alternatives on the same retained audio and live workflow before selecting a default. Describe supported languages and runtime constraints separately from measured quality.
+
+## Support the endpoint's native channel count, not just mono/stereo
+- Pattern: Raw-mode WASAPI opens each capture endpoint's native mix format. The converter accepted only 1-2 channels, so when the owner unplugged the Razer default and Windows fell back to a 4-channel Intel array, every dictation failed with `Unsupported microphone channel count: 4` until the app was restarted or the device changed.
+- Rule: Treat channel count as data, not a fixed enum: downmix any native channel count to mono before resampling, keep the existing mono/stereo results unchanged, and add the failing channel count to the converter theory. Do not solve an endpoint-format failure by automatically switching the user's microphone.

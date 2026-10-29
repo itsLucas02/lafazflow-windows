@@ -97,6 +97,8 @@ The owner reported that occasionally, especially after a long dictation, nothing
 
 **Follow-ups delivered:** the live "microphone is silent" warning (18/10/2026 — the shell swaps its level meter for "Mic silent - check device" within ~2.5s when the take stays below the level floor and clears it when audio returns). Automatic device switching was **attempted and removed the same day (20/10/2026)** after three trapping incidents — a stale override, an unopenable 4-channel endpoint ("Unsupported microphone channel count: 4"), and a warm-input replacement race that wedged the UI during rapid silent takes. The live warning, honest stop-time messages, stale-session self-heal, and session-generation guards remain; the microphone choice is left to the user. See section 7 for the evidence trail.
 
+**Multichannel recurrence (fixed 29/10/2026):** after the Razer Seiren Mini was unplugged, Windows fell back to the 4-channel Intel microphone array and every dictation failed with the same `Unsupported microphone channel count: 4` error, this time without any automatic switching involved. The capture converter now downmixes any native channel count to mono before resampling, so the selected/default endpoint is usable regardless of its channel layout. See [Multichannel microphone capture failure](2026-10-29-multichannel-microphone-capture.md).
+
 ## 3. DeepSeek phonetic family and "their/there/they're" priming
 
 ### Symptom
@@ -168,6 +170,8 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 
 **Third occurrence (hang) and removal (20/10/2026):** spamming silent takes made the recovery validation (`WarmUp(candidate)`) run from the background transcription-job thread while the next recording had already started. The warm-input replacement raced the active session and wedged the capture lock; the UI thread blocked, hotkey detections were logged with no toggles executed, and the pill never appeared. **Decision: automatic device switching was removed entirely.** The live silent warning, honest stop-time messages, stale-session self-heal, and session-generation guards remain. No automation may override the user's chosen microphone; if a future design revives switching, it must be validated against rapid-take, unsupported-endpoint, and UI-liveness scenarios and must never run from the transcription job thread.
 
+**Recurrence after removal (29/10/2026):** the 4-channel endpoint failure returned without any automatic switching. The owner unplugged the Razer default, Windows fell back to the 4-channel Intel array, and every start failed until restart because the converter accepted only 1-2 channels. Fixed by downmixing arbitrary channel counts rather than by selecting a different device. See [Multichannel microphone capture failure](2026-10-29-multichannel-microphone-capture.md).
+
 ## 8. What has already been done (context for future agents)
 
 - **M0–M10 persistent Whisper engine roadmap** (commits `1b2a3b9` … `73fa4a8`): persistent crash-isolated CUDA worker, complete-audio drain, versioned named-pipe protocol, final-preempts-preview, crash/timeout/CLI recovery, performance-health monitoring, plain-language Diagnostics, post-warmup memory verification, package provenance manifest.
@@ -193,4 +197,5 @@ During normal dictation the owner spoke "commit and push" but the pasted text re
 - `src/LafazFlow.Windows/Services/AudioCaptureService.cs`
 - `src/LafazFlow.Windows/Services/AudioSignalAnalyzer.cs`
 - `docs/references/2026-08-13-whisper-engine-reference-manifest.json` (pinned reference revisions)
+- `docs/references/2026-10-29-multichannel-microphone-capture.md` (multichannel endpoint fix)
 - `tasks/lessons.md` (reusable lessons)

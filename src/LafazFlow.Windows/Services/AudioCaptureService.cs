@@ -660,19 +660,18 @@ internal sealed class NativePcm16Resampler
 
     public NativePcm16Resampler(WaveFormat nativeFormat)
     {
-        if (nativeFormat.Channels is < 1 or > 2)
-            throw new NotSupportedException($"Unsupported microphone channel count: {nativeFormat.Channels}");
-
         _flushBuffer = new byte[(nativeFormat.AverageBytesPerSecond / 20 / nativeFormat.BlockAlign) * nativeFormat.BlockAlign];
         _nativeBuffer = new BufferedWaveProvider(nativeFormat)
         {
             ReadFully = false
         };
-        ISampleProvider samples = _nativeBuffer.ToSampleProvider();
-        if (nativeFormat.Channels == 2)
+        var downmix = new float[nativeFormat.Channels, 1];
+        for (var channel = 0; channel < nativeFormat.Channels; channel++)
         {
-            samples = new StereoToMonoSampleProvider(samples) { LeftVolume = 0.5f, RightVolume = 0.5f };
+            downmix[channel, 0] = 1f / nativeFormat.Channels;
         }
+
+        var samples = new ChannelMixerSampleProvider(_nativeBuffer.ToSampleProvider(), downmix);
         _resampler = new WdlResamplingSampleProvider(samples, 16000);
     }
 
